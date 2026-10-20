@@ -60,7 +60,15 @@ jobs:
         run: supabase db lint --fail-on error
 
       - name: RLS-tests (pgTAP)
-        run: supabase test db
+        run: |
+          set -o pipefail
+          if ! supabase test db 2>&1 | tee pgtap.log; then
+            # Gefaalde tests als annotatie, zodat ze ook zonder logtoegang zichtbaar zijn.
+            msg=$(grep -E 'not ok|^\s*#|ERROR|error|Failed|Dubious|Parse errors|Result' pgtap.log \
+              | head -200 | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=pgTAP-tests gefaald::${msg}"
+            exit 1
+          fi
 
   gitleaks:
     name: Geen secrets in de repository
