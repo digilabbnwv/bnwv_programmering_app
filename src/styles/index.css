@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens uit het BNWV Design System (docs/designsystem/).
+ * De standaardpaletten van Tailwind staan uit (`initial`): alleen kleuren,
+ * lettertypes, radii en schaduwen uit het design system bestaan als utility.
+ *
+ * Contrast (WCAG 2.1 AA): oranje (#ec7404) haalt op wit maar 2,97:1. Gebruik
+ * oranje daarom alleen decoratief. Tekst, knoppen en links zijn antraciet.
+ */
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('../assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  /* Kleuren */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-anthracite: #39373a;
+  --color-anthracite-hover: #2c2a2d;
+  --color-orange: #ec7404;
+  --color-orange-hover: #d76901;
+  --color-orange-active: #c05e01;
+  --color-orange-logo: #f47920;
+  --color-orange-40: #fee0c8;
+  --color-beige: #fde5d0;
+
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f7f6f6;
+  --color-neutral-100: #efeeee;
+  --color-neutral-200: #e2e1e2;
+  --color-neutral-300: #c9c7c9;
+  --color-neutral-400: #9d9a9e;
+  --color-neutral-500: #726f74;
+  --color-neutral-700: #514f53;
+  --color-neutral-900: #39373a;
+
+  /* Pijlerkleuren: alleen decoratief of als achtergrond met voldoende contrast */
+  --color-pijler-lees: #f7a700;
+  --color-pijler-lees-support: #fab948;
+  --color-pijler-leer: #00b5ec;
+  --color-pijler-leer-support: #57c4f2;
+  --color-pijler-doe: #e94266;
+  --color-pijler-doe-support: #ee7183;
+  --color-pijler-ontmoet: #009679;
+  --color-pijler-ontmoet-support: #3aa992;
+  --color-pijler-vraag: #1160ab;
+  --color-pijler-vraag-support: #517abd;
+
+  /* Typografie */
+  --font-*: initial;
+  --font-sans: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --text-*: initial;
+  --text-ui-xs: 0.75rem;
+  --text-ui-xs--line-height: 1.5;
+  --text-ui-sm: 0.875rem;
+  --text-ui-sm--line-height: 1.5;
+  --text-ui-md: 1rem;
+  --text-ui-md--line-height: 1.5;
+  --text-ui-lg: 1.125rem;
+  --text-ui-lg--line-height: 1.5;
+  --text-bijschrift: 0.8125rem;
+  --text-bijschrift--line-height: 1.5;
+  --text-brood: 1rem;
+  --text-brood--line-height: 1.5;
+  --text-intro: 1.3125rem;
+  --text-intro--line-height: 1.5;
+  --text-subkop: 1.25rem;
+  --text-subkop--line-height: 1.2;
+  --text-kop-medium: clamp(1.75rem, 3vw, 2.5rem);
+  --text-kop-medium--line-height: 1.2;
+  --text-kop-medium--letter-spacing: -0.025em;
+  --text-kop-groot: clamp(2.5rem, 5.2vw, 4.5rem);
+  --text-kop-groot--line-height: 1.2;
+  --text-kop-groot--letter-spacing: -0.025em;
+
+  --tracking-*: initial;
+  --tracking-normal: 0;
+  --tracking-title: -0.025em;
+
+  /*
+   * Spacing: Tailwind-stap 0.25rem. Design-system-schaal:
+   * 2xs=1, xs=2, sm=3, md=4, lg=6, xl=8, 2xl=12, 3xl=16, 4xl=24.
+   */
+  --spacing: 0.25rem;
+
+  /* Vormen */
+  --radius-*: initial;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+
+  --shadow-*: initial;
+  --shadow-card: 0 1px 3px rgba(57, 55, 58, 0.08), 0 8px 24px rgba(57, 55, 58, 0.06);
+  --shadow-raised: 0 2px 6px rgba(57, 55, 58, 0.1), 0 16px 40px rgba(57, 55, 58, 0.08);
+
+  --container-page: 1180px;
+
+  /* Beweging */
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+@layer base {
+  html {
+    @apply bg-neutral-0 font-sans text-brood text-anthracite antialiased;
+  }
+
+  /* Zichtbare focus voor toetsenbordgebruikers (WCAG 2.4.7) */
+  :focus-visible {
+    outline: 3px solid var(--color-anthracite);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0ms !important;
+      transition-duration: 0ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

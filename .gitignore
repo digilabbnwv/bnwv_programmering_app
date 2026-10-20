@@ -1,0 +1,25 @@
+# Lokale Node-installatie (portable)
+node_bin/
+
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+
+# Environment: nooit committen
+.env
+.env.*
+!.env.example
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+supabase/functions/.env
+
+# Editor/OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
