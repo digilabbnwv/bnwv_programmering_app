@@ -12,11 +12,16 @@
 --
 -- Activeren in het dashboard: Authentication → Hooks → Customize Access Token
 -- → Postgres-functie public.custom_access_token_hook. Lokaal: config.toml.
+--
+-- security definer: Supabase Auth (supabase_auth_admin) heeft zo alleen
+-- uitvoerrecht op deze ene functie nodig, en geen lees- of schrijfrechten op
+-- de tabellen zelf.
 -- =============================================================================
 
 create function public.custom_access_token_hook(event jsonb)
 returns jsonb
 language plpgsql
+security definer
 set search_path = ''
 as $$
 declare
@@ -61,22 +66,6 @@ end;
 $$;
 
 -- Alleen Supabase Auth mag de hook uitvoeren.
-revoke execute on function public.custom_access_token_hook(jsonb) from public, anon, authenticated;
+revoke execute on function public.custom_access_token_hook(jsonb) from public, anon, authenticated, service_role;
 grant usage on schema public to supabase_auth_admin;
 grant execute on function public.custom_access_token_hook(jsonb) to supabase_auth_admin;
-
-grant select on public.user_roles, public.profiles to supabase_auth_admin;
-grant insert on public.audit_log to supabase_auth_admin;
-grant usage on sequence public.audit_log_id_seq to supabase_auth_admin;
-
-create policy "Auth leest rollen voor de hook"
-  on public.user_roles for select to supabase_auth_admin
-  using (true);
-
-create policy "Auth leest profielen voor de hook"
-  on public.profiles for select to supabase_auth_admin
-  using (true);
-
-create policy "Auth schrijft inlogregels"
-  on public.audit_log for insert to supabase_auth_admin
-  with check (action = 'auth.ingelogd');

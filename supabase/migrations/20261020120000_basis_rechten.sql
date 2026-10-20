@@ -23,8 +23,6 @@ alter default privileges for role postgres in schema public
 create schema if not exists private;
 revoke all on schema private from public;
 grant usage on schema private to authenticated, service_role;
-alter default privileges for role postgres in schema private
-  revoke execute on functions from public;
 
 -- -----------------------------------------------------------------------------
 -- Rollen en rechten
@@ -105,7 +103,7 @@ create table public.audit_log (
   -- Geen foreign keys: de log moet blijven bestaan als een gebruiker verdwijnt.
   actor_id uuid,
   action text not null
-    check (action ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'),
+    check (action ~ '^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$'),
   target_user_id uuid,
   details jsonb not null default '{}'::jsonb
     check (jsonb_typeof(details) = 'object' and pg_column_size(details) <= 8192)

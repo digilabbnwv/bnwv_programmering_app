@@ -370,3 +370,13 @@ $$;
 
 revoke all on function public.list_users() from public, anon;
 grant execute on function public.list_users() to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Sluitstuk: in private mag authenticated alleen de autorisatiecontroles
+-- uitvoeren. Supabase geeft nieuwe functies standaard uitvoerrechten; die
+-- trekken we hier voor het hele schema in. De test 010_schema bewaakt dit.
+-- -----------------------------------------------------------------------------
+revoke execute on all functions in schema private from public, anon, authenticated;
+grant execute on function private.is_aal2() to authenticated;
+grant execute on function private.session_is_valid() to authenticated;
+grant execute on function private.authorize(text) to authenticated;
