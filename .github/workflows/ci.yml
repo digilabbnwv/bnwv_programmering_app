@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
   workflow_call:
 
@@ -38,6 +38,29 @@ jobs:
 
       - name: Geen secrets in de build
         run: npm run check:secrets
+
+  database:
+    name: Migraties en RLS-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.121.0
+
+      - name: Lokale Supabase starten (alleen database en auth)
+        run: >
+          supabase start
+          -x realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Migraties controleren
+        run: supabase db lint --fail-on error
+
+      - name: RLS-tests (pgTAP)
+        run: supabase test db
 
   gitleaks:
     name: Geen secrets in de repository
