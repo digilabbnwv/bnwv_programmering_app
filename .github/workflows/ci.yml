@@ -51,10 +51,10 @@ jobs:
         with:
           version: 2.121.0
 
-      - name: Lokale Supabase starten (alleen database en auth)
+      - name: Lokale Supabase starten (database, auth, API en Edge Functions)
         run: >
           supabase start
-          -x realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,logflare,vector,supavisor
 
       - name: Migraties controleren
         run: supabase db lint --fail-on error
@@ -69,6 +69,44 @@ jobs:
             echo "::error title=pgTAP-tests gefaald::${msg}"
             exit 1
           fi
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Edge Functions typechecken
+        run: deno check supabase/functions/*/index.ts
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - run: npm ci
+
+      - name: Edge Functions starten
+        run: |
+          supabase functions serve > functions.log 2>&1 &
+          # Wachten tot de functie zelf antwoordt (zonder token: code geen_toegang).
+          for i in $(seq 1 60); do
+            if curl -s -X POST http://127.0.0.1:54321/functions/v1/wachtwoord-wijzigen | grep -q geen_toegang; then
+              echo "Functies staan klaar"; exit 0
+            fi
+            sleep 2
+          done
+          cat functions.log
+          exit 1
+
+      - name: Integratietest inlogflow (echte Supabase Auth)
+        run: |
+          eval "$(supabase status -o env)"
+          export SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" DB_URL="$DB_URL"
+          npm run test:integratie
+
+      - name: Logs van de Edge Functions
+        if: failure()
+        run: cat functions.log || true
 
   gitleaks:
     name: Geen secrets in de repository

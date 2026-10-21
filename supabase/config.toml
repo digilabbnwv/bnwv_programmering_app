@@ -414,3 +414,8 @@ enabled = true
 # declarative_schema_path = "./schemas"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Het token controleert de functie zelf (getClaims), zodat dit ook werkt met
+# de nieuwe asymmetrische JWT-sleutels van Supabase.
+[functions.wachtwoord-wijzigen]
+verify_jwt = false

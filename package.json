@@ -20,7 +20,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "check:secrets": "node scripts/check-build-secrets.mjs dist"
+    "check:secrets": "node scripts/check-build-secrets.mjs dist",
+    "test:integratie": "vitest run --config vitest.integratie.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
