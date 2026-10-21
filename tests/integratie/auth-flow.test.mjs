@@ -87,6 +87,11 @@ describe('inlogflow met echte Supabase Auth', () => {
          insert into public.user_roles (user_id, role_id) values ('${userId}', 'medewerker');`)
   })
 
+  it('weigert registreren: alleen een beheerder maakt accounts aan', async () => {
+    const { error } = await nieuweClient().auth.signUp({ email: 'nieuw@test.nl', password: 'Sterk-Wachtwoord-1' })
+    expect(error?.code).toBe('signup_disabled')
+  })
+
   it('weigert een verkeerd wachtwoord', async () => {
     const { error } = await nieuweClient().auth.signInWithPassword({ email: EMAIL, password: 'Fout-Wachtwoord-1' })
     expect(error?.code).toBe('invalid_credentials')
