@@ -91,7 +91,9 @@ jobs:
 
       - name: Edge Functions starten
         run: |
-          supabase functions serve > functions.log 2>&1 &
+          # --no-verify-jwt: zoals verify_jwt = false in config.toml; de functie
+          # controleert het token zelf.
+          supabase functions serve --no-verify-jwt > functions.log 2>&1 &
           # Wachten tot de functie zelf antwoordt (zonder token: code geen_toegang).
           for i in $(seq 1 60); do
             if curl -s -X POST http://127.0.0.1:54321/functions/v1/wachtwoord-wijzigen | grep -q geen_toegang; then
@@ -101,6 +103,15 @@ jobs:
           done
           cat functions.log
           exit 1
+
+      - name: Edge Function met een ongeldig token (diagnose)
+        run: |
+          # Als annotatie, zodat het resultaat zonder logtoegang te lezen is.
+          res=$(curl -s -w ' (HTTP %{http_code})' -X POST \
+            -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.x' \
+            -H 'Content-Type: application/json' -d '{}' \
+            http://127.0.0.1:54321/functions/v1/wachtwoord-wijzigen)
+          echo "::notice title=Edge Function met ongeldig token::${res}"
 
       - name: Integratietest inlogflow (echte Supabase Auth)
         run: |
@@ -112,8 +123,9 @@ jobs:
       - name: Logs van de Edge Functions
         if: failure()
         run: |
-          cat functions.log || true
-          msg=$(tail -60 functions.log 2>/dev/null | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')
+          docker logs supabase_edge_runtime_bnwv_programmering_app > edge.log 2>&1 || true
+          cat functions.log edge.log || true
+          msg=$(cat functions.log edge.log 2>/dev/null | tail -80 | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')
           echo "::error title=Logs van de Edge Functions::${msg}"
 
   gitleaks:

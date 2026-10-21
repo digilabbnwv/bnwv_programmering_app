@@ -25,6 +25,8 @@ const DB_URL = env('DB_URL')
 const EMAIL = 'integratie@test.nl'
 const TIJDELIJK = 'Tijdelijk-Wachtwoord-1'
 const NIEUW = 'Eigen-Wachtwoord-2026'
+const FOUT = 'Fout-Wachtwoord-1'
+const REGISTRATIE = 'Sterk-Wachtwoord-1'
 
 const opties = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 const nieuweClient = () => createClient(URL, ANON, opties)
@@ -88,12 +90,12 @@ describe('inlogflow met echte Supabase Auth', () => {
   })
 
   it('weigert registreren: alleen een beheerder maakt accounts aan', async () => {
-    const { error } = await nieuweClient().auth.signUp({ email: 'nieuw@test.nl', password: 'Sterk-Wachtwoord-1' })
+    const { error } = await nieuweClient().auth.signUp({ email: 'nieuw@test.nl', password: REGISTRATIE })
     expect(error?.code).toBe('signup_disabled')
   })
 
   it('weigert een verkeerd wachtwoord', async () => {
-    const { error } = await nieuweClient().auth.signInWithPassword({ email: EMAIL, password: 'Fout-Wachtwoord-1' })
+    const { error } = await nieuweClient().auth.signInWithPassword({ email: EMAIL, password: FOUT })
     expect(error?.code).toBe('invalid_credentials')
   })
 
