@@ -78,7 +78,8 @@ jobs:
       # root en zoekt hij de npm-pakketten in node_modules.
       - name: Edge Functions typechecken
         run: |
-          for dir in supabase/functions/*/; do
+          # _shared heeft geen index.ts; het wordt meegecontroleerd via de imports.
+          for dir in supabase/functions/[!_]*/; do
             (cd "$dir" && deno check index.ts)
           done
 

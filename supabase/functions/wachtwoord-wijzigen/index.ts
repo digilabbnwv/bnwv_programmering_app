@@ -10,75 +10,16 @@
 // Voorwaarden: geldig token met AAL2 (2FA gedaan) en must_change_password nog
 // true. Na de wijziging is de vlag false, dus de functie werkt één keer per
 // reset door een beheerder.
-//
-// De service role key komt uit de omgeving van Supabase, nooit uit de repo.
 
-import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
+import { adminClient, antwoord, ingelogdeGebruiker, serveer, wachtwoordIsSterk } from '../_shared/http.ts'
 
-const MIN_LENGTE = 12
-const MAX_BYTES = 72
+serveer(async (req) => {
+  const admin = adminClient()
+  if (!admin) return antwoord(req, 500, { code: 'configuratie' })
 
-// Gelijk aan src/auth/wachtwoord.ts en supabase/config.toml.
-function wachtwoordIsSterk(wachtwoord: string): boolean {
-  return (
-    wachtwoord.length >= MIN_LENGTE &&
-    new TextEncoder().encode(wachtwoord).length <= MAX_BYTES &&
-    /[a-z]/.test(wachtwoord) &&
-    /[A-Z]/.test(wachtwoord) &&
-    /[0-9]/.test(wachtwoord)
-  )
-}
-
-// Toegestane origins voor CORS, komma-gescheiden (secret ALLOWED_ORIGINS).
-// Zonder instelling alleen de lokale dev- en preview-server.
-const ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') ??
-  'http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:4173')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean)
-
-function corsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get('Origin')
-  if (!origin || !ORIGINS.includes(origin)) return {}
-  return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    Vary: 'Origin',
-  }
-}
-
-function antwoord(req: Request, status: number, body: Record<string, unknown>): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
-  })
-}
-
-async function verwerk(req: Request): Promise<Response> {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req) })
-  if (req.method !== 'POST') return antwoord(req, 405, { code: 'methode' })
-
-  const url = Deno.env.get('SUPABASE_URL')
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!url || !serviceKey) return antwoord(req, 500, { code: 'configuratie' })
-
-  const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
-  if (!token) return antwoord(req, 401, { code: 'geen_toegang' })
-
-  const admin = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
-
-  // Controleert de handtekening van het token (JWKS, of via Auth zelf).
-  const { data: claimData, error: claimFout } = await admin.auth.getClaims(token)
-  const claims = claimData?.claims
-  if (claimFout || !claims?.sub || claims.role !== 'authenticated') {
-    if (claimFout) console.error('token geweigerd:', claimFout.code ?? claimFout.message)
-    return antwoord(req, 401, { code: 'geen_toegang' })
-  }
-  if (claims.aal !== 'aal2') return antwoord(req, 403, { code: 'geen_toegang' })
-  const userId = claims.sub
+  const gebruiker = await ingelogdeGebruiker(req, admin)
+  if ('fout' in gebruiker) return gebruiker.fout
+  const { userId } = gebruiker
 
   let wachtwoord: unknown
   try {
@@ -116,14 +57,4 @@ async function verwerk(req: Request): Promise<Response> {
   }
 
   return antwoord(req, 200, { ok: true })
-}
-
-Deno.serve(async (req) => {
-  try {
-    return await verwerk(req)
-  } catch (e) {
-    // Alleen de fout loggen, nooit het verzoek (daar staat het wachtwoord in).
-    console.error('onverwachte fout:', e instanceof Error ? `${e.name}: ${e.message}` : 'onbekend')
-    return antwoord(req, 500, { code: 'serverfout' })
-  }
 })

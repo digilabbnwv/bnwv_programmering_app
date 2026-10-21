@@ -421,3 +421,6 @@ enabled = true
 # de nieuwe asymmetrische JWT-sleutels van Supabase.
 [functions.wachtwoord-wijzigen]
 verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
