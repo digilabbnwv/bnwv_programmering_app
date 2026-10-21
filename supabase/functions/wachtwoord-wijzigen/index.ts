@@ -55,7 +55,7 @@ function antwoord(req: Request, status: number, body: Record<string, unknown>): 
   })
 }
 
-Deno.serve(async (req) => {
+async function verwerk(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(req) })
   if (req.method !== 'POST') return antwoord(req, 405, { code: 'methode' })
 
@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
   const { data: claimData, error: claimFout } = await admin.auth.getClaims(token)
   const claims = claimData?.claims
   if (claimFout || !claims?.sub || claims.role !== 'authenticated') {
+    if (claimFout) console.error('token geweigerd:', claimFout.code ?? claimFout.message)
     return antwoord(req, 401, { code: 'geen_toegang' })
   }
   if (claims.aal !== 'aal2') return antwoord(req, 403, { code: 'geen_toegang' })
@@ -93,19 +94,36 @@ Deno.serve(async (req) => {
   const { data: status, error: statusFout } = await admin.rpc('password_change_status', {
     p_user: userId,
   })
-  if (statusFout) return antwoord(req, 500, { code: 'serverfout' })
+  if (statusFout) {
+    console.error('password_change_status:', statusFout.code, statusFout.message)
+    return antwoord(req, 500, { code: 'serverfout' })
+  }
   if (status === 'niet_nodig') return antwoord(req, 409, { code: 'niet_nodig' })
   if (status !== 'toegestaan') return antwoord(req, 403, { code: 'geen_toegang' })
 
   const { error: updateFout } = await admin.auth.admin.updateUserById(userId, { password: wachtwoord })
   if (updateFout) {
     // Supabase Auth kan het wachtwoord ook weigeren, bijv. als het gelekt is.
+    console.error('updateUserById:', updateFout.code, updateFout.status)
     const zwak = updateFout.code === 'weak_password' || updateFout.status === 422
     return antwoord(req, zwak ? 400 : 500, { code: zwak ? 'zwak_wachtwoord' : 'serverfout' })
   }
 
   const { error: rpcFout } = await admin.rpc('complete_password_change', { p_user: userId })
-  if (rpcFout) return antwoord(req, 500, { code: 'serverfout' })
+  if (rpcFout) {
+    console.error('complete_password_change:', rpcFout.code, rpcFout.message)
+    return antwoord(req, 500, { code: 'serverfout' })
+  }
 
   return antwoord(req, 200, { ok: true })
+}
+
+Deno.serve(async (req) => {
+  try {
+    return await verwerk(req)
+  } catch (e) {
+    // Alleen de fout loggen, nooit het verzoek (daar staat het wachtwoord in).
+    console.error('onverwachte fout:', e instanceof Error ? `${e.name}: ${e.message}` : 'onbekend')
+    return antwoord(req, 500, { code: 'serverfout' })
+  }
 })

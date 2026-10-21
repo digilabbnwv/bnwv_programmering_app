@@ -184,6 +184,11 @@ describe('inlogflow met echte Supabase Auth', () => {
     expect(refreshFout).not.toBeNull()
 
     const { error } = await nieuweClient().auth.signInWithPassword({ email: EMAIL, password: NIEUW })
-    expect(error?.status).toBe(403)
+    // Hele fout vergelijken, zodat een afwijking in de CI-annotatie leesbaar is.
+    expect({ status: error?.status, code: error?.code, message: error?.message }).toEqual({
+      status: 403,
+      code: undefined,
+      message: 'Dit account is niet actief. Neem contact op met een beheerder.',
+    })
   })
 })

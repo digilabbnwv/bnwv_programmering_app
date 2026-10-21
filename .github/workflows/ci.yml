@@ -111,7 +111,10 @@ jobs:
 
       - name: Logs van de Edge Functions
         if: failure()
-        run: cat functions.log || true
+        run: |
+          cat functions.log || true
+          msg=$(tail -60 functions.log 2>/dev/null | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Logs van de Edge Functions::${msg}"
 
   gitleaks:
     name: Geen secrets in de repository
@@ -123,6 +126,11 @@ jobs:
           persist-credentials: false
 
       - name: Gitleaks
-        run: >
-          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1
-          git /repo --redact --verbose --exit-code 1
+        run: |
+          if ! docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 \
+              git /repo --redact --verbose --exit-code 1 \
+              --report-format json --report-path /repo/gitleaks.json; then
+            # Vondsten als annotatie (zonder de waarde zelf: --redact).
+            jq -r '.[] | "::error file=\(.File),line=\(.StartLine),title=Gitleaks \(.RuleID)::commit \(.Commit[0:7]): \(.Description)"' gitleaks.json || true
+            exit 1
+          fi
