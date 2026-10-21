@@ -219,8 +219,10 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
-enable_signup = false
+# Let op: dit zet de e-mailprovider zelf aan of uit, dus ook inloggen met
+# wachtwoord. Registreren is al uitgezet met [auth] enable_signup = false;
+# de integratietest controleert dat registreren geweigerd wordt.
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -414,3 +416,8 @@ enabled = true
 # declarative_schema_path = "./schemas"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Het token controleert de functie zelf (getClaims), zodat dit ook werkt met
+# de nieuwe asymmetrische JWT-sleutels van Supabase.
+[functions.wachtwoord-wijzigen]
+verify_jwt = false

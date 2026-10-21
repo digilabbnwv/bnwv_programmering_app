@@ -51,10 +51,10 @@ jobs:
         with:
           version: 2.121.0
 
-      - name: Lokale Supabase starten (alleen database en auth)
+      - name: Lokale Supabase starten (database, auth, API en Edge Functions)
         run: >
           supabase start
-          -x realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,logflare,vector,supavisor
 
       - name: Migraties controleren
         run: supabase db lint --fail-on error
@@ -70,6 +70,52 @@ jobs:
             exit 1
           fi
 
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Per functie vanuit de eigen map: anders ziet Deno de package.json in de
+      # root en zoekt hij de npm-pakketten in node_modules.
+      - name: Edge Functions typechecken
+        run: |
+          for dir in supabase/functions/*/; do
+            (cd "$dir" && deno check index.ts)
+          done
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - run: npm ci
+
+      - name: Edge Functions starten
+        run: |
+          supabase functions serve > functions.log 2>&1 &
+          # Wachten tot de functie zelf antwoordt (zonder token: code geen_toegang).
+          for i in $(seq 1 60); do
+            if curl -s -X POST http://127.0.0.1:54321/functions/v1/wachtwoord-wijzigen | grep -q geen_toegang; then
+              echo "Functies staan klaar"; exit 0
+            fi
+            sleep 2
+          done
+          cat functions.log
+          exit 1
+
+      - name: Integratietest inlogflow (echte Supabase Auth)
+        run: |
+          eval "$(supabase status -o env)"
+          export SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" DB_URL="$DB_URL"
+          npm run test:integratie
+
+      - name: Logs van de Edge Functions
+        if: failure()
+        run: |
+          cat functions.log || true
+          msg=$(tail -60 functions.log 2>/dev/null | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Logs van de Edge Functions::${msg}"
+
   gitleaks:
     name: Geen secrets in de repository
     runs-on: ubuntu-latest
@@ -80,6 +126,11 @@ jobs:
           persist-credentials: false
 
       - name: Gitleaks
-        run: >
-          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1
-          git /repo --redact --verbose --exit-code 1
+        run: |
+          if ! docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 \
+              git /repo --redact --verbose --exit-code 1 \
+              --report-format json --report-path /repo/gitleaks.json; then
+            # Vondsten als annotatie (zonder de waarde zelf: --redact).
+            jq -r '.[] | "::error file=\(.File),line=\(.StartLine),title=Gitleaks \(.RuleID)::commit \(.Commit[0:7]): \(.Description)"' gitleaks.json || true
+            exit 1
+          fi
