@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { usePaginaTitel } from '../layout/Pagina'
 
 /** Gecentreerde kaart voor de schermen van de inlogflow. */
 export function AuthKaart({
@@ -10,6 +11,7 @@ export function AuthKaart({
   intro?: ReactNode
   children: ReactNode
 }) {
+  usePaginaTitel(titel)
   return (
     <main className="flex min-h-dvh items-start justify-center bg-neutral-50 px-4 py-12 md:items-center">
       <div className="w-full max-w-md rounded-card bg-neutral-0 p-6 shadow-card md:p-8">
