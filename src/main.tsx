@@ -11,6 +11,14 @@ import './styles/index.css'
 const root = document.getElementById('root')
 if (!root) throw new Error('Element #root ontbreekt in index.html')
 
+// Clickjacking: GitHub Pages kan geen X-Frame-Options zetten en frame-ancestors
+// werkt niet in een CSP-<meta>. Daarom weigert de app zelf om in een frame
+// van een andere site te draaien.
+if (window.top !== window.self) {
+  root.textContent = 'BNWV Intern kan niet binnen een andere website worden geopend.'
+  throw new Error('In een frame geladen; gestopt')
+}
+
 createRoot(root).render(
   <StrictMode>
     {configResult.ok && supabase ? (
