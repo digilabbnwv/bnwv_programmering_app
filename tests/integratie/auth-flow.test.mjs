@@ -70,9 +70,19 @@ async function wijzigWachtwoord(session, wachtwoord) {
   return { status: res.status, body: await res.json().catch(() => null) }
 }
 
+// Een TOTP-code geldt 30 seconden. Weigert Auth de code (bijv. omdat dezelfde
+// code net al gebruikt is), dan opnieuw met de code van het volgende venster.
+async function verifieer(c, factorId, secret) {
+  const eerste = await c.auth.mfa.challengeAndVerify({ factorId, code: totp(secret) })
+  if (!eerste.error) return eerste
+  await new Promise((r) => setTimeout(r, 30_000 - (Date.now() % 30_000) + 1000))
+  return c.auth.mfa.challengeAndVerify({ factorId, code: totp(secret) })
+}
+
 describe('inlogflow met echte Supabase Auth', () => {
-  const client = nieuweClient()
+  let client = nieuweClient()
   let userId
+  let factor
 
   beforeAll(async () => {
     const admin = createClient(URL, SERVICE, opties)
@@ -117,17 +127,15 @@ describe('inlogflow met echte Supabase Auth', () => {
   })
 
   it('koppelt een authenticator-app en komt daarmee op AAL2', async () => {
-    const { data: factor, error } = await client.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Test' })
+    const { data, error } = await client.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Test' })
     expect(error).toBeNull()
+    factor = data
     expect(factor.totp.qr_code).toMatch(/^data:image\/svg\+xml/)
 
     const fout = await client.auth.mfa.challengeAndVerify({ factorId: factor.id, code: '000000' })
     expect(fout.error?.code).toBe('mfa_verification_failed')
 
-    const { error: verifyFout } = await client.auth.mfa.challengeAndVerify({
-      factorId: factor.id,
-      code: totp(factor.totp.secret),
-    })
+    const { error: verifyFout } = await verifieer(client, factor.id, factor.totp.secret)
     expect(verifyFout).toBeNull()
     const { data: s } = await client.auth.getSession()
     expect(claims(s.session).aal).toBe('aal2')
@@ -146,28 +154,34 @@ describe('inlogflow met echte Supabase Auth', () => {
     expect(res).toEqual({ status: 400, body: { code: 'zwak_wachtwoord' } })
   })
 
-  it('wijzigt het wachtwoord één keer en zet de vlag uit', async () => {
+  it('wijzigt het wachtwoord één keer en beëindigt daarna de sessies', async () => {
     const { data: s } = await client.auth.getSession()
     expect(await wijzigWachtwoord(s.session, NIEUW)).toEqual({ status: 200, body: { ok: true } })
     expect((await wijzigWachtwoord(s.session, 'Nog-Een-Wachtwoord-3')).status).toBe(409)
 
-    const { data, error } = await client.auth.refreshSession()
-    expect(error).toBeNull()
-    const c = claims(data.session)
-    expect(c.must_change_password).toBe(false)
-    expect(c.aal).toBe('aal2')
-
-    const { data: rollen } = await client.from('roles').select('id')
-    expect(rollen).toHaveLength(4)
+    // Supabase Auth trekt bij een nieuw wachtwoord alle sessies in: opnieuw inloggen.
+    const { error } = await client.auth.refreshSession()
+    expect(error?.code).toBe('refresh_token_not_found')
   })
 
-  it('logt in met het nieuwe wachtwoord, niet meer met het oude', async () => {
+  it('logt in met het nieuwe wachtwoord en 2FA, niet meer met het oude', async () => {
     const oud = await nieuweClient().auth.signInWithPassword({ email: EMAIL, password: TIJDELIJK })
     expect(oud.error?.code).toBe('invalid_credentials')
-    const nieuw = await nieuweClient().auth.signInWithPassword({ email: EMAIL, password: NIEUW })
+
+    client = nieuweClient()
+    const nieuw = await client.auth.signInWithPassword({ email: EMAIL, password: NIEUW })
     expect(nieuw.error).toBeNull()
     // Met een gekoppelde app is na het wachtwoord nog de 2FA-stap nodig.
     expect(claims(nieuw.data.session).aal).toBe('aal1')
+
+    const { data, error } = await verifieer(client, factor.id, factor.totp.secret)
+    expect(error).toBeNull()
+    const c = claims(data)
+    expect(c.aal).toBe('aal2')
+    expect(c.must_change_password).toBe(false)
+
+    const { data: rollen } = await client.from('roles').select('id')
+    expect(rollen).toHaveLength(4)
   })
 
   it('schrijft inloggen en de wachtwoordwijziging naar de auditlog', () => {
@@ -187,9 +201,8 @@ describe('inlogflow met echte Supabase Auth', () => {
 
     const { error } = await nieuweClient().auth.signInWithPassword({ email: EMAIL, password: NIEUW })
     // Hele fout vergelijken, zodat een afwijking in de CI-annotatie leesbaar is.
-    expect({ status: error?.status, code: error?.code, message: error?.message }).toEqual({
+    expect({ status: error?.status, message: error?.message }).toEqual({
       status: 403,
-      code: undefined,
       message: 'Dit account is niet actief. Neem contact op met een beheerder.',
     })
   })

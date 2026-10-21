@@ -42,12 +42,9 @@ export function WachtwoordWijzigenPage() {
       setFout(await serverFout(error))
       return
     }
-    // Nieuw token ophalen: de claim must_change_password is nu false.
-    const { error: refreshFout } = await client.auth.refreshSession()
-    setBezig(false)
-    if (refreshFout) {
-      await uitloggen('Je wachtwoord is gewijzigd. Log opnieuw in met je nieuwe wachtwoord.')
-    }
+    // Supabase Auth trekt bij een nieuw wachtwoord alle sessies in, ook deze.
+    // Dus opnieuw inloggen, met het nieuwe wachtwoord en de code uit de app.
+    await uitloggen('Je wachtwoord is gewijzigd. Log opnieuw in met je nieuwe wachtwoord.')
   }
 
   return (
