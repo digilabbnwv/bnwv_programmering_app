@@ -1,0 +1,4 @@
+# Vals positief: testwachtwoord in de integratietest (lokale Supabase in CI).
+418f366132d8afbc1f0ed600c678067fdee59ae5:tests/integratie/auth-flow.test.mjs:generic-api-key:91
+# Vals positief: nep-token in een (inmiddels verwijderde) diagnosestap in CI.
+efe0bc6f4a3862053716220ef4d7e857e9009b30:.github/workflows/ci.yml:curl-auth-header:110

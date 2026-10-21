@@ -91,7 +91,9 @@ jobs:
 
       - name: Edge Functions starten
         run: |
-          supabase functions serve > functions.log 2>&1 &
+          # --no-verify-jwt: zoals verify_jwt = false in config.toml; de functie
+          # controleert het token zelf.
+          supabase functions serve --no-verify-jwt > functions.log 2>&1 &
           # Wachten tot de functie zelf antwoordt (zonder token: code geen_toegang).
           for i in $(seq 1 60); do
             if curl -s -X POST http://127.0.0.1:54321/functions/v1/wachtwoord-wijzigen | grep -q geen_toegang; then
@@ -112,8 +114,9 @@ jobs:
       - name: Logs van de Edge Functions
         if: failure()
         run: |
-          cat functions.log || true
-          msg=$(tail -60 functions.log 2>/dev/null | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')
+          docker logs supabase_edge_runtime_bnwv_programmering_app > edge.log 2>&1 || true
+          cat functions.log edge.log || true
+          msg=$(cat functions.log edge.log 2>/dev/null | tail -80 | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}')
           echo "::error title=Logs van de Edge Functions::${msg}"
 
   gitleaks:
