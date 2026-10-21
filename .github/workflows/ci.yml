@@ -74,8 +74,13 @@ jobs:
         with:
           deno-version: v2.x
 
+      # Per functie vanuit de eigen map: anders ziet Deno de package.json in de
+      # root en zoekt hij de npm-pakketten in node_modules.
       - name: Edge Functions typechecken
-        run: deno check supabase/functions/*/index.ts
+        run: |
+          for dir in supabase/functions/*/; do
+            (cd "$dir" && deno check index.ts)
+          done
 
       - uses: actions/setup-node@v7
         with:
