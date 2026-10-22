@@ -138,6 +138,8 @@ npx supabase secrets set ALLOWED_ORIGINS=https://digilabbnwv.github.io
 
 Vraagt `functions deploy` om Docker, voeg dan `--use-api` toe: dan bundelt Supabase de functies zelf.
 
+Op het BNWV-netwerk lukken `link` en `db push` niet, omdat de Postgres-poorten dicht zijn. Gebruik dan de workflow *Supabase uitrollen* (zie [Deploy](#deploy)); die doet `db push` en `functions deploy` vanuit GitHub. `secrets set` werkt wel vanaf de werkplek, want dat gaat via HTTPS.
+
 `npx supabase config push` gebruiken we niet: `config.toml` bevat lokale waarden (zoals de site-URL). Zet de instellingen hieronder daarom met de hand.
 
 ### 2. Instellingen in het dashboard
@@ -170,7 +172,13 @@ Na het wijzigen van de hook of de sessie-instellingen moeten gebruikers opnieuw 
    - `VITE_SUPABASE_PUBLISHABLE_KEY`
    - optioneel `VITE_IDLE_TIMEOUT_MINUTES`
 3. **Settings → Environments → github-pages → Deployment branches:** alleen `main`.
-4. Aanbevolen: **Settings → Branches →** een regel voor `main` die een pull request en een groene CI vraagt.
+4. **Settings → Environments → New environment `supabase`**, voor de workflow *Supabase uitrollen*:
+   - **Required reviewers:** jijzelf, en eventueel een tweede beheerder.
+   - **Deployment branches and tags:** *Selected branches*, alleen `main`.
+   - **Environment secrets:**
+     - `SUPABASE_ACCESS_TOKEN`: een persoonlijk access token, aan te maken via [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens). Geef het een duidelijke naam, bijv. "GitHub Actions BNWV Intern", en een vervaldatum.
+     - `SUPABASE_DB_PASSWORD`: het databasewachtwoord van het project (Project Settings → Database).
+5. Aanbevolen: **Settings → Branches →** een regel voor `main` die een pull request en een groene CI vraagt.
 
 De repository is publiek: de code is openbaar, de gegevens niet. Daarom staat er geen enkel secret in de repository; gitleaks controleert dat bij elke push.
 
@@ -186,24 +194,18 @@ Elke push naar `main` start [deploy.yml](.github/workflows/deploy.yml):
 
 Faalt één stap, dan blijft de vorige versie online. Handmatig opnieuw publiceren kan via **Actions → Deploy → Run workflow**.
 
-### Database en Edge Functions: met de hand, vóór de frontend
+### Database en Edge Functions: handmatig, via GitHub Actions
 
-Migraties en functies rol je bewust met de hand uit, zodat een databasewijziging nooit ongemerkt live gaat:
+Migraties en functies rol je bewust met de hand uit, zodat een databasewijziging nooit ongemerkt live gaat. Dat gaat via de workflow [Supabase uitrollen](.github/workflows/supabase.yml), want het BNWV-netwerk blokkeert de Postgres-poorten (5432 en 6543). Daardoor werkt `supabase db push` niet vanaf een werkplek.
 
-1. Merge de wijziging pas als CI groen is.
-2. Rol eerst de database uit, daarna de functies:
+1. Merge de wijziging naar `main` als CI groen is. De frontend volgt vanzelf.
+2. Start **Actions → Supabase uitrollen → Run workflow** op `main` en kies wat je uitrolt: *database en functies*, *alleen database* of *alleen functies*.
+3. De workflow draait eerst alle checks en wacht dan op goedkeuring. Keur goed via **Review deployments**.
+4. In de log zie je eerst welke migraties erbij komen (dry run); daarna worden ze uitgerold, en daarna de functies.
 
-   ```bash
-   npx supabase db push
-   ```
+Schrijf migraties zo dat de frontend die net live is gegaan ermee blijft werken, want die staat er even eerder dan de database. Voeg bijvoorbeeld een kolom eerst toe, en gebruik hem pas in een volgende versie van de frontend.
 
-   ```bash
-   npx supabase functions deploy wachtwoord-wijzigen admin-users
-   ```
-
-3. Push of merge daarna naar `main`; dan volgt de frontend vanzelf.
-
-Schrijf migraties zo dat de huidige frontend ermee blijft werken. Verwijder bijvoorbeeld een kolom pas in een latere migratie.
+Ben je op een netwerk dat Postgres wel doorlaat, dan kan het ook lokaal: `npx supabase db push` en `npx supabase functions deploy --use-api`.
 
 ## De eerste beheerder aanmaken
 

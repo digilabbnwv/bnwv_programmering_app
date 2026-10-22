@@ -152,7 +152,28 @@ Het grootste overblijvende pad is een gecompromitteerde npm-afhankelijkheid (zie
 - Er staat geen enkel secret in de repository, en gitleaks controleert dat bij elke push.
 - De beveiliging steunt niet op geheimhouding van de code, maar op RLS, 2FA en de server-side controles.
 
-### 12. Teamleiders zien alle e-mailadressen
+### 12. Twee Supabase-secrets in GitHub
+
+**Risico:** de workflow *Supabase uitrollen* gebruikt een Supabase access token en het databasewachtwoord. Wie die twee heeft, kan de hele database lezen en wijzigen, RLS omzeilen en de auditlog aanpassen. Het access token geeft bovendien toegang tot alle projecten van het Supabase-account dat het aanmaakte.
+
+**Waarom:** het BNWV-netwerk blokkeert de Postgres-poorten, dus migraties kunnen niet vanaf een werkplek.
+
+**Beperking:**
+- De secrets staan alleen in de GitHub-environment `supabase`. Die werkt alleen vanaf `main` en vraagt bij elke run goedkeuring van een reviewer.
+- Workflows uit pull requests van forks krijgen geen secrets.
+- Geef het token een vervaldatum, vervang het en het databasewachtwoord als iemand met schrijfrechten op de repository vertrekt, en geef zo weinig mogelijk mensen schrijfrechten.
+
+### 13. Free-plan: pauzeren en geen back-ups
+
+**Risico:**
+- **Pauzeren:** een Free-project pauzeert na een week zonder activiteit, bijvoorbeeld in een vakantie. De app is dan offline tot iemand in het dashboard op *Restore* klikt.
+- **Geen back-ups:** het Free-plan maakt geen automatische back-ups. Gaat de database stuk, of wist iemand per ongeluk gegevens, dan zijn gebruikers, rollen en de auditlog weg.
+
+**Beperking:**
+- Maak geregeld een export met `supabase db dump`, vanaf een netwerk dat Postgres doorlaat.
+- Stap over naar Pro zodra de app echt in gebruik is: dan komen er dagelijkse back-ups bij, en ook de sessie-instellingen en de controle op gelekte wachtwoorden (risico 2).
+
+### 14. Teamleiders zien alle e-mailadressen
 
 **Risico:** het recht `gebruikers.bekijken` toont naam, e-mailadres, rol en laatste login van alle accounts.
 

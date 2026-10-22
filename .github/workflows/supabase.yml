@@ -1,0 +1,93 @@
+name: Supabase uitrollen
+
+# Rolt databasemigraties en Edge Functions uit naar het Supabase-project.
+# Alleen handmatig te starten (Actions → Supabase uitrollen → Run workflow),
+# alleen vanaf main, en pas na goedkeuring in de environment "supabase".
+# Daar staan de twee secrets; zie README → Deploy.
+#
+# Waarom via GitHub Actions: het BNWV-netwerk blokkeert de Postgres-poorten
+# (5432/6543), dus `supabase db push` werkt niet vanaf een werkplek.
+
+on:
+  workflow_dispatch:
+    inputs:
+      onderdelen:
+        description: Wat uitrollen
+        type: choice
+        options:
+          - database en functies
+          - alleen database
+          - alleen functies
+        default: database en functies
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Checks
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
+
+  uitrollen:
+    name: Uitrollen naar Supabase
+    needs: checks
+    runs-on: ubuntu-latest
+    # De secrets staan alleen in deze environment. Stel in: alleen branch
+    # main, en een verplichte reviewer.
+    environment: supabase
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      ONDERDELEN: ${{ inputs.onderdelen }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.121.0
+
+      - name: Project koppelen
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "::error title=Secrets ontbreken::Zet SUPABASE_ACCESS_TOKEN en SUPABASE_DB_PASSWORD in de environment supabase."
+            exit 1
+          fi
+          # Het project volgt uit dezelfde variabele als de frontend, zodat
+          # database en frontend nooit naar verschillende projecten gaan.
+          ref=$(printf '%s' "$VITE_SUPABASE_URL" | sed -nE 's#^https://([a-z0-9]{20})\.supabase\.co/?$#\1#p')
+          if [ -z "$ref" ]; then
+            echo "::error title=Project onbekend::VITE_SUPABASE_URL is geen https://<ref>.supabase.co-adres."
+            exit 1
+          fi
+          echo "Project: $ref"
+          supabase link --project-ref "$ref" --password "$SUPABASE_DB_PASSWORD"
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+
+      - name: Migraties tonen (dry run)
+        if: inputs.onderdelen != 'alleen functies'
+        run: supabase db push --dry-run --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Migraties uitrollen
+        if: inputs.onderdelen != 'alleen functies'
+        run: supabase db push --yes --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Edge Functions uitrollen
+        if: inputs.onderdelen != 'alleen database'
+        run: supabase functions deploy --use-api
+
+      - name: Samenvatting
+        if: always()
+        run: |
+          {
+            echo "### Supabase uitrollen"
+            echo "- Onderdelen: $ONDERDELEN"
+            echo "- Commit: \`${GITHUB_SHA::7}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
