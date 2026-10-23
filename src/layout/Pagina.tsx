@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { useRechten } from '../auth/RechtenProvider'
 
-const APP_NAAM = 'BNWV Intern'
+const APP_NAAM = 'BNWV Team Programmering'
 
 /** Zet de titel van het browsertabblad (WCAG 2.4.2). */
 export function usePaginaTitel(titel: string) {

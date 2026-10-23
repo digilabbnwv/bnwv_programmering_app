@@ -54,7 +54,7 @@ function Kader() {
       </main>
       <footer className="border-t border-neutral-200 bg-neutral-0">
         <p className="mx-auto max-w-page px-4 py-6 text-ui-sm text-neutral-700 md:px-8">
-          Bibliotheek Noordwest Veluwe · Intern
+          Bibliotheek Noordwest Veluwe · Team Programmering
         </p>
       </footer>
     </div>
@@ -119,7 +119,7 @@ function Kop() {
           <span aria-hidden="true" className="h-8 w-1.5 rounded-pill bg-orange" />
           <span className="leading-tight">
             <span className="block text-ui-sm font-semibold">Bibliotheek Noordwest Veluwe</span>{' '}
-            <span className="block text-ui-lg font-extrabold">Intern</span>
+            <span className="block text-ui-lg font-extrabold">Team Programmering</span>
           </span>
         </Link>
 

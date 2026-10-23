@@ -15,7 +15,7 @@ if (!root) throw new Error('Element #root ontbreekt in index.html')
 // werkt niet in een CSP-<meta>. Daarom weigert de app zelf om in een frame
 // van een andere site te draaien.
 if (window.top !== window.self) {
-  root.textContent = 'BNWV Intern kan niet binnen een andere website worden geopend.'
+  root.textContent = 'BNWV Team Programmering kan niet binnen een andere website worden geopend.'
   throw new Error('In een frame geladen; gestopt')
 }
 

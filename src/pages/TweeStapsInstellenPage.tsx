@@ -83,7 +83,7 @@ export function TweeStapsInstellenPage() {
               Scan deze QR-code met je authenticator-app.
               <img
                 src={factor.qrCode}
-                alt="QR-code om BNWV Intern aan je authenticator-app toe te voegen"
+                alt="QR-code om BNWV Team Programmering aan je authenticator-app toe te voegen"
                 width={192}
                 height={192}
                 className="mt-3 rounded-md border-2 border-neutral-200 bg-white p-2"

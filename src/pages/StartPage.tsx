@@ -6,7 +6,7 @@ export function StartPage() {
   return (
     <Pagina
       titel={weergavenaam ? `Welkom, ${weergavenaam}` : 'Welkom'}
-      intro="Hier komen straks de onderdelen van BNWV Intern."
+      intro="Hier komen straks de onderdelen van BNWV Team Programmering."
     >
       {rolNaam && <p className="text-neutral-700">Je rol: {rolNaam}</p>}
     </Pagina>

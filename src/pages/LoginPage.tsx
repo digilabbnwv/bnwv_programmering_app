@@ -33,7 +33,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthKaart titel="Inloggen" intro="Log in met je e-mailadres en wachtwoord van BNWV Intern.">
+    <AuthKaart titel="Inloggen" intro="Log in met je e-mailadres en wachtwoord van BNWV Team Programmering.">
       <form onSubmit={opVersturen} noValidate className="space-y-5">
         {melding && !fout && <Melding soort="info">{melding}</Melding>}
         {fout && <Melding soort="fout">{fout}</Melding>}
