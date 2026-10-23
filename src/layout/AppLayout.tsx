@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { RechtenProvider, useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
-import { NAV_ITEMS, zichtbareItems } from './navigatie'
+import { hoortBij, isGroep, MENU, zichtbaarMenu, type NavGroep, type NavItem } from './navigatie'
 
 /** Layout voor alle pagina's na het inloggen. */
 export function AppLayout() {
@@ -67,7 +67,7 @@ function Kop() {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
   const knop = useRef<HTMLButtonElement>(null)
-  const items = zichtbareItems(NAV_ITEMS, heeftRecht)
+  const menu = zichtbaarMenu(MENU, heeftRecht)
 
   // Escape sluit het mobiele menu en zet de focus terug op de knop.
   useEffect(() => {
@@ -82,27 +82,29 @@ function Kop() {
   }, [menuOpen])
 
   const links = (opMobiel: boolean) =>
-    items.map((item) => (
-      <li key={item.pad}>
-        <NavLink
-          to={item.pad}
-          end={item.pad === '/'}
-          className={({ isActive }) =>
-            `block font-semibold ${opMobiel ? 'rounded-md px-3 py-3' : 'border-b-4 py-5'} ${
-              isActive
-                ? opMobiel
-                  ? 'bg-neutral-100 underline decoration-orange decoration-4 underline-offset-8'
-                  : 'border-orange'
-                : opMobiel
-                  ? 'hover:bg-neutral-100'
-                  : 'border-transparent hover:border-neutral-300'
-            }`
-          }
-        >
-          {item.label}
-        </NavLink>
-      </li>
-    ))
+    menu.map((regel) => {
+      if (!isGroep(regel)) {
+        return (
+          <li key={regel.pad}>
+            <MenuLink item={regel} opMobiel={opMobiel} />
+          </li>
+        )
+      }
+      if (!opMobiel) return <Uitklapmenu key={regel.label} groep={regel} />
+      // Klein scherm: de groep als kopje met de items eronder, niets uit te klappen.
+      return (
+        <li key={regel.label} className="pt-3">
+          <span className="block px-3 pb-1 text-ui-sm font-semibold text-neutral-700">{regel.label}</span>
+          <ul aria-label={regel.label} className="space-y-1">
+            {regel.items.map((item) => (
+              <li key={item.pad}>
+                <MenuLink item={item} opMobiel />
+              </li>
+            ))}
+          </ul>
+        </li>
+      )
+    })
 
   const gebruiker = (
     <p className="text-ui-sm leading-tight">
@@ -160,6 +162,103 @@ function Kop() {
         </div>
       </div>
     </header>
+  )
+}
+
+function MenuLink({ item, opMobiel, inUitklapmenu = false }: { item: NavItem; opMobiel: boolean; inUitklapmenu?: boolean }) {
+  const { pathname } = useLocation()
+  const actief = hoortBij(item.pad, pathname)
+  let stijl: string
+  if (opMobiel) {
+    stijl = `rounded-md px-3 py-3 ${actief ? 'bg-neutral-100 underline decoration-orange decoration-4 underline-offset-8' : 'hover:bg-neutral-100'}`
+  } else if (inUitklapmenu) {
+    stijl = `border-l-4 px-4 py-2.5 ${actief ? 'border-orange bg-neutral-50' : 'border-transparent hover:bg-neutral-100'}`
+  } else {
+    stijl = `border-b-4 py-5 ${actief ? 'border-orange' : 'border-transparent hover:border-neutral-300'}`
+  }
+  return (
+    // NavLink zet aria-current; zonder `end` hoort /scholen/123 ook bij /scholen, net als hoortBij().
+    <NavLink to={item.pad} end={item.pad === '/'} className={`block font-semibold ${stijl}`}>
+      {item.label}
+    </NavLink>
+  )
+}
+
+/**
+ * Groep in het menu op een groot scherm: een knop die een lijst met links
+ * openklapt (disclosure, geen ARIA-menu: gewone links met Tab). Sluit met
+ * Escape, bij een klik ernaast of als de focus de groep verlaat. Na het kiezen
+ * van een pagina sluit hij vanzelf, omdat de kop dan opnieuw wordt opgebouwd.
+ */
+function Uitklapmenu({ groep }: { groep: NavGroep }) {
+  const { pathname } = useLocation()
+  const [open, setOpen] = useState(false)
+  const lijstId = useId()
+  const groepRef = useRef<HTMLLIElement>(null)
+  const knop = useRef<HTMLButtonElement>(null)
+  const actief = groep.items.some((item) => hoortBij(item.pad, pathname))
+
+  useEffect(() => {
+    if (!open) return
+    const opToets = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setOpen(false)
+      knop.current?.focus()
+    }
+    // Klik of focus buiten de groep (bijv. met Tab verder) sluit hem.
+    const erbuiten = (e: Event) => {
+      if (!groepRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('keydown', opToets)
+    document.addEventListener('pointerdown', erbuiten)
+    document.addEventListener('focusin', erbuiten)
+    return () => {
+      document.removeEventListener('keydown', opToets)
+      document.removeEventListener('pointerdown', erbuiten)
+      document.removeEventListener('focusin', erbuiten)
+    }
+  }, [open])
+
+  return (
+    <li ref={groepRef} className="relative">
+      <button
+        ref={knop}
+        type="button"
+        aria-expanded={open}
+        aria-controls={lijstId}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex cursor-pointer items-center gap-1.5 border-b-4 py-5 font-semibold ${
+          actief ? 'border-orange' : 'border-transparent hover:border-neutral-300'
+        }`}
+      >
+        {groep.label}
+        <svg
+          aria-hidden="true"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`transition-transform ${open ? 'rotate-180' : ''}`}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      <ul
+        id={lijstId}
+        hidden={!open}
+        className="absolute top-full left-0 z-40 min-w-56 overflow-hidden rounded-card bg-neutral-0 py-2 shadow-raised"
+      >
+        {groep.items.map((item) => (
+          <li key={item.pad}>
+            <MenuLink item={item} opMobiel={false} inUitklapmenu />
+          </li>
+        ))}
+      </ul>
+    </li>
   )
 }
 

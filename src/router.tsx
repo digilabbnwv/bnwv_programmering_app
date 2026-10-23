@@ -84,7 +84,7 @@ export const router = createHashRouter([
           {
             path: '/gebruikers',
             element: (
-              <VereistRecht recht="gebruikers.bekijken">
+              <VereistRecht recht="gebruikers.beheren">
                 <GebruikersPage />
               </VereistRecht>
             ),

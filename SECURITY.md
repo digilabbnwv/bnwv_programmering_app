@@ -180,4 +180,4 @@ Het grootste overblijvende pad is een gecompromitteerde npm-afhankelijkheid (zie
 
 **Risico:** het recht `gebruikers.bekijken` toont naam, e-mailadres, rol en laatste login van alle accounts.
 
-**Waarom:** dat is bewust, voor het gebruikersoverzicht. Pas de rechten in `role_permissions` aan als dat niet gewenst is.
+**Waarom:** de teamleider koppelt medewerkers aan een inlogaccount en kiest daarvoor uit de lijst met accounts. De pagina Gebruikers zelf staat alleen in het menu van de beheerder (`gebruikers.beheren`), maar de lijst is via de API wel op te vragen. Pas de rechten in `role_permissions` aan als dat niet gewenst is.

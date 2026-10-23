@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NAV_ITEMS, zichtbareItems } from './navigatie'
+import { hoortBij, isGroep, MENU, zichtbaarMenu } from './navigatie'
 
 // Rechten per rol, gelijk aan de seed in de migraties basis_rechten en werkbelasting.
 const WERKBELASTING = ['werkbelasting.bekijken', 'werkbelasting.beheren']
@@ -10,32 +10,49 @@ const ROLLEN: Record<string, string[]> = {
   'alleen-lezen': ['app.gebruiken'],
 }
 
-const labels = (rol: string) =>
-  zichtbareItems(NAV_ITEMS, (r) => ROLLEN[rol]?.includes(r) ?? false).map((i) => i.label)
+/** Het menu als tekst: "Beheer: Scholen, ..." voor een groep. */
+const menu = (rol: string) =>
+  zichtbaarMenu(MENU, (r) => ROLLEN[rol]?.includes(r) ?? false).map((regel) =>
+    isGroep(regel) ? `${regel.label}: ${regel.items.map((i) => i.label).join(', ')}` : regel.label,
+  )
 
-describe('zichtbareItems', () => {
-  it('beheerder ziet alles', () => {
-    expect(labels('beheerder')).toEqual([
+describe('zichtbaarMenu', () => {
+  it('beheerder ziet beheer en instellingen', () => {
+    expect(menu('beheerder')).toEqual([
       'Start',
-      'Scholen',
-      'Medewerkers',
-      'Projectgroepen',
-      'Jaar en staffel',
-      'Gebruikers',
-      'Auditlog',
+      'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel',
+      'Instellingen: Gebruikers, Auditlog',
     ])
   })
 
-  it('teamleider ziet werkbelasting en gebruikers, niet de auditlog', () => {
-    expect(labels('teamleider')).toEqual(['Start', 'Scholen', 'Medewerkers', 'Projectgroepen', 'Jaar en staffel', 'Gebruikers'])
+  it('teamleider ziet beheer, maar geen instellingen', () => {
+    expect(menu('teamleider')).toEqual(['Start', 'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel'])
   })
 
   it('medewerker en alleen-lezen zien alleen Start', () => {
-    expect(labels('medewerker')).toEqual(['Start'])
-    expect(labels('alleen-lezen')).toEqual(['Start'])
+    expect(menu('medewerker')).toEqual(['Start'])
+    expect(menu('alleen-lezen')).toEqual(['Start'])
   })
 
   it('zonder rechten (nog aan het laden) niets', () => {
-    expect(labels('onbekend')).toEqual([])
+    expect(menu('onbekend')).toEqual([])
+  })
+
+  it('laat in een groep alleen de items zien waar je recht op hebt', () => {
+    const alleenAuditlog = zichtbaarMenu(MENU, (r) => r === 'auditlog.lezen')
+    expect(alleenAuditlog).toEqual([{ label: 'Instellingen', items: [{ pad: '/auditlog', label: 'Auditlog', recht: 'auditlog.lezen' }] }])
+  })
+})
+
+describe('hoortBij', () => {
+  it('rekent detailpagina’s tot hun overzicht', () => {
+    expect(hoortBij('/scholen', '/scholen')).toBe(true)
+    expect(hoortBij('/scholen', '/scholen/123')).toBe(true)
+    expect(hoortBij('/scholen', '/scholenoverzicht')).toBe(false)
+  })
+
+  it('Start hoort alleen bij de startpagina', () => {
+    expect(hoortBij('/', '/')).toBe(true)
+    expect(hoortBij('/', '/scholen')).toBe(false)
   })
 })
