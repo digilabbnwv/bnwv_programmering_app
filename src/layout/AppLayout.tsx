@@ -4,7 +4,17 @@ import { useAuth } from '../auth/AuthProvider'
 import { RechtenProvider, useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import logo from '../assets/logo-bnwv.webp'
-import { hoortBij, isGroep, MENU, zichtbaarMenu, type NavGroep, type NavItem } from './navigatie'
+import {
+  hoortBij,
+  initialen,
+  INSTELLINGEN,
+  isGroep,
+  MENU,
+  zichtbaarMenu,
+  zichtbareInstellingen,
+  type NavGroep,
+  type NavItem,
+} from './navigatie'
 
 /** Layout voor alle pagina's na het inloggen. */
 export function AppLayout() {
@@ -69,6 +79,7 @@ function Kop() {
   const menuId = useId()
   const knop = useRef<HTMLButtonElement>(null)
   const menu = zichtbaarMenu(MENU, heeftRecht)
+  const instellingen = zichtbareInstellingen(heeftRecht)
 
   // Escape sluit het mobiele menu en zet de focus terug op de knop.
   useEffect(() => {
@@ -82,62 +93,50 @@ function Kop() {
     return () => document.removeEventListener('keydown', opToets)
   }, [menuOpen])
 
-  const links = (opMobiel: boolean) =>
-    menu.map((regel) => {
-      if (!isGroep(regel)) {
-        return (
-          <li key={regel.pad}>
-            <MenuLink item={regel} opMobiel={opMobiel} />
+  // Klein scherm: een groep als kopje met de items eronder, niets uit te klappen.
+  const mobieleGroep = (label: string, items: readonly NavItem[]) => (
+    <li key={label} className="pt-3">
+      <span className="block px-3 pb-1 text-ui-sm font-semibold text-neutral-700">{label}</span>
+      <ul aria-label={label} className="space-y-1">
+        {items.map((item) => (
+          <li key={item.pad}>
+            <MenuLink item={item} soort="mobiel" />
           </li>
-        )
-      }
-      if (!opMobiel) return <Uitklapmenu key={regel.label} groep={regel} />
-      // Klein scherm: de groep als kopje met de items eronder, niets uit te klappen.
-      return (
-        <li key={regel.label} className="pt-3">
-          <span className="block px-3 pb-1 text-ui-sm font-semibold text-neutral-700">{regel.label}</span>
-          <ul aria-label={regel.label} className="space-y-1">
-            {regel.items.map((item) => (
-              <li key={item.pad}>
-                <MenuLink item={item} opMobiel />
-              </li>
-            ))}
-          </ul>
-        </li>
-      )
-    })
-
-  const gebruiker = (
-    <p className="text-ui-sm leading-tight">
-      <span className="block font-semibold">{weergavenaam ?? 'Ingelogd'}</span>
-      {rolNaam && <span className="block text-neutral-700">{rolNaam}</span>}
-    </p>
+        ))}
+      </ul>
+    </li>
   )
 
   return (
     <header className="border-b border-neutral-200 bg-neutral-0 print:hidden">
-      <div className="mx-auto flex max-w-page items-center gap-6 px-4 md:px-8">
+      <div className="mx-auto flex h-16 max-w-page items-center gap-10 px-4 md:h-20 md:px-8">
         {/* Gewone Link: het logo is geen menu-item en krijgt geen aria-current. */}
-        <Link to="/" className="shrink-0 py-3">
+        <Link to="/" className="shrink-0">
           <img
             src={logo}
             alt="Bibliotheek Noordwest Veluwe – Team Programmering, naar de startpagina"
             width={640}
             height={227}
-            className="h-9 w-auto md:h-11"
+            className="h-10 w-auto md:h-12"
           />
         </Link>
 
-        {/* Groot scherm: menu naast het logo */}
-        <nav aria-label="Hoofdmenu" className="hidden flex-1 md:block">
-          <ul className="flex gap-6">{links(false)}</ul>
+        {/* Groot scherm: menu rechts, dan het gebruikersmenu */}
+        <nav aria-label="Hoofdmenu" className="ml-auto hidden h-full md:block">
+          <ul className="flex h-full items-stretch gap-8">
+            {menu.map((regel) =>
+              isGroep(regel) ? (
+                <Uitklapmenu key={regel.label} groep={regel} />
+              ) : (
+                <li key={regel.pad} className="flex">
+                  <MenuLink item={regel} soort="balk" />
+                </li>
+              ),
+            )}
+          </ul>
         </nav>
-        <div className="ml-auto hidden items-center gap-4 md:flex">
-          {gebruiker}
-          <Button variant="secundair" onClick={() => void uitloggen()}>
-            Uitloggen
-          </Button>
-        </div>
+        <span aria-hidden="true" className="hidden h-8 w-px bg-neutral-200 md:block" />
+        <Gebruikersmenu naam={weergavenaam} rol={rolNaam} instellingen={instellingen} onUitloggen={() => void uitloggen()} />
 
         {/* Klein scherm: inklapbaar menu */}
         <button
@@ -155,10 +154,24 @@ function Kop() {
 
       <div id={menuId} hidden={!menuOpen} className="border-t border-neutral-200 px-4 pt-2 pb-4 md:hidden">
         <nav aria-label="Hoofdmenu">
-          <ul className="space-y-1">{links(true)}</ul>
+          <ul className="space-y-1">
+            {menu.map((regel) =>
+              isGroep(regel) ? (
+                mobieleGroep(regel.label, regel.items)
+              ) : (
+                <li key={regel.pad}>
+                  <MenuLink item={regel} soort="mobiel" />
+                </li>
+              ),
+            )}
+            {instellingen.length > 0 && mobieleGroep(INSTELLINGEN.label, instellingen)}
+          </ul>
         </nav>
         <div className="mt-4 flex items-center justify-between gap-4 border-t border-neutral-200 pt-4">
-          {gebruiker}
+          <p className="text-ui-sm leading-tight">
+            <span className="block font-semibold">{weergavenaam ?? 'Ingelogd'}</span>
+            {rolNaam && <span className="block text-neutral-700">{rolNaam}</span>}
+          </p>
           <Button variant="secundair" onClick={() => void uitloggen()}>
             Uitloggen
           </Button>
@@ -168,38 +181,41 @@ function Kop() {
   )
 }
 
-function MenuLink({ item, opMobiel, inUitklapmenu = false }: { item: NavItem; opMobiel: boolean; inUitklapmenu?: boolean }) {
+type LinkSoort = 'balk' | 'uitklap' | 'mobiel'
+
+const LINK_STIJL: Record<LinkSoort, (actief: boolean) => string> = {
+  // Streep onderaan de balk; alleen het actieve item is vet.
+  balk: (actief) =>
+    `flex items-center border-y-[3px] border-t-transparent ${
+      actief ? 'border-b-orange font-semibold' : 'border-b-transparent font-medium text-neutral-700 hover:text-anthracite'
+    }`,
+  uitklap: (actief) =>
+    `border-l-[3px] px-4 py-2.5 ${actief ? 'border-orange bg-neutral-50 font-semibold' : 'border-transparent font-medium hover:bg-neutral-100'}`,
+  mobiel: (actief) =>
+    `rounded-md px-3 py-3 font-semibold ${actief ? 'bg-neutral-100 underline decoration-orange decoration-4 underline-offset-8' : 'hover:bg-neutral-100'}`,
+}
+
+function MenuLink({ item, soort }: { item: NavItem; soort: LinkSoort }) {
   const { pathname } = useLocation()
-  const actief = hoortBij(item.pad, pathname)
-  let stijl: string
-  if (opMobiel) {
-    stijl = `rounded-md px-3 py-3 ${actief ? 'bg-neutral-100 underline decoration-orange decoration-4 underline-offset-8' : 'hover:bg-neutral-100'}`
-  } else if (inUitklapmenu) {
-    stijl = `border-l-4 px-4 py-2.5 ${actief ? 'border-orange bg-neutral-50' : 'border-transparent hover:bg-neutral-100'}`
-  } else {
-    stijl = `border-b-4 py-5 ${actief ? 'border-orange' : 'border-transparent hover:border-neutral-300'}`
-  }
   return (
     // NavLink zet aria-current; zonder `end` hoort /scholen/123 ook bij /scholen, net als hoortBij().
-    <NavLink to={item.pad} end={item.pad === '/'} className={`block font-semibold ${stijl}`}>
+    <NavLink to={item.pad} end={item.pad === '/'} className={`block ${LINK_STIJL[soort](hoortBij(item.pad, pathname))}`}>
       {item.label}
     </NavLink>
   )
 }
 
 /**
- * Groep in het menu op een groot scherm: een knop die een lijst met links
- * openklapt (disclosure, geen ARIA-menu: gewone links met Tab). Sluit met
- * Escape, bij een klik ernaast of als de focus de groep verlaat. Na het kiezen
- * van een pagina sluit hij vanzelf, omdat de kop dan opnieuw wordt opgebouwd.
+ * Open- en dichtklappen van een paneel onder een knop (disclosure, geen
+ * ARIA-menu: gewone links en knoppen met Tab). Sluit met Escape, bij een klik
+ * ernaast of als de focus het geheel verlaat. Na het kiezen van een pagina
+ * sluit het vanzelf, omdat de kop dan opnieuw wordt opgebouwd.
  */
-function Uitklapmenu({ groep }: { groep: NavGroep }) {
-  const { pathname } = useLocation()
+function useUitklap<T extends HTMLElement>() {
   const [open, setOpen] = useState(false)
-  const lijstId = useId()
-  const groepRef = useRef<HTMLLIElement>(null)
+  const paneelId = useId()
+  const geheel = useRef<T>(null)
   const knop = useRef<HTMLButtonElement>(null)
-  const actief = groep.items.some((item) => hoortBij(item.pad, pathname))
 
   useEffect(() => {
     if (!open) return
@@ -208,9 +224,8 @@ function Uitklapmenu({ groep }: { groep: NavGroep }) {
       setOpen(false)
       knop.current?.focus()
     }
-    // Klik of focus buiten de groep (bijv. met Tab verder) sluit hem.
     const erbuiten = (e: Event) => {
-      if (!groepRef.current?.contains(e.target as Node)) setOpen(false)
+      if (!geheel.current?.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('keydown', opToets)
     document.addEventListener('pointerdown', erbuiten)
@@ -222,46 +237,133 @@ function Uitklapmenu({ groep }: { groep: NavGroep }) {
     }
   }, [open])
 
+  return { open, setOpen, paneelId, geheel, knop }
+}
+
+function Pijltje({ open }: { open: boolean }) {
   return (
-    <li ref={groepRef} className="relative">
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`transition-transform ${open ? 'rotate-180' : ''}`}
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  )
+}
+
+/** Groep in het hoofdmenu op een groot scherm. */
+function Uitklapmenu({ groep }: { groep: NavGroep }) {
+  const { pathname } = useLocation()
+  const { open, setOpen, paneelId, geheel, knop } = useUitklap<HTMLLIElement>()
+  const actief = groep.items.some((item) => hoortBij(item.pad, pathname))
+
+  return (
+    <li ref={geheel} className="relative flex">
       <button
         ref={knop}
         type="button"
         aria-expanded={open}
-        aria-controls={lijstId}
+        aria-controls={paneelId}
         onClick={() => setOpen((o) => !o)}
-        className={`flex cursor-pointer items-center gap-1.5 border-b-4 py-5 font-semibold ${
-          actief ? 'border-orange' : 'border-transparent hover:border-neutral-300'
+        className={`flex cursor-pointer items-center gap-1.5 border-y-[3px] border-t-transparent ${
+          actief ? 'border-b-orange font-semibold' : 'border-b-transparent font-medium text-neutral-700 hover:text-anthracite'
         }`}
       >
         {groep.label}
-        <svg
-          aria-hidden="true"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`transition-transform ${open ? 'rotate-180' : ''}`}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        <Pijltje open={open} />
       </button>
       <ul
-        id={lijstId}
+        id={paneelId}
         hidden={!open}
-        className="absolute top-full left-0 z-40 min-w-56 overflow-hidden rounded-card bg-neutral-0 py-2 shadow-raised"
+        className="absolute top-full left-0 z-40 mt-px min-w-56 overflow-hidden rounded-card bg-neutral-0 py-2 shadow-raised"
       >
         {groep.items.map((item) => (
           <li key={item.pad}>
-            <MenuLink item={item} opMobiel={false} inUitklapmenu />
+            <MenuLink item={item} soort="uitklap" />
           </li>
         ))}
       </ul>
     </li>
+  )
+}
+
+/** Rondje met initialen; klapt naam, rol, instellingen en uitloggen open. */
+function Gebruikersmenu({
+  naam,
+  rol,
+  instellingen,
+  onUitloggen,
+}: {
+  naam: string | null
+  rol: string | null
+  instellingen: NavItem[]
+  onUitloggen: () => void
+}) {
+  const { pathname } = useLocation()
+  const { open, setOpen, paneelId, geheel, knop } = useUitklap<HTMLDivElement>()
+  const actief = instellingen.some((item) => hoortBij(item.pad, pathname))
+
+  return (
+    <div ref={geheel} className="relative hidden md:block">
+      <button
+        ref={knop}
+        type="button"
+        aria-expanded={open}
+        aria-controls={paneelId}
+        onClick={() => setOpen((o) => !o)}
+        className="flex cursor-pointer items-center gap-2 rounded-pill p-1 pr-2 hover:bg-neutral-100"
+      >
+        <span
+          aria-hidden="true"
+          className={`flex size-10 items-center justify-center rounded-pill bg-beige font-bold ${actief ? 'ring-2 ring-orange' : ''}`}
+        >
+          {initialen(naam)}
+        </span>
+        <span className="sr-only">Gebruikersmenu {naam ?? ''}</span>
+        <Pijltje open={open} />
+      </button>
+      <div
+        id={paneelId}
+        hidden={!open}
+        className="absolute top-full right-0 z-40 mt-3 w-64 overflow-hidden rounded-card bg-neutral-0 py-2 shadow-raised"
+      >
+        <div className="border-b border-neutral-200 px-4 pt-2 pb-3">
+          <p className="font-semibold">{naam ?? 'Ingelogd'}</p>
+          {rol && <p className="text-ui-sm text-neutral-700">{rol}</p>}
+        </div>
+        {instellingen.length > 0 && (
+          <nav aria-label={INSTELLINGEN.label} className="border-b border-neutral-200 py-2">
+            <p aria-hidden="true" className="px-4 pt-1 pb-1 text-ui-xs font-semibold text-neutral-700">
+              {INSTELLINGEN.label}
+            </p>
+            <ul>
+              {instellingen.map((item) => (
+                <li key={item.pad}>
+                  <MenuLink item={item} soort="uitklap" />
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onUitloggen}
+            className="block w-full cursor-pointer border-l-[3px] border-transparent px-4 py-2.5 text-left font-medium hover:bg-neutral-100"
+          >
+            Uitloggen
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 

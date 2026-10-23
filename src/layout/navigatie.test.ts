@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hoortBij, isGroep, MENU, zichtbaarMenu } from './navigatie'
+import { hoortBij, initialen, isGroep, MENU, zichtbaarMenu, zichtbareInstellingen } from './navigatie'
 
 // Rechten per rol, gelijk aan de seed in de migraties basis_rechten en werkbelasting.
 const WERKBELASTING = ['werkbelasting.bekijken', 'werkbelasting.beheren']
@@ -17,17 +17,10 @@ const menu = (rol: string) =>
   )
 
 describe('zichtbaarMenu', () => {
-  it('beheerder ziet beheer en instellingen', () => {
-    expect(menu('beheerder')).toEqual([
-      'Start',
-      'Rapportage',
-      'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel',
-      'Instellingen: Gebruikers, Auditlog',
-    ])
-  })
-
-  it('teamleider ziet rapportage en beheer, maar geen instellingen', () => {
-    expect(menu('teamleider')).toEqual(['Start', 'Rapportage', 'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel'])
+  it('beheerder en teamleider zien rapportage en beheer', () => {
+    const verwacht = ['Start', 'Rapportage', 'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel']
+    expect(menu('beheerder')).toEqual(verwacht)
+    expect(menu('teamleider')).toEqual(verwacht)
   })
 
   it('medewerker en alleen-lezen zien alleen Start', () => {
@@ -39,9 +32,28 @@ describe('zichtbaarMenu', () => {
     expect(menu('onbekend')).toEqual([])
   })
 
-  it('laat in een groep alleen de items zien waar je recht op hebt', () => {
-    const alleenAuditlog = zichtbaarMenu(MENU, (r) => r === 'auditlog.lezen')
-    expect(alleenAuditlog).toEqual([{ label: 'Instellingen', items: [{ pad: '/auditlog', label: 'Auditlog', recht: 'auditlog.lezen' }] }])
+  it('laat een groep zonder zichtbare items weg', () => {
+    expect(zichtbaarMenu(MENU, (r) => r === 'app.gebruiken').map((r) => r.label)).toEqual(['Start'])
+  })
+})
+
+describe('zichtbareInstellingen', () => {
+  const instellingen = (rol: string) =>
+    zichtbareInstellingen((r) => ROLLEN[rol]?.includes(r) ?? false).map((i) => i.label)
+
+  it('alleen de beheerder heeft instellingen', () => {
+    expect(instellingen('beheerder')).toEqual(['Gebruikers', 'Auditlog'])
+    expect(instellingen('teamleider')).toEqual([])
+    expect(instellingen('medewerker')).toEqual([])
+  })
+})
+
+describe('initialen', () => {
+  it('neemt de eerste letter van de eerste en de laatste naam', () => {
+    expect(initialen('Jasper Geertsma')).toBe('JG')
+    expect(initialen('Anna de Vries')).toBe('AV')
+    expect(initialen('  ingeborg ')).toBe('I')
+    expect(initialen(null)).toBe('?')
   })
 })
 

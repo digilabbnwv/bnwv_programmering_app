@@ -29,14 +29,29 @@ export const MENU: readonly NavRegel[] = [
       { pad: '/staffel', label: 'Jaar en staffel', recht: 'werkbelasting.beheren' },
     ],
   },
-  {
-    label: 'Instellingen',
-    items: [
-      { pad: '/gebruikers', label: 'Gebruikers', recht: 'gebruikers.beheren' },
-      { pad: '/auditlog', label: 'Auditlog', recht: 'auditlog.lezen' },
-    ],
-  },
 ]
+
+/** Instellingen staan in het gebruikersmenu rechtsboven, niet in het hoofdmenu. */
+export const INSTELLINGEN: NavGroep = {
+  label: 'Instellingen',
+  items: [
+    { pad: '/gebruikers', label: 'Gebruikers', recht: 'gebruikers.beheren' },
+    { pad: '/auditlog', label: 'Auditlog', recht: 'auditlog.lezen' },
+  ],
+}
+
+/** De instellingen waar je recht op hebt; leeg als er geen zijn. */
+export function zichtbareInstellingen(heeftRecht: (recht: string) => boolean): NavItem[] {
+  return INSTELLINGEN.items.filter((item) => heeftRecht(item.recht))
+}
+
+/** "Jasper Geertsma" → "JG", "Anna de Vries" → "AV". */
+export function initialen(naam: string | null): string {
+  const delen = (naam ?? '').trim().split(/\s+/).filter(Boolean)
+  const eerste = delen[0]?.[0] ?? ''
+  const laatste = delen.length > 1 ? (delen.at(-1)?.[0] ?? '') : ''
+  return (eerste + laatste).toUpperCase() || '?'
+}
 
 export function isGroep(regel: NavRegel): regel is NavGroep {
   return 'items' in regel
