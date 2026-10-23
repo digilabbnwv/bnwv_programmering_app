@@ -50,7 +50,11 @@ export function AuthProvider({
       setSession(nieuweSessie)
       // Een sessie met onbruikbare claims (bijv. zonder rol) direct beëindigen,
       // buiten de callback om.
+      // Zonder melding lijkt het inloggen dan niets te doen.
       if (nieuweSessie && !leesClaims(nieuweSessie.access_token).user_role) {
+        setMelding(
+          'Inloggen is gelukt, maar het token mist de rol. Waarschijnlijk staat de access token hook niet aan; neem contact op met een beheerder.',
+        )
         setTimeout(() => void client.auth.signOut({ scope: 'local' }), 0)
       }
     })
