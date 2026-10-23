@@ -18,6 +18,7 @@ import {
   perWeek,
   type Werkbelasting,
 } from '../werkbelasting/berekening'
+import { Verdelingsbalk } from '../werkbelasting/grafieken'
 import { FormulierDialoog, Laadstatus } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst } from '../werkbelasting/opmaak'
 import { bouwInvoer, isGewijzigd, laadRapportage, memoTeksten, totalenVan, type Rapportagegegevens } from '../werkbelasting/rapportage'
@@ -329,7 +330,9 @@ function Memo({
           ]}
           totaal={['Totaal', formatUren(w.contracturen), week(w.contracturen), deel(w.contracturen)]}
         />
-        <Verdelingsbalk w={w} />
+        <div className="mt-5">
+          <Verdelingsbalk w={w} />
+        </div>
       </MemoSectie>
 
       <MemoSectie titel={`Projectgroepen ${w.jaar}`}>
@@ -461,35 +464,6 @@ function MemoTabel({
           </tfoot>
         )}
       </table>
-    </div>
-  )
-}
-
-/** Gestapelde balk van de verdeling; de tabel erboven is de toegankelijke versie. */
-function Verdelingsbalk({ w }: { w: Werkbelasting }) {
-  if (w.contracturen <= 0) return null
-  const delen = [
-    { label: 'Scholen', waarde: w.schooluren, kleur: 'bg-pijler-vraag' },
-    { label: 'Projectgroepen', waarde: w.projecturen, kleur: 'bg-pijler-leer' },
-    { label: 'Overig', waarde: Math.max(0, w.overig), kleur: 'bg-pijler-ontmoet' },
-    { label: 'Mijmertijd', waarde: w.mijmertijd, kleur: 'bg-pijler-lees' },
-  ]
-  const totaal = delen.reduce((s, d) => s + d.waarde, 0)
-  return (
-    <div aria-hidden="true" className="mt-5">
-      <div className="flex h-4 overflow-hidden rounded-pill bg-neutral-100 print:[print-color-adjust:exact]">
-        {delen.map((d) => (
-          <div key={d.label} className={d.kleur} style={{ width: `${(d.waarde / totaal) * 100}%` }} />
-        ))}
-      </div>
-      <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-ui-sm">
-        {delen.map((d) => (
-          <li key={d.label} className="flex items-center gap-2">
-            <span className={`inline-block size-3 rounded-pill ${d.kleur} print:[print-color-adjust:exact]`} />
-            {d.label}
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
