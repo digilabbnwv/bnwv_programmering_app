@@ -45,8 +45,12 @@ select is(
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['list_users'],
-  'authenticated kan in public alleen list_users uitvoeren'
+  array['contract_opslaan', 'deelnemer_opslaan', 'extra_uren_opslaan', 'list_users',
+        'medewerker_opslaan', 'programma_opslaan', 'projectgroep_opslaan',
+        'school_jaargegevens_opslaan', 'school_opslaan', 'school_toewijzen',
+        'staffel_schijf_opslaan', 'toelichting_opslaan', 'toewijzing_wijzigen',
+        'werkbelasting_verwijderen', 'werkjaar_opslaan'],
+  'authenticated kan in public alleen list_users en de werkbelastingfuncties uitvoeren'
 );
 
 select is(
@@ -55,7 +59,7 @@ select is(
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'private'
       and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['authorize', 'is_aal2', 'session_is_valid'],
+  array['authorize', 'eigen_medewerker_id', 'is_aal2', 'session_is_valid'],
   'authenticated kan in private alleen de autorisatiecontroles uitvoeren'
 );
 
@@ -76,9 +80,11 @@ select results_eq(
        from public.role_permissions group by role_id order by role_id $$,
   $$ values
        ('alleen-lezen', array['app.gebruiken']),
-       ('beheerder',    array['app.gebruiken', 'auditlog.lezen', 'gebruikers.beheren', 'gebruikers.bekijken']),
+       ('beheerder',    array['app.gebruiken', 'auditlog.lezen', 'gebruikers.beheren', 'gebruikers.bekijken',
+                              'werkbelasting.beheren', 'werkbelasting.bekijken']),
        ('medewerker',   array['app.gebruiken']),
-       ('teamleider',   array['app.gebruiken', 'gebruikers.bekijken']) $$,
+       ('teamleider',   array['app.gebruiken', 'gebruikers.bekijken',
+                              'werkbelasting.beheren', 'werkbelasting.bekijken']) $$,
   'rechten per rol zoals afgesproken'
 );
 

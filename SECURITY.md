@@ -17,7 +17,10 @@ Meld een kwetsbaarheid niet in een openbaar issue. De repository is publiek. Geb
 
 ### Rechten
 
-- **RLS overal:** Row Level Security staat aan op elke tabel. `anon` mag niets en `authenticated` mag alleen lezen. Wijzigen gaat alleen via databasefuncties die alleen de service role mag uitvoeren, dus alleen via de Edge Functions.
+- **RLS overal:** Row Level Security staat aan op elke tabel. `anon` mag niets en `authenticated` mag alleen lezen. Wijzigen gaat alleen via databasefuncties:
+  - gebruikers en rollen via functies die alleen de service role mag uitvoeren, dus alleen via de Edge Functions;
+  - de werkbelasting (scholen, medewerkers, projectgroepen, staffel) via functies die de frontend aanroept. Elke functie eist eerst het recht `werkbelasting.beheren` via `private.authorize()`, dus ook AAL2. De lijst met functies die `authenticated` mag uitvoeren staat vast in een pgTAP-test.
+- **Werkbelasting lezen:** een medewerker ziet alleen de eigen gegevens (de medewerker die aan het eigen account gekoppeld is). Het hele team zien vereist `werkbelasting.bekijken`. Scholen, staffel en projectgroepen zijn voor iedereen met `app.gebruiken` leesbaar.
 - **Eén controle voor alles:** elke policy gaat via `private.authorize()`. Die eist:
   - AAL2 (2FA gedaan);
   - een actief account;
@@ -28,7 +31,7 @@ Meld een kwetsbaarheid niet in een openbaar issue. De repository is publiek. Geb
 - **Rol nooit uit gebruikersgegevens:** de rol komt uit `user_roles`, nooit uit `user_metadata`, want die kan de gebruiker zelf aanpassen. Een access token hook zet de rol in het token en weigert tokens voor gedeactiveerde accounts, ook bij het verversen.
 - **Beheerdersregels in triggers:** een beheerder kan zichzelf de rol niet afnemen en er blijft altijd een actieve beheerder. Omdat dit in triggers zit, geldt het ook voor SQL rechtstreeks in het dashboard.
 - **Gebruikersbeheer:** dat loopt via de Edge Function `admin-users`. Die eist AAL2, en de databasefuncties controleren het recht nog een keer. Een rolwijziging, deactivering of reset trekt de sessies van de gebruiker in.
-- **Auditlog:** de auditlog legt inloggen, wachtwoordwijzigingen en alle beheeracties vast. Triggers blokkeren wijzigen, verwijderen en leegmaken, ook voor de service role. Alleen het recht `auditlog.lezen` kan hem lezen.
+- **Auditlog:** de auditlog legt inloggen, wachtwoordwijzigingen, alle beheeracties en elke wijziging in de werkbelasting vast. Triggers blokkeren wijzigen, verwijderen en leegmaken, ook voor de service role. Alleen het recht `auditlog.lezen` kan hem lezen.
 
 ### Frontend
 
