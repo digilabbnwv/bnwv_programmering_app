@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { RechtenProvider, useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
+import logo from '../assets/logo-bnwv.webp'
 import { hoortBij, isGroep, MENU, zichtbaarMenu, type NavGroep, type NavItem } from './navigatie'
 
 /** Layout voor alle pagina's na het inloggen. */
@@ -117,12 +118,14 @@ function Kop() {
     <header className="border-b border-neutral-200 bg-neutral-0 print:hidden">
       <div className="mx-auto flex max-w-page items-center gap-6 px-4 md:px-8">
         {/* Gewone Link: het logo is geen menu-item en krijgt geen aria-current. */}
-        <Link to="/" className="flex shrink-0 items-center gap-3 py-4">
-          <span aria-hidden="true" className="h-8 w-1.5 rounded-pill bg-orange" />
-          <span className="leading-tight">
-            <span className="block text-ui-sm font-semibold">Bibliotheek Noordwest Veluwe</span>{' '}
-            <span className="block text-ui-lg font-extrabold">Team Programmering</span>
-          </span>
+        <Link to="/" className="shrink-0 py-3">
+          <img
+            src={logo}
+            alt="Bibliotheek Noordwest Veluwe – Team Programmering, naar de startpagina"
+            width={640}
+            height={227}
+            className="h-9 w-auto md:h-11"
+          />
         </Link>
 
         {/* Groot scherm: menu naast het logo */}
