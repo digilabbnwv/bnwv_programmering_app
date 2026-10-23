@@ -20,13 +20,14 @@ describe('zichtbaarMenu', () => {
   it('beheerder ziet beheer en instellingen', () => {
     expect(menu('beheerder')).toEqual([
       'Start',
+      'Rapportage',
       'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel',
       'Instellingen: Gebruikers, Auditlog',
     ])
   })
 
-  it('teamleider ziet beheer, maar geen instellingen', () => {
-    expect(menu('teamleider')).toEqual(['Start', 'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel'])
+  it('teamleider ziet rapportage en beheer, maar geen instellingen', () => {
+    expect(menu('teamleider')).toEqual(['Start', 'Rapportage', 'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel'])
   })
 
   it('medewerker en alleen-lezen zien alleen Start', () => {

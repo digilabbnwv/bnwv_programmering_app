@@ -19,6 +19,7 @@ export type NavRegel = NavItem | NavGroep
 
 export const MENU: readonly NavRegel[] = [
   { pad: '/', label: 'Start', recht: 'app.gebruiken' },
+  { pad: '/rapportage', label: 'Rapportage', recht: 'werkbelasting.bekijken' },
   {
     label: 'Beheer',
     items: [

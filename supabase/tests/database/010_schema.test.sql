@@ -49,7 +49,8 @@ select is(
         'medewerker_opslaan', 'programma_opslaan', 'projectgroep_opslaan',
         'school_jaargegevens_opslaan', 'school_opslaan', 'school_toewijzen',
         'staffel_schijf_opslaan', 'toelichting_opslaan', 'toewijzing_wijzigen',
-        'werkbelasting_verwijderen', 'werkjaar_opslaan'],
+        'werkbelasting_heropenen', 'werkbelasting_vaststellen', 'werkbelasting_verwijderen',
+        'werkjaar_opslaan'],
   'authenticated kan in public alleen list_users en de werkbelastingfuncties uitvoeren'
 );
 

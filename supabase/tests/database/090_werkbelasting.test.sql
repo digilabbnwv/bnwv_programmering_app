@@ -1,7 +1,7 @@
 -- Werkbelasting: wie ziet wat, wie mag wijzigen, en de regels in de database
 -- (geen overlap, school verplaatsen, auditlog).
 begin;
-select plan(31);
+select plan(37);
 
 select tests.create_user('beheerder@test.nl',  'beheerder');
 select tests.create_user('teamleider@test.nl', 'teamleider');
@@ -56,6 +56,9 @@ select throws_ok(
 select throws_ok(
   $$ select public.medewerker_opslaan('00000000-0000-0000-0000-00000000b001', 'Ik', '', '', null, true, '') $$,
   '42501', null, 'medewerker: kan zichzelf niet wijzigen');
+select throws_ok(
+  $$ select public.werkbelasting_vaststellen('00000000-0000-0000-0000-00000000b001', 2026::smallint, '{}') $$,
+  '42501', null, 'medewerker: kan de eigen werkbelasting niet vaststellen');
 reset role;
 
 -- Zonder 2FA niets.
@@ -127,8 +130,27 @@ select throws_ok(
 
 select lives_ok(
   $$ select public.toelichting_opslaan('00000000-0000-0000-0000-00000000b001', 2026::smallint,
-       'Da Costa per oktober overgenomen.', 'vastgesteld') $$,
+       'Da Costa per oktober overgenomen.') $$,
+  'teamleider: kan een toelichting schrijven');
+select lives_ok(
+  $$ select public.werkbelasting_vaststellen('00000000-0000-0000-0000-00000000b001', 2026::smallint,
+       '{"contracturen": 1504}') $$,
   'teamleider: kan de werkbelasting vaststellen');
+select is(
+  (select status || ' ' || (vastgesteld_door = auth.uid())::text || ' ' || (totalen ->> 'contracturen') || ' ' || toelichting
+     from public.werkbelasting_toelichtingen where medewerker_id = '00000000-0000-0000-0000-00000000b001'),
+  'vastgesteld true 1504 Da Costa per oktober overgenomen.',
+  'vaststellen bewaart wie, de totalen en laat de toelichting staan');
+select lives_ok(
+  $$ select public.werkbelasting_heropenen('00000000-0000-0000-0000-00000000b001', 2026::smallint) $$,
+  'teamleider: kan een vastgestelde werkbelasting heropenen');
+select is(
+  (select status || ' ' || coalesce(totalen::text, 'geen') || ' ' || coalesce(vastgesteld_op::text, 'geen')
+     from public.werkbelasting_toelichtingen where medewerker_id = '00000000-0000-0000-0000-00000000b001'),
+  'concept geen geen', 'heropenen wist de vaststelling');
+select throws_ok(
+  $$ select public.werkbelasting_heropenen('00000000-0000-0000-0000-00000000b002', 2026::smallint) $$,
+  'P0002', null, 'heropenen zonder vaststelling geeft niet gevonden');
 reset role;
 
 select is(

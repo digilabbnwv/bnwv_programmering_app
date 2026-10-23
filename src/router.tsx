@@ -13,6 +13,8 @@ import { MedewerkerDetailPage } from './pages/MedewerkerDetailPage'
 import { ProjectgroepenPage } from './pages/ProjectgroepenPage'
 import { ProjectgroepDetailPage } from './pages/ProjectgroepDetailPage'
 import { StaffelPage } from './pages/StaffelPage'
+import { RapportagePage } from './pages/RapportagePage'
+import { WerkbelastingPage } from './pages/WerkbelastingPage'
 
 // Hash-routing: GitHub Pages kan geen server-side rewrites doen.
 // Alles onder AuthGate is pas zichtbaar na inloggen met 2FA. Het recht per
@@ -25,6 +27,23 @@ export const router = createHashRouter([
         element: <AppLayout />,
         children: [
           { path: '/', element: <StartPage /> },
+          {
+            path: '/rapportage',
+            element: (
+              <VereistRecht recht="werkbelasting.bekijken">
+                <RapportagePage />
+              </VereistRecht>
+            ),
+          },
+          {
+            // Eigen verdeling voor iedereen; die van anderen laat RLS alleen zien met werkbelasting.bekijken.
+            path: '/werkbelasting/:id',
+            element: (
+              <VereistRecht recht="app.gebruiken">
+                <WerkbelastingPage />
+              </VereistRecht>
+            ),
+          },
           {
             path: '/scholen',
             element: (

@@ -115,6 +115,26 @@ export interface ExtraUren {
   school_id: string | null
 }
 
+/** Bij vaststellen bewaarde totalen, in uren per jaar. */
+export interface Totalen {
+  contracturen: number
+  mijmertijd: number
+  schooluren: number
+  projecturen: number
+  overig: number
+  extraTotaal: number
+}
+
+export interface Toelichting {
+  medewerker_id: string
+  jaar: number
+  toelichting: string
+  status: 'concept' | 'vastgesteld'
+  vastgesteld_door: string | null
+  vastgesteld_op: string | null
+  totalen: Totalen | null
+}
+
 export type Resultaat<T> = { ok: true; data: T } | { ok: false; melding: string }
 
 const ALGEMEEN = 'Dat lukt nu niet. Probeer het later opnieuw.'
@@ -148,6 +168,7 @@ type Tabel =
   | 'projectgroepen'
   | 'projectgroep_deelnemers'
   | 'extra_uren'
+  | 'werkbelasting_toelichtingen'
 
 /** Leest een hele tabel (voor zover RLS hem laat zien). */
 export async function lees<T>(

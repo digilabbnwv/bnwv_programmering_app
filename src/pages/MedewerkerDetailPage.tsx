@@ -84,9 +84,12 @@ export function MedewerkerDetailPage() {
 
   return (
     <Pagina titel={medewerker.naam} intro={medewerker.functie || undefined}>
-      <p className="mb-8">
+      <p className="mb-8 flex flex-wrap gap-x-6 gap-y-2">
         <Link to="/medewerkers" className="font-semibold underline underline-offset-4 hover:no-underline">
           Alle medewerkers
+        </Link>
+        <Link to={`/werkbelasting/${medewerker.id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+          Werkurenverdeling bekijken
         </Link>
       </p>
 

@@ -30,7 +30,7 @@ function Kader() {
   }, [pathname])
 
   return (
-    <div className="flex min-h-dvh flex-col bg-neutral-50">
+    <div className="flex min-h-dvh flex-col bg-neutral-50 print:bg-white">
       <a
         href="#inhoud"
         onClick={(e) => {
@@ -48,11 +48,11 @@ function Kader() {
         ref={main}
         id="inhoud"
         tabIndex={-1}
-        className="mx-auto w-full max-w-page flex-1 px-4 py-8 outline-none md:px-8 md:py-12"
+        className="mx-auto w-full max-w-page flex-1 px-4 py-8 outline-none md:px-8 md:py-12 print:max-w-none print:p-0"
       >
         <Outlet />
       </main>
-      <footer className="border-t border-neutral-200 bg-neutral-0">
+      <footer className="border-t border-neutral-200 bg-neutral-0 print:hidden">
         <p className="mx-auto max-w-page px-4 py-6 text-ui-sm text-neutral-700 md:px-8">
           Bibliotheek Noordwest Veluwe · Team Programmering
         </p>
@@ -114,7 +114,7 @@ function Kop() {
   )
 
   return (
-    <header className="border-b border-neutral-200 bg-neutral-0">
+    <header className="border-b border-neutral-200 bg-neutral-0 print:hidden">
       <div className="mx-auto flex max-w-page items-center gap-6 px-4 md:px-8">
         {/* Gewone Link: het logo is geen menu-item en krijgt geen aria-current. */}
         <Link to="/" className="flex shrink-0 items-center gap-3 py-4">

@@ -59,7 +59,9 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 2. **Staffel en jaarinstellingen**: schijven per jaar en soort, werkweken en mijmerpercentage.
 3. **Medewerkers**: gegevens, koppeling met een account, contracthistorie, extra uren.
 4. **Projectgroepen**: gegevens, deelnemers met uren en periode.
-5. **Rapportage**: teamoverzicht per jaar (uren en percentages per medewerker, signalen) en per medewerker de memo-weergave, printbaar, met toelichting en status.
+5. **Rapportage** (`/rapportage`, `werkbelasting.bekijken`): teamoverzicht per jaar met kengetallen, uren en percentages per medewerker, status en signalen.
+   **Werkurenverdeling** (`/werkbelasting/:id`): de memo per medewerker, printbaar, met toelichting. Iedereen ziet de eigen verdeling.
+   **Vaststellen** (`werkbelasting.beheren`) bewaart de totalen van dat moment. Wijken de uren later af, dan meldt de pagina dat de gegevens na het vaststellen zijn gewijzigd. "Terug naar concept" heft de vaststelling op.
 6. **Dashboard (Start)**: mijn verdeling (grafiek), mijn scholen, mijn projectgroepen, signalen.
 
 Signalen: overbelast (negatief vrij), geen contract, school zonder medewerker, projectgroep zonder deelnemers.
