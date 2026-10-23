@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { NAV_ITEMS, zichtbareItems } from './navigatie'
 
-// Rechten per rol, gelijk aan de seed in de migratie basis_rechten.
+// Rechten per rol, gelijk aan de seed in de migraties basis_rechten en werkbelasting.
+const WERKBELASTING = ['werkbelasting.bekijken', 'werkbelasting.beheren']
 const ROLLEN: Record<string, string[]> = {
-  beheerder: ['app.gebruiken', 'gebruikers.bekijken', 'gebruikers.beheren', 'auditlog.lezen'],
-  teamleider: ['app.gebruiken', 'gebruikers.bekijken'],
+  beheerder: ['app.gebruiken', 'gebruikers.bekijken', 'gebruikers.beheren', 'auditlog.lezen', ...WERKBELASTING],
+  teamleider: ['app.gebruiken', 'gebruikers.bekijken', ...WERKBELASTING],
   medewerker: ['app.gebruiken'],
   'alleen-lezen': ['app.gebruiken'],
 }
@@ -14,11 +15,19 @@ const labels = (rol: string) =>
 
 describe('zichtbareItems', () => {
   it('beheerder ziet alles', () => {
-    expect(labels('beheerder')).toEqual(['Start', 'Gebruikers', 'Auditlog'])
+    expect(labels('beheerder')).toEqual([
+      'Start',
+      'Scholen',
+      'Medewerkers',
+      'Projectgroepen',
+      'Jaar en staffel',
+      'Gebruikers',
+      'Auditlog',
+    ])
   })
 
-  it('teamleider ziet gebruikers, niet de auditlog', () => {
-    expect(labels('teamleider')).toEqual(['Start', 'Gebruikers'])
+  it('teamleider ziet werkbelasting en gebruikers, niet de auditlog', () => {
+    expect(labels('teamleider')).toEqual(['Start', 'Scholen', 'Medewerkers', 'Projectgroepen', 'Jaar en staffel', 'Gebruikers'])
   })
 
   it('medewerker en alleen-lezen zien alleen Start', () => {

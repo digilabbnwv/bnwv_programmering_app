@@ -10,6 +10,10 @@ export interface NavItem {
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { pad: '/', label: 'Start', recht: 'app.gebruiken' },
+  { pad: '/scholen', label: 'Scholen', recht: 'werkbelasting.beheren' },
+  { pad: '/medewerkers', label: 'Medewerkers', recht: 'werkbelasting.beheren' },
+  { pad: '/projectgroepen', label: 'Projectgroepen', recht: 'werkbelasting.beheren' },
+  { pad: '/staffel', label: 'Jaar en staffel', recht: 'werkbelasting.beheren' },
   { pad: '/gebruikers', label: 'Gebruikers', recht: 'gebruikers.bekijken' },
   { pad: '/auditlog', label: 'Auditlog', recht: 'auditlog.lezen' },
 ]

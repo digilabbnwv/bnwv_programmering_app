@@ -143,7 +143,7 @@ export function staffelUren(
 }
 
 /** Contractperiodes: elk contract loopt tot de dag vóór het volgende. */
-export function contractPeriodes(contracten: readonly Contract[]): (Contract & Periode)[] {
+export function contractPeriodes<C extends Contract>(contracten: readonly C[]): (C & Periode)[] {
   const gesorteerd = [...contracten].sort((a, b) => a.ingangsdatum.localeCompare(b.ingangsdatum))
   return gesorteerd.map((c, i) => {
     const volgende = gesorteerd[i + 1]
