@@ -19,7 +19,7 @@ import { useGegevens } from '../werkbelasting/useGegevens'
  */
 export function StartPage() {
   const { client, claims } = useAuth()
-  const { weergavenaam, rolNaam, heeftRecht, laden: rechtenLaden } = useRechten()
+  const { weergavenaam, heeftRecht, laden: rechtenLaden } = useRechten()
   const jaar = new Date().getFullYear()
   const laden = useCallback(() => laadRapportage(client, jaar), [client, jaar])
   const { data, fout } = useGegevens(laden)
@@ -28,7 +28,7 @@ export function StartPage() {
   const werkjaar = data?.werkjaren.find((w) => w.jaar === jaar) ?? null
 
   return (
-    <Pagina titel={weergavenaam ? `Welkom, ${weergavenaam}` : 'Welkom'} intro={rolNaam ? `Je rol: ${rolNaam}` : undefined}>
+    <Pagina titel={weergavenaam ? `Welkom, ${weergavenaam}` : 'Welkom'}>
       {!data || rechtenLaden ? (
         <Laadstatus fout={fout} />
       ) : !werkjaar ? (

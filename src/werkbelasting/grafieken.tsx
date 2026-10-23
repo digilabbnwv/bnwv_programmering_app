@@ -270,31 +270,34 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
           100% van het contract
         </span>
       </div>
-      <table className="sr-only">
-        <caption>Verdeling van de contracturen per medewerker, in procenten</caption>
-        <thead>
-          <tr>
-            <th scope="col">Medewerker</th>
-            {ONDERDELEN.map((o) => (
-              <th key={o.sleutel} scope="col">
-                {o.label}
-              </th>
-            ))}
-            <th scope="col">Vrij of tekort (uren)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rijen.map((r) => (
-            <tr key={r.id}>
-              <th scope="row">{r.naam}</th>
+      {/* Tabel voor schermlezers. sr-only op de div: op een <table> blijft het bijschrift soms zichtbaar. */}
+      <div className="sr-only">
+        <table>
+          <caption>Verdeling van de contracturen per medewerker, in procenten</caption>
+          <thead>
+            <tr>
+              <th scope="col">Medewerker</th>
               {ONDERDELEN.map((o) => (
-                <td key={o.sleutel}>{formatPercentage(procent(r, o.sleutel))}</td>
+                <th key={o.sleutel} scope="col">
+                  {o.label}
+                </th>
               ))}
-              <td>{formatUren(r.w.overig)}</td>
+              <th scope="col">Vrij of tekort (uren)</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rijen.map((r) => (
+              <tr key={r.id}>
+                <th scope="row">{r.naam}</th>
+                {ONDERDELEN.map((o) => (
+                  <td key={o.sleutel}>{formatPercentage(procent(r, o.sleutel))}</td>
+                ))}
+                <td>{formatUren(r.w.overig)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   )
 }
