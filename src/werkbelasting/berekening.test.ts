@@ -50,6 +50,7 @@ const MEMO: Invoer = {
     { projectgroepId: 'c', naam: 'Podcasting', uren_per_jaar: 10, startdatum: '2026-01-01', einddatum: null },
     { projectgroepId: 'd', naam: 'Open Boek', uren_per_jaar: 40, startdatum: '2026-01-01', einddatum: null },
   ],
+  taken: [],
   extraUren: [{ omschrijving: 'NPO Speulderbrink', uren: 40, financier: 'NPO' }],
 }
 
@@ -83,6 +84,26 @@ describe('berekenWerkbelasting: de memo 2026', () => {
     expect(w.extraTotaal).toBe(40)
     expect(w.contracturen).toBeCloseTo(1504)
     expect(w.signalen).toEqual([])
+  })
+})
+
+describe('overige taken', () => {
+  it('telt als eigen post en verkleint wat nog niet ingevuld is', () => {
+    const w = berekenWerkbelasting({
+      ...MEMO,
+      taken: [
+        { taakId: 'bhv', naam: 'BHV', uren_per_jaar: 20, startdatum: '2026-01-01', einddatum: null },
+        // Halverwege overgedragen: telt voor 181 van de 365 dagen.
+        { taakId: 'coord', naam: 'Coördinatie', uren_per_jaar: 100, startdatum: '2025-01-01', einddatum: '2026-06-30' },
+        { taakId: 'oud', naam: 'Oud', uren_per_jaar: 50, startdatum: '2024-01-01', einddatum: '2025-12-31' },
+      ],
+    })
+    expect(w.taken.map((t) => t.naam)).toEqual(['BHV', 'Coördinatie'])
+    expect(w.takenuren).toBeCloseTo(20 + (100 * 181) / 365)
+    expect(w.overig).toBeCloseTo(433.2 - w.takenuren)
+    expect(
+      w.percentage.scholen + w.percentage.projecten + w.percentage.taken + w.percentage.overig + w.percentage.mijmertijd,
+    ).toBeCloseTo(100)
   })
 })
 

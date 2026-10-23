@@ -4,7 +4,7 @@ import { formatPercentage, formatPerWeek, formatUren, perWeek, type Werkbelastin
 
 /**
  * Grafieken van de werkbelasting. Kleuren per onderdeel liggen vast (nooit
- * per rang): scholen, projectgroepen, overig, mijmertijd. Het palet is
+ * per rang): scholen, projectgroepen, overige taken, nog niet ingevuld, mijmertijd. Het palet is
  * gecontroleerd op kleurenblindheid (scripts van de dataviz-richtlijnen);
  * lichtblauw heeft weinig contrast met wit, dus elke grafiek heeft een
  * legenda met waarden en een tabel voor schermlezers.
@@ -12,7 +12,8 @@ import { formatPercentage, formatPerWeek, formatUren, perWeek, type Werkbelastin
 export const ONDERDELEN = [
   { sleutel: 'scholen', label: 'Scholen', kleur: 'bg-pijler-vraag' },
   { sleutel: 'projecten', label: 'Projectgroepen', kleur: 'bg-pijler-leer' },
-  { sleutel: 'overig', label: 'Overig werk', kleur: 'bg-pijler-ontmoet' },
+  { sleutel: 'taken', label: 'Overige taken', kleur: 'bg-paars' },
+  { sleutel: 'overig', label: 'Nog niet ingevuld', kleur: 'bg-pijler-ontmoet' },
   { sleutel: 'mijmertijd', label: 'Mijmertijd', kleur: 'bg-orange-hover' },
 ] as const
 
@@ -22,6 +23,7 @@ export function urenPerOnderdeel(w: Werkbelasting): Record<Onderdeel, number> {
   return {
     scholen: w.schooluren,
     projecten: w.projecturen,
+    taken: w.takenuren,
     // Een tekort is geen deel van de balk; dat toont het overbelast-signaal.
     overig: Math.max(0, w.overig),
     mijmertijd: w.mijmertijd,
@@ -250,7 +252,7 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
                       Overbelast: {formatUren(-r.w.overig)} uur te veel
                     </span>
                   ) : (
-                    `${formatUren(r.w.overig)} uur vrij (${formatPercentage(r.w.percentage.overig)})`
+                    `${formatUren(r.w.overig)} uur nog niet ingevuld (${formatPercentage(r.w.percentage.overig)})`
                   )}
                 </p>
               </div>
@@ -282,7 +284,7 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
                   {o.label}
                 </th>
               ))}
-              <th scope="col">Vrij of tekort (uren)</th>
+              <th scope="col">Nog niet ingevuld of tekort (uren)</th>
             </tr>
           </thead>
           <tbody>

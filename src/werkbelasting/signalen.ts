@@ -23,5 +23,7 @@ export function teamsignaalTekst(s: Teamsignaal): string {
         : `${s.naam} heeft ${Math.round(s.aandeelZonder * 100)}% van het jaar geen medewerker.`
     case 'projectgroep-zonder-deelnemers':
       return `Projectgroep ${s.naam} heeft dit jaar geen deelnemers.`
+    case 'taak-zonder-uitvoerders':
+      return `Taak ${s.naam} heeft dit jaar geen uitvoerder.`
   }
 }

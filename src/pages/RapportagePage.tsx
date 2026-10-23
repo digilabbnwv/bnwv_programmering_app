@@ -61,6 +61,7 @@ export function RapportagePage() {
   const contracturen = som((r) => r.werkbelasting.contracturen)
   const schooluren = som((r) => r.werkbelasting.schooluren)
   const projecturen = som((r) => r.werkbelasting.projecturen)
+  const takenuren = som((r) => r.werkbelasting.takenuren)
   const overig = som((r) => r.werkbelasting.overig)
   const deel = (uren: number) => formatPercentage(contracturen > 0 ? (uren / contracturen) * 100 : 0)
   const metSignaal = rijen.filter((r) => r.werkbelasting.signalen.length > 0 || r.gewijzigdNaVaststellen).length
@@ -75,12 +76,13 @@ export function RapportagePage() {
         </Button>
       </div>
 
-      <dl className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Kengetal label="Contracturen team" waarde={formatUren(contracturen)} toelichting={`${rijen.length} medewerkers`} />
         <Kengetal label="Scholen" waarde={formatUren(schooluren)} toelichting={deel(schooluren)} />
         <Kengetal label="Projectgroepen" waarde={formatUren(projecturen)} toelichting={deel(projecturen)} />
+        <Kengetal label="Overige taken" waarde={formatUren(takenuren)} toelichting={deel(takenuren)} />
         <Kengetal
-          label={overig < 0 ? 'Tekort' : 'Vrij voor overig werk'}
+          label={overig < 0 ? 'Tekort' : 'Nog niet ingevuld'}
           waarde={formatUren(overig)}
           toelichting={`${vastgesteld} van ${rijen.length} vastgesteld`}
         />
@@ -157,7 +159,12 @@ export function RapportagePage() {
               getal: true,
             },
             {
-              kop: 'Vrij',
+              kop: 'Taken',
+              inhoud: (r) => <UrenEnDeel uren={r.werkbelasting.takenuren} deel={r.werkbelasting.percentage.taken} />,
+              getal: true,
+            },
+            {
+              kop: 'Niet ingevuld',
               inhoud: (r) =>
                 r.werkbelasting.overig < -0.05 ? (
                   <strong>

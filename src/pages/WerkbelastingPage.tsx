@@ -218,7 +218,7 @@ function StatusRegel({
         <div className="mt-3">
           <Melding soort="fout">
             De gegevens zijn na het vaststellen gewijzigd. De uren hieronder wijken af van de vastgestelde verdeling
-            {toelichting.totalen && ` (vastgesteld: ${formatUren(toelichting.totalen.schooluren)} uur scholen, ${formatUren(toelichting.totalen.projecturen)} uur projecten)`}
+            {toelichting.totalen && ` (vastgesteld: ${formatUren(toelichting.totalen.schooluren)} uur scholen, ${formatUren(toelichting.totalen.projecturen)} uur projecten, ${formatUren(toelichting.totalen.takenuren ?? 0)} uur overige taken)`}
             .
           </Melding>
         </div>
@@ -320,8 +320,9 @@ function Memo({
           rijen={[
             ['Programma-uren scholen', formatUren(w.schooluren), week(w.schooluren), formatPercentage(w.percentage.scholen)],
             ['Projectgroepen', formatUren(w.projecturen), week(w.projecturen), formatPercentage(w.percentage.projecten)],
+            ['Overige taken', formatUren(w.takenuren), week(w.takenuren), formatPercentage(w.percentage.taken)],
             [
-              w.overig < 0 ? 'Tekort (overbelast)' : 'Overige werkzaamheden',
+              w.overig < 0 ? 'Tekort (overbelast)' : 'Nog niet ingevuld',
               formatUren(w.overig),
               week(w.overig),
               formatPercentage(w.percentage.overig),
@@ -350,6 +351,25 @@ function Memo({
               week(p.jaaruren),
             ])}
             totaal={['Totaal', '', formatUren(w.projecturen), week(w.projecturen)]}
+          />
+        )}
+      </MemoSectie>
+
+      <MemoSectie titel={`Overige taken ${w.jaar}`}>
+        {w.taken.length === 0 ? (
+          <p>Geen overige taken in {w.jaar}.</p>
+        ) : (
+          <MemoTabel
+            bijschrift="Overige taken"
+            koppen={['Taak', 'Periode', 'Uren per jaar', 'Gemiddeld per week']}
+            getallen={[2, 3]}
+            rijen={w.taken.map((t) => [
+              t.naam,
+              t.aandeel < 1 ? formatPeriode(t.periode.startdatum, t.periode.einddatum) : 'Hele jaar',
+              formatUren(t.jaaruren),
+              week(t.jaaruren),
+            ])}
+            totaal={['Totaal', '', formatUren(w.takenuren), week(w.takenuren)]}
           />
         )}
       </MemoSectie>

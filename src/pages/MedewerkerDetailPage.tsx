@@ -15,6 +15,8 @@ import {
   type ExtraUren,
   type Medewerker,
   type Projectgroep,
+  type Taak,
+  type TaakUitvoerder,
   type School,
   type Toewijzing,
   type Werkjaar,
@@ -39,7 +41,9 @@ export function MedewerkerDetailPage() {
   const navigate = useNavigate()
   const laden = useCallback(
     async () =>
-      alles<[Medewerker[], Contract[], ExtraUren[], Toewijzing[], Deelnemer[], School[], Projectgroep[], Werkjaar[]]>(
+      alles<
+        [Medewerker[], Contract[], ExtraUren[], Toewijzing[], Deelnemer[], School[], Projectgroep[], Werkjaar[], TaakUitvoerder[], Taak[]]
+      >(
         await Promise.all([
           lees<Medewerker>(client, 'medewerkers', 'naam'),
           lees<Contract>(client, 'contracten', 'ingangsdatum', { kolom: 'medewerker_id', waarde: id }),
@@ -49,6 +53,8 @@ export function MedewerkerDetailPage() {
           lees<School>(client, 'scholen', 'naam'),
           lees<Projectgroep>(client, 'projectgroepen', 'naam'),
           lees<Werkjaar>(client, 'werkjaren', 'jaar'),
+          lees<TaakUitvoerder>(client, 'taak_uitvoerders', 'startdatum', { kolom: 'medewerker_id', waarde: id }),
+          lees<Taak>(client, 'taken', 'naam'),
         ]),
       ),
     [client, id],
@@ -65,7 +71,8 @@ export function MedewerkerDetailPage() {
     )
   }
 
-  const [medewerkers, contracten, extraUren, toewijzingen, deelnames, scholen, projectgroepen, werkjaren] = data
+  const [medewerkers, contracten, extraUren, toewijzingen, deelnames, scholen, projectgroepen, werkjaren, uitvoeringen, taken] =
+    data
   const medewerker = medewerkers.find((m) => m.id === id)
   if (!medewerker) {
     return (
@@ -194,6 +201,27 @@ export function MedewerkerDetailPage() {
             },
             { kop: 'Uren per jaar', inhoud: (d) => formatUren(d.uren_per_jaar), getal: true },
             { kop: 'Periode', inhoud: (d) => formatPeriode(d.startdatum, d.einddatum) },
+          ]}
+        />
+      </Sectie>
+
+      <Sectie titel="Overige taken">
+        <Tabel
+          bijschrift="Overige taken van deze medewerker"
+          rijen={nieuwsteEerst(uitvoeringen)}
+          sleutel={(u) => u.id}
+          leeg="Geen overige taken. Voeg uitvoerders toe vanaf de pagina van de taak."
+          kolommen={[
+            {
+              kop: 'Taak',
+              inhoud: (u) => (
+                <Link to={`/taken/${u.taak_id}`} className="underline underline-offset-4 hover:no-underline">
+                  {taken.find((t) => t.id === u.taak_id)?.naam ?? 'Onbekend'}
+                </Link>
+              ),
+            },
+            { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },
+            { kop: 'Periode', inhoud: (u) => formatPeriode(u.startdatum, u.einddatum) },
           ]}
         />
       </Sectie>

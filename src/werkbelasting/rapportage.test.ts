@@ -65,6 +65,14 @@ function gegevens(): Rapportagegegevens {
       { id: 'p3', naam: 'Afgelopen', omschrijving: '', startdatum: '2024-01-01', einddatum: '2025-12-31', trekker_id: null },
     ],
     deelnemers: [{ id: 'd1', projectgroep_id: 'p1', medewerker_id: 'ing', uren_per_jaar: 40, startdatum: '2026-01-01', einddatum: null }],
+    taken: [
+      { id: 'k1', naam: 'BHV', omschrijving: '', startdatum: '2026-01-01', einddatum: null },
+      { id: 'k2', naam: 'Nog open', omschrijving: '', startdatum: '2026-01-01', einddatum: null },
+    ],
+    uitvoerders: [
+      { id: 'u1', taak_id: 'k1', medewerker_id: 'ing', uren_per_jaar: 20, startdatum: '2026-01-01', einddatum: null },
+      { id: 'u2', taak_id: 'k1', medewerker_id: 'hil', uren_per_jaar: 10, startdatum: '2026-01-01', einddatum: null },
+    ],
     extraUren: [{ id: 'e1', medewerker_id: 'ing', jaar: 2026, omschrijving: 'NPO', uren: 40, financier: 'NPO', school_id: null }],
     toelichtingen: [],
   }
@@ -79,6 +87,7 @@ describe('bouwInvoer', () => {
       ['Dok 19', 200],
     ])
     expect(invoer.projecten.map((p) => p.naam)).toEqual(['Open Boek'])
+    expect(invoer.taken).toEqual([{ taakId: 'k1', naam: 'BHV', uren_per_jaar: 20, startdatum: '2026-01-01', einddatum: null }])
     expect(invoer.extraUren).toEqual([{ omschrijving: 'NPO', uren: 40, financier: 'NPO' }])
   })
 
@@ -102,6 +111,7 @@ describe('teamRijen', () => {
 describe('teamSignalen', () => {
   it('meldt actieve scholen zonder medewerker en lopende projectgroepen zonder deelnemers', () => {
     expect(teamSignalen(gegevens(), 2026)).toEqual([
+      { soort: 'taak-zonder-uitvoerders', taakId: 'k2', naam: 'Nog open' },
       { soort: 'projectgroep-zonder-deelnemers', projectgroepId: 'p2', naam: 'Podcasting' },
       { soort: 'school-zonder-medewerker', schoolId: 'leeg', naam: 'Zonder iemand', aandeelZonder: 1 },
     ])
@@ -147,7 +157,8 @@ describe('memoTeksten', () => {
     expect(inleiding).toContain('contractomvang van gemiddeld 32 uur per week en 47 werkweken')
     expect(inleiding).toContain('20% van de contracturen gereserveerd voor mijmertijd en is 80% beschikbaar')
     expect(conclusie).toContain('300,8 uur per jaar gereserveerd voor mijmertijd')
-    expect(conclusie).toContain('resteert')
+    expect(conclusie).toContain('Nog niet ingevuld is')
+    expect(conclusie).toContain('aan overige taken')
   })
 
   it('benoemt overbelasting en een ontbrekend contract', () => {

@@ -105,6 +105,23 @@ export interface Deelnemer {
   einddatum: string | null
 }
 
+export interface Taak {
+  id: string
+  naam: string
+  omschrijving: string
+  startdatum: string
+  einddatum: string | null
+}
+
+export interface TaakUitvoerder {
+  id: string
+  taak_id: string
+  medewerker_id: string
+  uren_per_jaar: number
+  startdatum: string
+  einddatum: string | null
+}
+
 export interface ExtraUren {
   id: string
   medewerker_id: string
@@ -121,6 +138,8 @@ export interface Totalen {
   mijmertijd: number
   schooluren: number
   projecturen: number
+  /** Ontbreekt bij vaststellingen van vóór de overige taken. */
+  takenuren?: number
   overig: number
   extraTotaal: number
 }
@@ -168,6 +187,8 @@ type Tabel =
   | 'projectgroepen'
   | 'projectgroep_deelnemers'
   | 'extra_uren'
+  | 'taken'
+  | 'taak_uitvoerders'
   | 'werkbelasting_toelichtingen'
 
 /** Leest een hele tabel (voor zover RLS hem laat zien). */
@@ -206,6 +227,8 @@ export type VerwijderTabel =
   | 'projectgroepen'
   | 'projectgroep_deelnemers'
   | 'extra_uren'
+  | 'taken'
+  | 'taak_uitvoerders'
 
 export function verwijder(
   client: SupabaseClient,

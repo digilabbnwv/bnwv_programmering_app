@@ -51,6 +51,12 @@ export interface ProjectInzet extends Periode {
   uren_per_jaar: number
 }
 
+export interface TaakInzet extends Periode {
+  taakId: string
+  naam: string
+  uren_per_jaar: number
+}
+
 export interface ExtraUren {
   omschrijving: string
   uren: number
@@ -63,6 +69,7 @@ export interface Invoer {
   staffel: readonly StaffelSchijf[]
   scholen: readonly SchoolInzet[]
   projecten: readonly ProjectInzet[]
+  taken: readonly TaakInzet[]
   extraUren: readonly ExtraUren[]
 }
 
@@ -95,12 +102,15 @@ export interface Werkbelasting {
   schooluren: number
   projecten: Regel[]
   projecturen: number
-  /** Beschikbaar − scholen − projecten. Negatief: overbelast. */
+  /** Overige taken met een eigen ureninschatting. */
+  taken: Regel[]
+  takenuren: number
+  /** Nog niet ingevuld: beschikbaar − scholen − projecten − taken. Negatief: overbelast. */
   overig: number
   extraUren: ExtraUren[]
   extraTotaal: number
   /** Ten opzichte van de contracturen, zoals de memo. 0 zonder contracturen. */
-  percentage: { scholen: number; projecten: number; overig: number; mijmertijd: number }
+  percentage: { scholen: number; projecten: number; taken: number; overig: number; mijmertijd: number }
   signalen: Signaal[]
 }
 
@@ -201,23 +211,19 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
     })
   }
 
-  const projecten: Regel[] = []
-  for (const p of invoer.projecten) {
-    const aandeel = aandeelInJaar(p, jaar)
-    if (aandeel === 0) continue
-    projecten.push({
-      id: p.projectgroepId,
-      naam: p.naam,
-      volleJaaruren: p.uren_per_jaar,
-      aandeel,
-      jaaruren: p.uren_per_jaar * aandeel,
-      periode: { startdatum: p.startdatum, einddatum: p.einddatum },
-    })
-  }
+  const projecten = naarRato(
+    invoer.projecten.map((p) => ({ ...p, id: p.projectgroepId })),
+    jaar,
+  )
+  const taken = naarRato(
+    invoer.taken.map((t) => ({ ...t, id: t.taakId })),
+    jaar,
+  )
 
   const schooluren = som(scholen.map((r) => r.jaaruren))
   const projecturen = som(projecten.map((r) => r.jaaruren))
-  const overig = beschikbaar - schooluren - projecturen
+  const takenuren = som(taken.map((r) => r.jaaruren))
+  const overig = beschikbaar - schooluren - projecturen - takenuren
   // Afronden voorkomt een signaal door rekenruis.
   if (contracturen > 0 && overig < -0.05) signalen.push({ soort: 'overbelast', tekortUren: -overig })
 
@@ -234,17 +240,41 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
     schooluren,
     projecten,
     projecturen,
+    taken,
+    takenuren,
     overig,
     extraUren,
     extraTotaal: som(extraUren.map((e) => e.uren)),
     percentage: {
       scholen: deel(schooluren),
       projecten: deel(projecturen),
+      taken: deel(takenuren),
       overig: deel(overig),
       mijmertijd: deel(mijmertijd),
     },
     signalen,
   }
+}
+
+/** Regels met uren per jaar en een periode, naar rato van het jaar; buiten het jaar vallen ze weg. */
+function naarRato(
+  rijen: readonly (Periode & { id: string; naam: string; uren_per_jaar: number })[],
+  jaar: number,
+): Regel[] {
+  return rijen.flatMap((r) => {
+    const aandeel = aandeelInJaar(r, jaar)
+    if (aandeel === 0) return []
+    return [
+      {
+        id: r.id,
+        naam: r.naam,
+        volleJaaruren: r.uren_per_jaar,
+        aandeel,
+        jaaruren: r.uren_per_jaar * aandeel,
+        periode: { startdatum: r.startdatum, einddatum: r.einddatum },
+      },
+    ]
+  })
 }
 
 /** Uren per week, uitgaande van de werkweken van de medewerker in dit jaar. */

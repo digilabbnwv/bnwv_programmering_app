@@ -51,6 +51,8 @@
   --color-pijler-ontmoet-support: #3aa992;
   --color-pijler-vraag: #1160ab;
   --color-pijler-vraag-support: #517abd;
+  /* Grafiekkleur voor overige taken (geen huisstijlkleur; gekozen op onderscheidbaarheid). */
+  --color-paars: #7b4fa8;
 
   /* Typografie */
   --font-*: initial;

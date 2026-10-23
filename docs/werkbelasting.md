@@ -23,7 +23,8 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
   per school (bijv. "inclusief PSZ"). Naar rato van de periode dat de medewerker
   de school heeft (overdracht halverwege het jaar).
 - **Projectgroepen** = uren per deelnemer per jaar, naar rato van de deelnameperiode.
-- **Overig / vrij** = beschikbare werktijd − schooluren − projecturen. Negatief = overbelast.
+- **Overige taken** = uren per uitvoerder per jaar, naar rato van de periode. Een taak kan meerdere uitvoerders tegelijk hebben; overdragen laat de een stoppen en de ander met dezelfde uren beginnen.
+- **Nog niet ingevuld** = beschikbare werktijd − schooluren − projecturen − overige taken. Negatief = overbelast.
 - **Extra uren** (bijv. NPO-gelden) staan los van het contract en tellen niet mee in de percentages.
 - **Percentages** zijn ten opzichte van de contracturen, zoals in de memo. Per week = jaaruren ÷ werkweken.
 - Werkweken en mijmerpercentage zijn per jaar in te stellen en per contract te overschrijven.
@@ -42,6 +43,8 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 | `school_toewijzingen` | school ↔ medewerker met start- en einddatum. Per school één medewerker tegelijk. |
 | `projectgroepen` | naam, omschrijving, start- en einddatum, trekker |
 | `projectgroep_deelnemers` | medewerker, uren per jaar, start- en einddatum |
+| `taken` | naam, omschrijving, start- en einddatum |
+| `taak_uitvoerders` | medewerker, ureninschatting per jaar, start- en einddatum |
 | `extra_uren` | uren buiten het contract: jaar, omschrijving, financier, school |
 | `werkbelasting_toelichtingen` | per medewerker per jaar: vrije toelichting en status concept/vastgesteld |
 
@@ -59,12 +62,13 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 2. **Staffel en jaarinstellingen**: schijven per jaar en soort, werkweken en mijmerpercentage.
 3. **Medewerkers**: gegevens, koppeling met een account, contracthistorie, extra uren.
 4. **Projectgroepen**: gegevens, deelnemers met uren en periode.
+   **Overige taken**: gegevens, uitvoerders met uren en periode, overdragen aan een collega per datum.
 5. **Rapportage** (`/rapportage`, `werkbelasting.bekijken`): teamoverzicht per jaar met kengetallen, uren en percentages per medewerker, status en signalen.
    **Werkurenverdeling** (`/werkbelasting/:id`): de memo per medewerker, printbaar, met toelichting. Iedereen ziet de eigen verdeling.
    **Vaststellen** (`werkbelasting.beheren`) bewaart de totalen van dat moment. Wijken de uren later af, dan meldt de pagina dat de gegevens na het vaststellen zijn gewijzigd. "Terug naar concept" heft de vaststelling op.
 6. **Dashboard (Start)**: mijn verdeling (grafiek), mijn scholen, mijn projectgroepen, signalen.
 
-Signalen: overbelast (negatief vrij), geen contract, school zonder medewerker, projectgroep zonder deelnemers.
+Signalen: overbelast (negatief nog niet ingevuld), geen contract, school zonder medewerker, projectgroep zonder deelnemers, taak zonder uitvoerder.
 
 ## Fasering
 

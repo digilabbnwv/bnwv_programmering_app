@@ -10,6 +10,8 @@ import {
   type School,
   type SchoolJaargegevens,
   type StaffelSchijf,
+  type Taak,
+  type TaakUitvoerder,
   type Toelichting,
   type Toewijzing,
   type Totalen,
@@ -41,6 +43,8 @@ export interface Rapportagegegevens {
   toewijzingen: Toewijzing[]
   projectgroepen: Projectgroep[]
   deelnemers: Deelnemer[]
+  taken: Taak[]
+  uitvoerders: TaakUitvoerder[]
   extraUren: ExtraUren[]
   toelichtingen: Toelichting[]
 }
@@ -58,6 +62,8 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       Toewijzing[],
       Projectgroep[],
       Deelnemer[],
+      Taak[],
+      TaakUitvoerder[],
       ExtraUren[],
       Toelichting[],
     ]
@@ -72,13 +78,28 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       lees<Toewijzing>(client, 'school_toewijzingen', 'startdatum'),
       lees<Projectgroep>(client, 'projectgroepen', 'naam'),
       lees<Deelnemer>(client, 'projectgroep_deelnemers', 'startdatum'),
+      lees<Taak>(client, 'taken', 'naam'),
+      lees<TaakUitvoerder>(client, 'taak_uitvoerders', 'startdatum'),
       lees<ExtraUren>(client, 'extra_uren', 'omschrijving', jaarFilter),
       lees<Toelichting>(client, 'werkbelasting_toelichtingen', 'medewerker_id', jaarFilter),
     ]),
   )
   if (!res.ok) return res
-  const [werkjaren, medewerkers, contracten, scholen, jaargegevens, staffel, toewijzingen, projectgroepen, deelnemers, extraUren, toelichtingen] =
-    res.data
+  const [
+    werkjaren,
+    medewerkers,
+    contracten,
+    scholen,
+    jaargegevens,
+    staffel,
+    toewijzingen,
+    projectgroepen,
+    deelnemers,
+    taken,
+    uitvoerders,
+    extraUren,
+    toelichtingen,
+  ] = res.data
   return {
     ok: true,
     data: {
@@ -91,6 +112,8 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       toewijzingen,
       projectgroepen,
       deelnemers,
+      taken,
+      uitvoerders,
       extraUren,
       toelichtingen,
     },
@@ -136,6 +159,13 @@ export function bouwInvoer(g: Rapportagegegevens, medewerkerId: string, werkjaar
           },
         ]
       }),
+    taken: g.uitvoerders
+      .filter((u) => u.medewerker_id === medewerkerId)
+      .flatMap((u) => {
+        const taak = g.taken.find((t) => t.id === u.taak_id)
+        if (!taak) return []
+        return [{ taakId: taak.id, naam: taak.naam, uren_per_jaar: u.uren_per_jaar, startdatum: u.startdatum, einddatum: u.einddatum }]
+      }),
     extraUren: g.extraUren
       .filter((e) => e.medewerker_id === medewerkerId && e.jaar === jaar)
       .map((e) => ({ omschrijving: e.omschrijving, uren: e.uren, financier: e.financier })),
@@ -164,7 +194,7 @@ export function teamRijen(g: Rapportagegegevens, werkjaar: Werkjaar): Rij[] {
     })
     .filter(
       ({ medewerker, werkbelasting: w }) =>
-        medewerker.actief || w.contracturen > 0 || w.scholen.length > 0 || w.projecten.length > 0,
+        medewerker.actief || w.contracturen > 0 || w.scholen.length > 0 || w.projecten.length > 0 || w.taken.length > 0,
     )
     .sort((a, b) => a.medewerker.naam.localeCompare(b.medewerker.naam, 'nl'))
 }
@@ -176,6 +206,7 @@ export function totalenVan(w: Werkbelasting): Totalen {
     mijmertijd: rond(w.mijmertijd),
     schooluren: rond(w.schooluren),
     projecturen: rond(w.projecturen),
+    takenuren: rond(w.takenuren),
     overig: rond(w.overig),
     extraTotaal: rond(w.extraTotaal),
   }
@@ -186,12 +217,13 @@ export function isGewijzigd(toelichting: Toelichting | null, w: Werkbelasting): 
   if (toelichting?.status !== 'vastgesteld' || !toelichting.totalen) return false
   const nu = totalenVan(w)
   const toen = toelichting.totalen
-  return (Object.keys(nu) as (keyof Totalen)[]).some((k) => Math.abs(nu[k] - (toen[k] ?? 0)) >= 0.05)
+  return (Object.keys(nu) as (keyof Totalen)[]).some((k) => Math.abs((nu[k] ?? 0) - (toen[k] ?? 0)) >= 0.05)
 }
 
 export type Teamsignaal =
   | { soort: 'school-zonder-medewerker'; schoolId: string; naam: string; aandeelZonder: number }
   | { soort: 'projectgroep-zonder-deelnemers'; projectgroepId: string; naam: string }
+  | { soort: 'taak-zonder-uitvoerders'; taakId: string; naam: string }
 
 /** Signalen over het hele team: scholen of projectgroepen die (deels) niemand hebben. */
 export function teamSignalen(g: Rapportagegegevens, jaar: number): Teamsignaal[] {
@@ -209,6 +241,11 @@ export function teamSignalen(g: Rapportagegegevens, jaar: number): Teamsignaal[]
     if (aandeelInJaar(groep, jaar) === 0) continue
     const heeftDeelnemers = g.deelnemers.some((d) => d.projectgroep_id === groep.id && aandeelInJaar(d, jaar) > 0)
     if (!heeftDeelnemers) signalen.push({ soort: 'projectgroep-zonder-deelnemers', projectgroepId: groep.id, naam: groep.naam })
+  }
+  for (const taak of g.taken) {
+    if (aandeelInJaar(taak, jaar) === 0) continue
+    const heeftUitvoerders = g.uitvoerders.some((u) => u.taak_id === taak.id && aandeelInJaar(u, jaar) > 0)
+    if (!heeftUitvoerders) signalen.push({ soort: 'taak-zonder-uitvoerders', taakId: taak.id, naam: taak.naam })
   }
   return signalen.sort((a, b) => a.naam.localeCompare(b.naam, 'nl'))
 }
@@ -232,10 +269,11 @@ export function memoTeksten(naam: string, w: Werkbelasting): { inleiding: string
   const conclusie =
     w.contracturen === 0
       ? ''
-      : `Van de totale contractomvang wordt ${formatPercentage(w.percentage.scholen)} ingezet op de scholen en ` +
-        `${formatPercentage(w.percentage.projecten)} in projectgroepen. ` +
+      : `Van de totale contractomvang wordt ${formatPercentage(w.percentage.scholen)} ingezet op de scholen, ` +
+        `${formatPercentage(w.percentage.projecten)} in projectgroepen en ` +
+        `${formatPercentage(w.percentage.taken)} aan overige taken. ` +
         (vrij >= 0
-          ? `Voor overige werkzaamheden en ontwikkelopgaven resteert ${formatUren(vrij)} uur per jaar, gemiddeld ` +
+          ? `Nog niet ingevuld is ${formatUren(vrij)} uur per jaar, gemiddeld ` +
             `${formatPerWeek(perWeek(vrij, w.werkweken))} uur per week. `
           : `De inzet is ${formatUren(-vrij)} uur per jaar hoger dan de beschikbare werktijd ` +
             `(gemiddeld ${formatPerWeek(perWeek(-vrij, w.werkweken))} uur per week te veel). `) +

@@ -4,8 +4,8 @@ import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Melding } from '../components/Melding'
 import { Pagina } from '../layout/Pagina'
-import { berekenWerkbelasting, formatPercentage, formatPerWeek, formatUren, perWeek, type Werkbelasting } from '../werkbelasting/berekening'
-import { Staafdiagram, TeamBalken, Verdelingsbalk } from '../werkbelasting/grafieken'
+import { berekenWerkbelasting, formatPercentage, formatPerWeek, formatUren, perWeek, type Regel, type Werkbelasting } from '../werkbelasting/berekening'
+import { Staafdiagram, TeamBalken, Verdelingsbalk, type Staaf } from '../werkbelasting/grafieken'
 import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
 import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import { bouwInvoer, laadRapportage, teamRijen, teamSignalen, type Rapportagegegevens } from '../werkbelasting/rapportage'
@@ -73,12 +73,13 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
         <p>Er is voor {w.jaar} nog geen contract vastgelegd.</p>
       ) : (
         <div className="space-y-8">
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <Kengetal label="Contract" waarde={`${week(w.contracturen)} uur p/w`} toelichting={`${formatUren(w.contracturen)} uur per jaar`} />
             <Kengetal label="Scholen" waarde={formatPercentage(w.percentage.scholen)} toelichting={`${week(w.schooluren)} uur p/w`} />
             <Kengetal label="Projectgroepen" waarde={formatPercentage(w.percentage.projecten)} toelichting={`${week(w.projecturen)} uur p/w`} />
+            <Kengetal label="Overige taken" waarde={formatPercentage(w.percentage.taken)} toelichting={`${week(w.takenuren)} uur p/w`} />
             <Kengetal
-              label={w.overig < -0.05 ? 'Tekort' : 'Vrij voor overig werk'}
+              label={w.overig < -0.05 ? 'Tekort' : 'Nog niet ingevuld'}
               waarde={`${week(w.overig)} uur p/w`}
               toelichting={toelichting?.status === 'vastgesteld' ? 'Verdeling vastgesteld' : 'Verdeling in concept'}
             />
@@ -122,18 +123,14 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
               {w.projecten.length === 0 ? (
                 <p>Geen projectgroepen in {w.jaar}.</p>
               ) : (
-                <Staafdiagram
-                  titel="Uren per projectgroep in dit jaar"
-                  staven={[...w.projecten]
-                    .sort((a, b) => b.jaaruren - a.jaaruren)
-                    .map((p) => ({
-                      id: `${p.id}-${p.periode.startdatum}`,
-                      label: p.naam,
-                      naam: p.naam,
-                      waarde: p.jaaruren,
-                      toelichting: p.aandeel < 1 ? formatPeriode(p.periode.startdatum, p.periode.einddatum) : undefined,
-                    }))}
-                />
+                <Staafdiagram titel="Uren per projectgroep in dit jaar" staven={staven(w.projecten)} />
+              )}
+            </Blok>
+            <Blok titel={`Mijn overige taken (${w.taken.length})`}>
+              {w.taken.length === 0 ? (
+                <p>Geen overige taken in {w.jaar}.</p>
+              ) : (
+                <Staafdiagram titel="Uren per overige taak in dit jaar" staven={staven(w.taken)} />
               )}
             </Blok>
           </div>
@@ -141,6 +138,19 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
       )}
     </Sectie>
   )
+}
+
+/** Regels als staven, grootste eerst, met de periode als die korter is dan het jaar. */
+function staven(regels: readonly Regel[]): Staaf[] {
+  return [...regels]
+    .sort((a, b) => b.jaaruren - a.jaaruren)
+    .map((r) => ({
+      id: `${r.id}-${r.periode.startdatum}`,
+      label: r.naam,
+      naam: r.naam,
+      waarde: r.jaaruren,
+      toelichting: r.aandeel < 1 ? formatPeriode(r.periode.startdatum, r.periode.einddatum) : undefined,
+    }))
 }
 
 function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: number }) {

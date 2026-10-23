@@ -18,7 +18,7 @@ const menu = (rol: string) =>
 
 describe('zichtbaarMenu', () => {
   it('beheerder en teamleider zien rapportage en beheer', () => {
-    const verwacht = ['Start', 'Rapportage', 'Beheer: Scholen, Medewerkers, Projectgroepen, Jaar en staffel']
+    const verwacht = ['Start', 'Rapportage', 'Beheer: Scholen, Medewerkers, Projectgroepen, Overige taken, Jaar en staffel']
     expect(menu('beheerder')).toEqual(verwacht)
     expect(menu('teamleider')).toEqual(verwacht)
   })
