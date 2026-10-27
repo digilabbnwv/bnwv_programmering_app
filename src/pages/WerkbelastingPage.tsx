@@ -301,47 +301,6 @@ function Memo({
         )}
       </MemoSectie>
 
-      <MemoSectie titel="Programma-uren schoollocaties">
-        {w.scholen.length === 0 ? (
-          <p>Geen scholen in {w.jaar}.</p>
-        ) : (
-          <MemoTabel
-            bijschrift="Programma-uren per schoollocatie"
-            koppen={['Schoollocatie', 'Programma', 'Periode', 'Jaaruren', 'Gemiddeld per week']}
-            getallen={[3, 4]}
-            rijen={[...w.scholen]
-              .sort((a, b) => programmaVolgorde(a, b) || a.naam.localeCompare(b.naam, 'nl'))
-              .map((s) => [
-                s.naam,
-                s.programma.naam,
-                s.aandeel < 1 ? formatPeriode(s.periode.startdatum, s.periode.einddatum) : 'Hele jaar',
-                formatUren(s.jaaruren),
-                week(s.jaaruren),
-              ])}
-            totaal={['Totaal', '', '', formatUren(w.schooluren), week(w.schooluren)]}
-          />
-        )}
-      </MemoSectie>
-
-      {w.uitvoering.length > 0 && (
-        <MemoSectie titel={`Programma-uitvoering ${w.jaar}`}>
-          <MemoTabel
-            bijschrift="Programma-uitvoering"
-            koppen={['Programma', 'Periode', 'Uren per jaar', 'Gemiddeld per week']}
-            getallen={[2, 3]}
-            rijen={[...w.uitvoering]
-              .sort((a, b) => programmaVolgorde(a, b) || a.periode.startdatum.localeCompare(b.periode.startdatum))
-              .map((u) => [
-                u.naam,
-                u.aandeel < 1 ? formatPeriode(u.periode.startdatum, u.periode.einddatum) : 'Hele jaar',
-                formatUren(u.jaaruren),
-                week(u.jaaruren),
-              ])}
-            totaal={['Totaal', '', formatUren(w.uitvoeringsuren), week(w.uitvoeringsuren)]}
-          />
-        </MemoSectie>
-      )}
-
       <MemoSectie titel="Verdeling van de werkuren">
         <MemoTabel
           bijschrift="Verdeling van de werkuren"
@@ -369,7 +328,50 @@ function Memo({
         </div>
       </MemoSectie>
 
-      <MemoSectie titel={`Projectgroepen ${w.jaar}`}>
+      <MemoSectie titel="Programma-uren scholen">
+        {w.scholen.length === 0 ? (
+          <p>Geen scholen in {w.jaar}.</p>
+        ) : (
+          <MemoTabel
+            bijschrift="Programma-uren per schoollocatie"
+            koppen={['Schoollocatie', 'Programma', 'Periode', 'Jaaruren', 'Gemiddeld per week', 'Percentage']}
+            getallen={[3, 4, 5]}
+            rijen={[...w.scholen]
+              .sort((a, b) => programmaVolgorde(a, b) || a.naam.localeCompare(b.naam, 'nl'))
+              .map((s) => [
+                s.naam,
+                s.programma.naam,
+                s.aandeel < 1 ? formatPeriode(s.periode.startdatum, s.periode.einddatum) : 'Hele jaar',
+                formatUren(s.jaaruren),
+                week(s.jaaruren),
+                deel(s.jaaruren),
+              ])}
+            totaal={['Totaal', '', '', formatUren(w.schooluren), week(w.schooluren), deel(w.schooluren)]}
+          />
+        )}
+      </MemoSectie>
+
+      {w.uitvoering.length > 0 && (
+        <MemoSectie titel="Programma-uitvoering">
+          <MemoTabel
+            bijschrift="Programma-uitvoering"
+            koppen={['Programma', 'Periode', 'Uren per jaar', 'Gemiddeld per week', 'Percentage']}
+            getallen={[2, 3, 4]}
+            rijen={[...w.uitvoering]
+              .sort((a, b) => programmaVolgorde(a, b) || a.periode.startdatum.localeCompare(b.periode.startdatum))
+              .map((u) => [
+                u.naam,
+                u.aandeel < 1 ? formatPeriode(u.periode.startdatum, u.periode.einddatum) : 'Hele jaar',
+                formatUren(u.jaaruren),
+                week(u.jaaruren),
+                deel(u.jaaruren),
+              ])}
+            totaal={['Totaal', '', formatUren(w.uitvoeringsuren), week(w.uitvoeringsuren), deel(w.uitvoeringsuren)]}
+          />
+        </MemoSectie>
+      )}
+
+      <MemoSectie titel="Projectgroepen">
         {w.projecten.length === 0 ? (
           <p>Geen projectgroepen in {w.jaar}.</p>
         ) : (
@@ -388,7 +390,7 @@ function Memo({
         )}
       </MemoSectie>
 
-      <MemoSectie titel={`Overige taken ${w.jaar}`}>
+      <MemoSectie titel="Overige taken">
         {w.taken.length === 0 ? (
           <p>Geen overige taken in {w.jaar}.</p>
         ) : (
