@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useId, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
@@ -199,37 +199,7 @@ export function RapportageProgrammasPage() {
             </Sectie>
             {programmas.length > 0 && (
               <Sectie titel="Per medewerker en programma">
-                <Tabel
-                  bijschrift={`Programma-uren per medewerker ${jaar}`}
-                  rijen={rijen.filter((r) => r.werkbelasting.programmas.length > 0)}
-                  sleutel={(r) => r.medewerker.id}
-                  kolommen={[
-                    {
-                      kop: 'Medewerker',
-                      inhoud: (r) => (
-                        <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className={linkStijl}>
-                          {r.medewerker.naam}
-                        </Link>
-                      ),
-                      sorteer: (r) => r.medewerker.naam,
-                    },
-                    ...programmas.map((p): Kolom<Rij> => {
-                      const uren = (r: Rij) => r.werkbelasting.programmas.find((q) => q.programma.id === p.programma.id)?.uren ?? 0
-                      return {
-                        kop: p.programma.naam,
-                        inhoud: (r) => (uren(r) > 0 ? formatUren(uren(r)) : '–'),
-                        getal: true,
-                        sorteer: uren,
-                      }
-                    }),
-                    {
-                      kop: 'Totaal',
-                      inhoud: (r) => formatUren(r.werkbelasting.schooluren + r.werkbelasting.uitvoeringsuren),
-                      getal: true,
-                      sorteer: (r) => r.werkbelasting.schooluren + r.werkbelasting.uitvoeringsuren,
-                    },
-                  ]}
-                />
+                <PerMedewerkerEnProgramma rijen={rijen} jaar={jaar} programmas={programmas.map((p) => p.programma)} />
               </Sectie>
             )}
           </>
@@ -295,22 +265,13 @@ function PerMedewerker({
   programmas: ProgrammaRef[]
   metSignaal: number
 }) {
-  const [filter, setFilter] = useState<Rijfilter>({ naam: '', programmaId: '', situatie: 'alle' })
+  const [filter, setFilter] = useState<Rijfilter>(GEEN_FILTER)
   const [weergave, setWeergave] = useState<Weergave>('uren')
-  const zet = <K extends keyof Rijfilter>(veld: K, waarde: Rijfilter[K]) => setFilter((oud) => ({ ...oud, [veld]: waarde }))
   const gefilterd = filterRijen(rijen, filter)
   const toon = (uren: number, deel: number) => (weergave === 'uren' ? formatUren(uren) : formatPercentage(deel))
 
   const kolommen: Kolom<Rij>[] = [
-    {
-      kop: 'Medewerker',
-      inhoud: (r) => (
-        <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
-          {r.medewerker.naam}
-        </Link>
-      ),
-      sorteer: (r) => r.medewerker.naam,
-    },
+    medewerkerKolom(jaar),
     {
       kop: 'Uren p/w',
       inhoud: (r) => formatPerWeek(perWeek(r.werkbelasting.contracturen, r.werkbelasting.werkweken)),
@@ -355,6 +316,65 @@ function PerMedewerker({
         </div>
       )}
 
+      <Filterbalk
+        filter={filter}
+        onFilter={setFilter}
+        programmas={programmas}
+        weergave={weergave}
+        onWeergave={setWeergave}
+        aantal={gefilterd.length}
+        totaal={rijen.length}
+      />
+
+      <Tabel
+        bijschrift={`Werkurenverdeling per medewerker ${jaar}`}
+        rijen={gefilterd}
+        sleutel={(r) => r.medewerker.id}
+        leeg={rijen.length === 0 ? 'Geen medewerkers met inzet in dit jaar.' : 'Geen medewerkers die aan de filters voldoen.'}
+        kolommen={kolommen}
+        standaardSortering={{ kop: 'Medewerker', richting: 'oplopend' }}
+      />
+    </>
+  )
+}
+
+const GEEN_FILTER: Rijfilter = { naam: '', programmaId: '', situatie: 'alle' }
+
+function medewerkerKolom(jaar: number): Kolom<Rij> {
+  return {
+    kop: 'Medewerker',
+    inhoud: (r) => (
+      <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className={linkStijl}>
+        {r.medewerker.naam}
+      </Link>
+    ),
+    sorteer: (r) => r.medewerker.naam,
+  }
+}
+
+/** Zoeken, filters en de wissel tussen uren en percentage, met de telling eronder. */
+function Filterbalk({
+  filter,
+  onFilter,
+  programmas,
+  weergave,
+  onWeergave,
+  aantal,
+  totaal,
+}: {
+  filter: Rijfilter
+  onFilter: (filter: Rijfilter) => void
+  programmas: ProgrammaRef[]
+  weergave: Weergave
+  onWeergave: (weergave: Weergave) => void
+  aantal: number
+  totaal: number
+}) {
+  const naam = useId()
+  const zet = <K extends keyof Rijfilter>(veld: K, waarde: Rijfilter[K]) => onFilter({ ...filter, [veld]: waarde })
+
+  return (
+    <>
       <div className="mb-6 flex flex-wrap items-end gap-4 print:hidden">
         <TextField
           label="Zoek op naam"
@@ -389,10 +409,10 @@ function PerMedewerker({
               >
                 <input
                   type="radio"
-                  name="weergave"
+                  name={naam}
                   value={w}
                   checked={weergave === w}
-                  onChange={() => setWeergave(w)}
+                  onChange={() => onWeergave(w)}
                   className="sr-only"
                 />
                 {w === 'uren' ? 'Uren' : 'Percentage'}
@@ -403,17 +423,52 @@ function PerMedewerker({
       </div>
 
       <p role="status" className="mb-3 text-ui-sm text-neutral-700">
-        {gefilterd.length === rijen.length
-          ? `${rijen.length} medewerkers.`
-          : `${gefilterd.length} van ${rijen.length} medewerkers.`}{' '}
+        {aantal === totaal ? `${totaal} medewerkers.` : `${aantal} van ${totaal} medewerkers.`}{' '}
         {weergave === 'uren' ? 'Uren per jaar.' : 'Percentage van de contracturen.'}
       </p>
+    </>
+  )
+}
 
+/** Programma-uren per medewerker, te filteren en te sorteren, in uren of percentages van de contracturen. */
+function PerMedewerkerEnProgramma({ rijen, jaar, programmas }: { rijen: Rij[]; jaar: number; programmas: ProgrammaRef[] }) {
+  const [filter, setFilter] = useState<Rijfilter>(GEEN_FILTER)
+  const [weergave, setWeergave] = useState<Weergave>('uren')
+  const metProgramma = rijen.filter((r) => r.werkbelasting.programmas.length > 0)
+  const gefilterd = filterRijen(metProgramma, filter)
+  const waarde = (r: Rij, uren: number) =>
+    weergave === 'uren' ? uren : r.werkbelasting.contracturen > 0 ? (uren / r.werkbelasting.contracturen) * 100 : 0
+  const toon = (r: Rij, uren: number) => {
+    if (uren <= 0) return '–'
+    return weergave === 'uren' ? formatUren(uren) : formatPercentage(waarde(r, uren))
+  }
+  const totaal = (r: Rij) => r.werkbelasting.schooluren + r.werkbelasting.uitvoeringsuren
+
+  const kolommen: Kolom<Rij>[] = [
+    medewerkerKolom(jaar),
+    ...programmas.map((p): Kolom<Rij> => {
+      const uren = (r: Rij) => r.werkbelasting.programmas.find((q) => q.programma.id === p.id)?.uren ?? 0
+      return { kop: p.naam, inhoud: (r) => toon(r, uren(r)), getal: true, sorteer: (r) => waarde(r, uren(r)) }
+    }),
+    { kop: 'Totaal', inhoud: (r) => toon(r, totaal(r)), getal: true, sorteer: (r) => waarde(r, totaal(r)) },
+  ]
+
+  return (
+    <>
+      <Filterbalk
+        filter={filter}
+        onFilter={setFilter}
+        programmas={programmas}
+        weergave={weergave}
+        onWeergave={setWeergave}
+        aantal={gefilterd.length}
+        totaal={metProgramma.length}
+      />
       <Tabel
-        bijschrift={`Werkurenverdeling per medewerker ${jaar}`}
+        bijschrift={`Programma-uren per medewerker ${jaar}`}
         rijen={gefilterd}
         sleutel={(r) => r.medewerker.id}
-        leeg={rijen.length === 0 ? 'Geen medewerkers met inzet in dit jaar.' : 'Geen medewerkers die aan de filters voldoen.'}
+        leeg="Geen medewerkers die aan de filters voldoen."
         kolommen={kolommen}
         standaardSortering={{ kop: 'Medewerker', richting: 'oplopend' }}
       />
