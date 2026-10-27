@@ -110,6 +110,94 @@
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
 }
 
+/*
+ * Donkere modus. Standaard volgt de app de systeeminstelling; in het
+ * gebruikersmenu kan iemand licht of donker vastzetten (data-thema op <html>,
+ * zie src/lib/thema.ts). Afdrukken is altijd licht (alleen @media screen).
+ *
+ * Dezelfde tokens krijgen een donkere waarde, dus componenten hoeven niets te
+ * weten. Let op de omkering: `anthracite` is de inktkleur (nu licht) en
+ * `white` de kleur van tekst op inkt (nu donker). Kaarten (`neutral-0`) zijn
+ * lichter dan de pagina (`neutral-50`), net als in licht.
+ *
+ * Grafiekkleuren: eigen stappen voor het donkere vlak (#222024), gecontroleerd
+ * met het palet-script van de dataviz-richtlijnen (alle checks geslaagd).
+ * De twee blokken hieronder zijn gelijk; CSS kan ze niet delen.
+ */
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-thema='licht']) {
+    color-scheme: dark;
+    --color-white: #1c1b1e;
+    --color-anthracite: #ecebed;
+    --color-anthracite-hover: #ffffff;
+    --color-beige: #4a3a2c;
+    --color-orange-40: #4a3a2c;
+
+    --color-neutral-0: #222024;
+    --color-neutral-50: #19181a;
+    --color-neutral-100: #2d2b2f;
+    --color-neutral-200: #3a383c;
+    --color-neutral-300: #4b484e;
+    --color-neutral-400: #6c696f;
+    --color-neutral-500: #8a878d;
+    --color-neutral-700: #bdbabf;
+    --color-neutral-900: #ecebed;
+
+    --color-pijler-vraag: #4f86d4;
+    --color-pijler-leer: #009fd4;
+    --color-paars: #8458bd;
+
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.5), 0 16px 40px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@media screen {
+  :root[data-thema='donker'] {
+    color-scheme: dark;
+    --color-white: #1c1b1e;
+    --color-anthracite: #ecebed;
+    --color-anthracite-hover: #ffffff;
+    --color-beige: #4a3a2c;
+    --color-orange-40: #4a3a2c;
+
+    --color-neutral-0: #222024;
+    --color-neutral-50: #19181a;
+    --color-neutral-100: #2d2b2f;
+    --color-neutral-200: #3a383c;
+    --color-neutral-300: #4b484e;
+    --color-neutral-400: #6c696f;
+    --color-neutral-500: #8a878d;
+    --color-neutral-700: #bdbabf;
+    --color-neutral-900: #ecebed;
+
+    --color-pijler-vraag: #4f86d4;
+    --color-pijler-leer: #009fd4;
+    --color-paars: #8458bd;
+
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.5), 0 16px 40px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+/* `donker:` voor de uitzonderingen die geen token zijn, zoals het logo. */
+@custom-variant donker {
+  @media screen and (prefers-color-scheme: dark) {
+    :root:not([data-thema='licht']) & {
+      @slot;
+    }
+  }
+  @media screen {
+    :root[data-thema='donker'] & {
+      @slot;
+    }
+  }
+}
+
 @layer base {
   html {
     @apply bg-neutral-0 font-sans text-brood text-anthracite antialiased;

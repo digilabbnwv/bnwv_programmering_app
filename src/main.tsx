@@ -6,6 +6,7 @@ import { configResult } from './lib/config'
 import { supabase } from './lib/supabase'
 import { AuthProvider } from './auth/AuthProvider'
 import { ConfigFoutPage } from './pages/ConfigFoutPage'
+import { pasToe } from './lib/thema'
 import './styles/index.css'
 
 const root = document.getElementById('root')
@@ -18,6 +19,9 @@ if (window.top !== window.self) {
   root.textContent = 'BNWV Team Programmering kan niet binnen een andere website worden geopend.'
   throw new Error('In een frame geladen; gestopt')
 }
+
+// Een vastgezette keuze voor licht of donker; anders volgt de app het systeem.
+pasToe()
 
 createRoot(root).render(
   <StrictMode>

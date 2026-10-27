@@ -86,7 +86,7 @@ export function TweeStapsInstellenPage() {
                 alt="QR-code om BNWV Team Programmering aan je authenticator-app toe te voegen"
                 width={192}
                 height={192}
-                className="mt-3 rounded-md border-2 border-neutral-200 bg-white p-2"
+                className="mt-3 rounded-md border-2 border-neutral-200 bg-[#ffffff] p-2"
               />
               <details className="mt-3">
                 <summary className="cursor-pointer font-semibold underline underline-offset-4">

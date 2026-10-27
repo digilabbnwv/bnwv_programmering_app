@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
+import { leesThema, THEMAS, zetThema, type Thema } from '../lib/thema'
 import { RechtenProvider, useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import logo from '../assets/logo-bnwv.webp'
+import logoDonker from '../assets/logo-bnwv-donker.webp'
 import {
   hoortBij,
   initialen,
@@ -120,7 +122,15 @@ function Kop() {
             alt="Bibliotheek Noordwest Veluwe – Team Programmering, naar de startpagina"
             width={640}
             height={227}
-            className="h-10 w-auto md:h-12"
+            className="h-10 w-auto md:h-12 donker:hidden"
+          />
+          {/* Dezelfde afbeelding met lichte letters, voor de donkere modus. */}
+          <img
+            src={logoDonker}
+            alt="Bibliotheek Noordwest Veluwe – Team Programmering, naar de startpagina"
+            width={640}
+            height={227}
+            className="hidden h-10 w-auto md:h-12 donker:block"
           />
         </Link>
 
@@ -170,6 +180,9 @@ function Kop() {
             {instellingen.length > 0 && mobieleGroep(INSTELLINGEN.label, instellingen)}
           </ul>
         </nav>
+        <div className="mt-4 border-t border-neutral-200 pt-4">
+          <ThemaKeuze />
+        </div>
         <div className="mt-4 flex items-center justify-between gap-4 border-t border-neutral-200 pt-4">
           <p className="text-ui-sm leading-tight">
             <span className="block font-semibold">{weergavenaam ?? 'Ingelogd'}</span>
@@ -356,6 +369,9 @@ function Gebruikersmenu({
             </ul>
           </nav>
         )}
+        <div className="border-b border-neutral-200 px-4 py-3">
+          <ThemaKeuze />
+        </div>
         <div className="pt-2">
           <button
             type="button"
@@ -367,6 +383,40 @@ function Gebruikersmenu({
         </div>
       </div>
     </div>
+  )
+}
+
+/** Licht, donker of de systeeminstelling volgen. */
+function ThemaKeuze() {
+  const [thema, setThema] = useState<Thema>(leesThema)
+  const naam = useId()
+  return (
+    <fieldset>
+      <legend className="text-ui-xs font-semibold text-neutral-700">Weergave</legend>
+      <div className="mt-2 flex rounded-md border-2 border-neutral-300 p-0.5">
+        {THEMAS.map((t) => (
+          <label
+            key={t.waarde}
+            className={`flex-1 cursor-pointer rounded-sm px-2 py-1.5 text-center text-ui-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+              thema === t.waarde ? 'bg-anthracite font-semibold text-white' : 'hover:bg-neutral-100'
+            }`}
+          >
+            <input
+              type="radio"
+              name={naam}
+              value={t.waarde}
+              checked={thema === t.waarde}
+              onChange={() => {
+                setThema(t.waarde)
+                zetThema(t.waarde)
+              }}
+              className="sr-only"
+            />
+            {t.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   )
 }
 
