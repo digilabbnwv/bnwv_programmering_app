@@ -11,6 +11,12 @@ coverage/
 .env.*
 !.env.example
 
+# Lokale gegevens (persoonsgegevens, imports): nooit committen
+lokaal/
+*.xlsx
+*.xls
+*.csv
+
 # Supabase CLI
 supabase/.temp/
 supabase/.branches/
