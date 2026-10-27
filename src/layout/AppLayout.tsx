@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { RechtenProvider, useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
@@ -74,6 +74,9 @@ function Kader() {
 
 function Kop() {
   const { uitloggen } = useAuth()
+  const navigate = useNavigate()
+  // Terug naar het dashboard: wie hierna inlogt, komt niet op een pagina van de vorige gebruiker.
+  const uitloggenNaarStart = () => void uitloggen().then(() => navigate('/', { replace: true }))
   const { heeftRecht, weergavenaam, rolNaam } = useRechten()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
@@ -136,7 +139,7 @@ function Kop() {
           </ul>
         </nav>
         <span aria-hidden="true" className="hidden h-8 w-px bg-neutral-200 md:block" />
-        <Gebruikersmenu naam={weergavenaam} rol={rolNaam} instellingen={instellingen} onUitloggen={() => void uitloggen()} />
+        <Gebruikersmenu naam={weergavenaam} rol={rolNaam} instellingen={instellingen} onUitloggen={uitloggenNaarStart} />
 
         {/* Klein scherm: inklapbaar menu */}
         <button
@@ -172,7 +175,7 @@ function Kop() {
             <span className="block font-semibold">{weergavenaam ?? 'Ingelogd'}</span>
             {rolNaam && <span className="block text-neutral-700">{rolNaam}</span>}
           </p>
-          <Button variant="secundair" onClick={() => void uitloggen()}>
+          <Button variant="secundair" onClick={uitloggenNaarStart}>
             Uitloggen
           </Button>
         </div>

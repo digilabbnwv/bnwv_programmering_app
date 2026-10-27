@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { Link } from 'react-router'
 import { useRechten } from '../auth/RechtenProvider'
 
 const APP_NAAM = 'BNWV Team Programmering'
@@ -33,7 +34,13 @@ export function VereistRecht({ recht, children }: { recht: string; children: Rea
   const { laden, heeftRecht } = useRechten()
   if (laden) return <p role="status">Bezig met laden…</p>
   if (!heeftRecht(recht)) {
-    return <Pagina titel="Geen toegang" intro="Je hebt geen rechten voor deze pagina." />
+    return (
+      <Pagina titel="Geen toegang" intro="Je hebt geen rechten voor deze pagina.">
+        <Link to="/" className="font-semibold underline underline-offset-4 hover:no-underline">
+          Naar het dashboard
+        </Link>
+      </Pagina>
+    )
   }
   return children
 }
