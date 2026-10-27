@@ -39,7 +39,7 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 | `programmas` | naam, omschrijving en type: `scholen` (bijv. dBos, BoekStart) of `uitvoerders` (bijv. Digilabs). Het type wijzigt alleen zolang er niets aan het programma hangt. |
 | `staffel_schijven` | jaar, soort school, van–tot leerlingen → uren |
 | `scholen` | naam, soort, programma (verplicht, type `scholen`), BRIN, adres, postcode, plaats, contactpersoon, e-mail, telefoon, opmerking, actief |
-| `school_jaargegevens` | per school per jaar: leerlingaantal, urencorrectie + reden |
+| `school_jaargegevens` | per school per jaar: leerlingaantal, urencorrectie + reden, markering `overgenomen` (van het vorige jaar, nog niet met de hand opgeslagen) |
 | `medewerkers` | naam, e-mail, functie, actief, optioneel gekoppeld aan een inlogaccount |
 | `contracten` | per medewerker: ingangsdatum, uren per week, eventueel afwijkende werkweken of mijmerpercentage |
 | `school_toewijzingen` | school ↔ medewerker met start- en einddatum. Per school één medewerker tegelijk. |
@@ -61,7 +61,7 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 
 ## Schermen
 
-1. **Scholen**: lijst en formulier (NAW, soort, programma), leerlingaantal en correctie per jaar, huidige medewerker en historie, school verplaatsen naar een collega per datum.
+1. **Scholen**: lijst per jaar en formulier (NAW, soort, programma), leerlingaantal en correctie per jaar. Voor een nieuw jaar neemt "Leerlingaantallen van … overnemen" in één keer het aantal (en desgewenst de correctie) van het vorige jaar over voor alle actieve scholen zonder gegevens; die krijgen het label "overgenomen" tot ze bij de school worden bijgewerkt. Verder: huidige medewerker en historie, school verplaatsen naar een collega per datum.
 2. **Staffel en jaarinstellingen**: schijven per jaar en soort, werkweken en mijmerpercentage.
    **Programma's** (`/programmas`): lijst met soort en het aantal actieve scholen of uitvoerders. De detailpagina toont bij een programma met scholen de scholen (het programma kies je bij de school), en bij een programma met vaste uitvoerders de uitvoerders met uren en periode, met overdragen aan een collega per datum.
 3. **Medewerkers**: gegevens, koppeling met een account, contracthistorie, extra uren.

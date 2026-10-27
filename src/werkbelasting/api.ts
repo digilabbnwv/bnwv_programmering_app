@@ -68,6 +68,8 @@ export interface SchoolJaargegevens {
   leerlingaantal: number
   uren_correctie: number
   correctie_reden: string
+  /** Overgenomen van het vorige jaar en nog niet met de hand opgeslagen. */
+  overgenomen: boolean
 }
 
 export interface Medewerker {

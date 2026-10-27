@@ -53,9 +53,9 @@ function gegevens(): Rapportagegegevens {
       { id: 'digilabs', naam: 'Digilabs', omschrijving: '', type: 'uitvoerders' },
     ],
     jaargegevens: [
-      { school_id: 'brug', jaar: 2026, leerlingaantal: 320, uren_correctie: 30, correctie_reden: 'PSZ' },
-      { school_id: 'dok', jaar: 2026, leerlingaantal: 200, uren_correctie: 0, correctie_reden: '' },
-      { school_id: 'brug', jaar: 2025, leerlingaantal: 1, uren_correctie: 0, correctie_reden: '' },
+      { school_id: 'brug', jaar: 2026, leerlingaantal: 320, uren_correctie: 30, correctie_reden: 'PSZ', overgenomen: false },
+      { school_id: 'dok', jaar: 2026, leerlingaantal: 200, uren_correctie: 0, correctie_reden: '', overgenomen: false },
+      { school_id: 'brug', jaar: 2025, leerlingaantal: 1, uren_correctie: 0, correctie_reden: '', overgenomen: false },
     ],
     staffel: [
       { id: 's1', jaar: 2026, schoolsoort: 'PO', min_leerlingen: 0, max_leerlingen: 299, uren: 100 },
@@ -130,7 +130,7 @@ describe('teamProgrammas', () => {
     const g = gegevens()
     g.toewijzingen.push({ id: 't4', school_id: 'leeg', medewerker_id: 'hil', startdatum: '2026-01-01', einddatum: null })
     g.scholen = g.scholen.map((s) => (s.id === 'leeg' ? { ...s, programma_id: 'boekstart' } : s))
-    g.jaargegevens.push({ school_id: 'leeg', jaar: 2026, leerlingaantal: 50, uren_correctie: 0, correctie_reden: '' })
+    g.jaargegevens.push({ school_id: 'leeg', jaar: 2026, leerlingaantal: 50, uren_correctie: 0, correctie_reden: '', overgenomen: false })
     g.programmaUitvoerders = [
       { id: 'v1', programma_id: 'digilabs', medewerker_id: 'ing', uren_per_jaar: 200, startdatum: '2026-01-01', einddatum: null },
       { id: 'v2', programma_id: 'digilabs', medewerker_id: 'hil', uren_per_jaar: 100, startdatum: '2026-07-01', einddatum: null },

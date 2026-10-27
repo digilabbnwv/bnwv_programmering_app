@@ -91,6 +91,15 @@ export function ongeldig(melding: string): Resultaat<never> {
   return { ok: false, melding }
 }
 
+/** Label bij een leerlingaantal dat van het vorige jaar is overgenomen en nog niet is bijgewerkt. */
+export function Overgenomen({ jaar }: { jaar: number }) {
+  return (
+    <span className="ml-2 inline-block rounded-pill bg-neutral-100 px-2 py-0.5 text-ui-xs font-semibold text-neutral-700">
+      overgenomen<span className="sr-only"> van {jaar}, nog niet bijgewerkt</span>
+    </span>
+  )
+}
+
 export function Sectie({
   titel,
   acties,

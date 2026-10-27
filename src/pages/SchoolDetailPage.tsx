@@ -20,7 +20,7 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Gegevens, Laadstatus, ongeldig, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, Gegevens, Laadstatus, ongeldig, Overgenomen, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst, leesGetal, loopt, opNaam, vandaag } from '../werkbelasting/opmaak'
 import { SchoolFormulier } from '../werkbelasting/SchoolFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
@@ -175,7 +175,16 @@ export function SchoolDetailPage() {
           leeg="Nog geen leerlingaantal ingevuld."
           kolommen={[
             { kop: 'Jaar', inhoud: (g) => g.jaar },
-            { kop: 'Leerlingen', inhoud: (g) => g.leerlingaantal, getal: true },
+            {
+              kop: 'Leerlingen',
+              inhoud: (g) => (
+                <>
+                  {g.leerlingaantal}
+                  {g.overgenomen && <Overgenomen jaar={g.jaar - 1} />}
+                </>
+              ),
+              getal: true,
+            },
             {
               kop: 'Staffel',
               inhoud: (g) => {
