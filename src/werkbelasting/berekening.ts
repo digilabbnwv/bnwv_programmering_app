@@ -2,7 +2,7 @@
  * Rekenmodel voor de werkurenverdeling per medewerker per kalenderjaar, zoals
  * de memo "Werkurenverdeling". Zie docs/werkbelasting.md voor de regels.
  *
- * Alles wat een periode heeft (contract, school, projectgroep) telt naar rato
+ * Alles wat een periode heeft (contract, school, uitvoering, projectgroep) telt naar rato
  * van het aantal dagen in het jaar. Datums zijn ISO-strings (jjjj-mm-dd);
  * een einddatum is inclusief, null betekent lopend.
  */
@@ -46,10 +46,16 @@ export interface SchoolInzet extends Periode {
   schoolId: string
   naam: string
   soort: Schoolsoort
-  /** null: de school valt onder geen programma. */
-  programma: ProgrammaRef | null
+  programma: ProgrammaRef
   /** Gegevens van de school voor dit jaar; null als ze ontbreken. */
   jaargegevens: { leerlingaantal: number; uren_correctie: number } | null
+}
+
+/** Vaste uitvoerder van een programma zonder scholen, bijv. Digilabs. */
+export interface UitvoeringInzet extends Periode {
+  uitvoerderId: string
+  programma: ProgrammaRef
+  uren_per_jaar: number
 }
 
 export interface ProjectInzet extends Periode {
@@ -75,6 +81,7 @@ export interface Invoer {
   contracten: readonly Contract[]
   staffel: readonly StaffelSchijf[]
   scholen: readonly SchoolInzet[]
+  uitvoering: readonly UitvoeringInzet[]
   projecten: readonly ProjectInzet[]
   taken: readonly TaakInzet[]
   extraUren: readonly ExtraUren[]
@@ -92,13 +99,14 @@ export interface Regel {
   periode: Periode
 }
 
-export interface SchoolRegel extends Regel {
-  programma: ProgrammaRef | null
+/** Een regel die bij een programma hoort: een school of programma-uitvoering. */
+export interface ProgrammaRegel extends Regel {
+  programma: ProgrammaRef
 }
 
-/** Schooluren van één programma; programma null: scholen zonder programma. */
+/** Uren van één programma: schooluren of programma-uitvoering. */
 export interface ProgrammaUren {
-  programma: ProgrammaRef | null
+  programma: ProgrammaRef
   uren: number
   /** Aantal verschillende scholen. */
   scholen: number
@@ -117,21 +125,24 @@ export interface Werkbelasting {
   contracturen: number
   mijmertijd: number
   beschikbaar: number
-  scholen: SchoolRegel[]
+  scholen: ProgrammaRegel[]
   schooluren: number
-  /** Schooluren per programma, op naam; zonder programma als laatste. */
+  /** Programma-uitvoering: vaste uren bij een programma zonder scholen. */
+  uitvoering: ProgrammaRegel[]
+  uitvoeringsuren: number
+  /** Scholen en uitvoering samen per programma, op naam. */
   programmas: ProgrammaUren[]
   projecten: Regel[]
   projecturen: number
   /** Overige taken met een eigen ureninschatting. */
   taken: Regel[]
   takenuren: number
-  /** Nog niet ingevuld: beschikbaar − scholen − projecten − taken. Negatief: overbelast. */
+  /** Nog niet ingevuld: beschikbaar − scholen − uitvoering − projecten − taken. Negatief: overbelast. */
   overig: number
   extraUren: ExtraUren[]
   extraTotaal: number
   /** Ten opzichte van de contracturen, zoals de memo. 0 zonder contracturen. */
-  percentage: { scholen: number; projecten: number; taken: number; overig: number; mijmertijd: number }
+  percentage: { scholen: number; uitvoering: number; projecten: number; taken: number; overig: number; mijmertijd: number }
   signalen: Signaal[]
 }
 
@@ -210,7 +221,7 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
   if (contracturen === 0) signalen.push({ soort: 'geen-contract' })
   const beschikbaar = contracturen - mijmertijd
 
-  const scholen: SchoolRegel[] = []
+  const scholen: ProgrammaRegel[] = []
   for (const s of invoer.scholen) {
     const aandeel = aandeelInJaar(s, jaar)
     if (aandeel === 0) continue
@@ -233,6 +244,9 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
     })
   }
 
+  const uitvoering = invoer.uitvoering.flatMap((u) =>
+    naarRato([{ ...u, id: u.uitvoerderId, naam: u.programma.naam }], jaar).map((r) => ({ ...r, programma: u.programma })),
+  )
   const projecten = naarRato(
     invoer.projecten.map((p) => ({ ...p, id: p.projectgroepId })),
     jaar,
@@ -243,9 +257,10 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
   )
 
   const schooluren = som(scholen.map((r) => r.jaaruren))
+  const uitvoeringsuren = som(uitvoering.map((r) => r.jaaruren))
   const projecturen = som(projecten.map((r) => r.jaaruren))
   const takenuren = som(taken.map((r) => r.jaaruren))
-  const overig = beschikbaar - schooluren - projecturen - takenuren
+  const overig = beschikbaar - schooluren - uitvoeringsuren - projecturen - takenuren
   // Afronden voorkomt een signaal door rekenruis.
   if (contracturen > 0 && overig < -0.05) signalen.push({ soort: 'overbelast', tekortUren: -overig })
 
@@ -260,7 +275,9 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
     beschikbaar,
     scholen,
     schooluren,
-    programmas: perProgramma(scholen),
+    uitvoering,
+    uitvoeringsuren,
+    programmas: perProgramma(scholen, uitvoering),
     projecten,
     projecturen,
     taken,
@@ -270,6 +287,7 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
     extraTotaal: som(extraUren.map((e) => e.uren)),
     percentage: {
       scholen: deel(schooluren),
+      uitvoering: deel(uitvoeringsuren),
       projecten: deel(projecturen),
       taken: deel(takenuren),
       overig: deel(overig),
@@ -300,24 +318,30 @@ function naarRato(
   })
 }
 
-/** Schooluren opgeteld per programma, op naam; scholen zonder programma als laatste. */
-export function perProgramma(scholen: readonly SchoolRegel[]): ProgrammaUren[] {
-  const groepen = new Map<string | null, { programma: ProgrammaRef | null; uren: number; scholen: Set<string> }>()
-  for (const s of scholen) {
-    const sleutel = s.programma?.id ?? null
-    const groep = groepen.get(sleutel) ?? { programma: s.programma, uren: 0, scholen: new Set<string>() }
-    groep.uren += s.jaaruren
-    groep.scholen.add(s.id)
-    groepen.set(sleutel, groep)
+/**
+ * Uren opgeteld per programma, op naam. Het maakt niet uit of de regel een
+ * school of programma-uitvoering is: elke regel telt mee bij zijn programma.
+ */
+export function perProgramma(
+  scholen: readonly ProgrammaRegel[],
+  uitvoering: readonly ProgrammaRegel[] = [],
+): ProgrammaUren[] {
+  const groepen = new Map<string, { programma: ProgrammaRef; uren: number; scholen: Set<string> }>()
+  const groep = (r: ProgrammaRegel) => {
+    const g = groepen.get(r.programma.id) ?? { programma: r.programma, uren: 0, scholen: new Set<string>() }
+    groepen.set(r.programma.id, g)
+    g.uren += r.jaaruren
+    return g
   }
+  for (const s of scholen) groep(s).scholen.add(s.id)
+  for (const u of uitvoering) groep(u)
   return [...groepen.values()]
     .map((g) => ({ programma: g.programma, uren: g.uren, scholen: g.scholen.size }))
     .sort(programmaVolgorde)
 }
 
-/** Op programmanaam; "zonder programma" (null) als laatste. */
-export function programmaVolgorde(a: { programma: ProgrammaRef | null }, b: { programma: ProgrammaRef | null }): number {
-  if (!a.programma || !b.programma) return (a.programma ? 0 : 1) - (b.programma ? 0 : 1)
+/** Op programmanaam. */
+export function programmaVolgorde(a: { programma: ProgrammaRef }, b: { programma: ProgrammaRef }): number {
   return a.programma.naam.localeCompare(b.programma.naam, 'nl')
 }
 

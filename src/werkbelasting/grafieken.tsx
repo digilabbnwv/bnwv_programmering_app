@@ -4,13 +4,14 @@ import { formatPercentage, formatPerWeek, formatUren, perWeek, type Werkbelastin
 
 /**
  * Grafieken van de werkbelasting. Kleuren per onderdeel liggen vast (nooit
- * per rang): scholen, projectgroepen, overige taken, nog niet ingevuld, mijmertijd. Het palet is
+ * per rang): scholen, programma-uitvoering, projectgroepen, overige taken, nog niet ingevuld, mijmertijd. Het palet is
  * gecontroleerd op kleurenblindheid (scripts van de dataviz-richtlijnen);
  * lichtblauw heeft weinig contrast met wit, dus elke grafiek heeft een
  * legenda met waarden en een tabel voor schermlezers.
  */
 export const ONDERDELEN = [
   { sleutel: 'scholen', label: 'Scholen', kleur: 'bg-pijler-vraag' },
+  { sleutel: 'uitvoering', label: 'Programma-uitvoering', kleur: 'bg-pijler-doe' },
   { sleutel: 'projecten', label: 'Projectgroepen', kleur: 'bg-pijler-leer' },
   { sleutel: 'taken', label: 'Overige taken', kleur: 'bg-paars' },
   { sleutel: 'overig', label: 'Nog niet ingevuld', kleur: 'bg-pijler-ontmoet' },
@@ -22,6 +23,7 @@ type Onderdeel = (typeof ONDERDELEN)[number]['sleutel']
 export function urenPerOnderdeel(w: Werkbelasting): Record<Onderdeel, number> {
   return {
     scholen: w.schooluren,
+    uitvoering: w.uitvoeringsuren,
     projecten: w.projecturen,
     taken: w.takenuren,
     // Een tekort is geen deel van de balk; dat toont het overbelast-signaal.

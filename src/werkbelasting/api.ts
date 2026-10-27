@@ -21,10 +21,19 @@ export interface Werkjaar {
   mijmer_percentage: number
 }
 
+/** Een programma werkt met scholen (uren via de staffel) of met vaste uitvoerders. */
+export type ProgrammaType = 'scholen' | 'uitvoerders'
+
+export const PROGRAMMATYPES: readonly { waarde: ProgrammaType; label: string; uitleg: string }[] = [
+  { waarde: 'scholen', label: 'Met scholen', uitleg: 'De uren komen uit de staffel van de scholen, zoals bij dBos en BoekStart.' },
+  { waarde: 'uitvoerders', label: 'Met vaste uitvoerders', uitleg: 'Collega’s met een ureninschatting per jaar, zoals bij Digilabs.' },
+]
+
 export interface Programma {
   id: string
   naam: string
   omschrijving: string
+  type: ProgrammaType
 }
 
 export interface StaffelSchijf {
@@ -40,7 +49,7 @@ export interface School {
   id: string
   naam: string
   soort: Schoolsoort
-  programma_id: string | null
+  programma_id: string
   brin: string | null
   matt_projectnummer: string
   adres: string
@@ -123,6 +132,16 @@ export interface TaakUitvoerder {
   einddatum: string | null
 }
 
+/** Vaste uitvoerder van een programma met het type 'uitvoerders'. */
+export interface ProgrammaUitvoerder {
+  id: string
+  programma_id: string
+  medewerker_id: string
+  uren_per_jaar: number
+  startdatum: string
+  einddatum: string | null
+}
+
 export interface ExtraUren {
   id: string
   medewerker_id: string
@@ -141,6 +160,8 @@ export interface Totalen {
   projecturen: number
   /** Ontbreekt bij vaststellingen van vóór de overige taken. */
   takenuren?: number
+  /** Ontbreekt bij vaststellingen van vóór de programma-uitvoering. */
+  uitvoeringsuren?: number
   overig: number
   extraTotaal: number
 }
@@ -190,6 +211,7 @@ type Tabel =
   | 'extra_uren'
   | 'taken'
   | 'taak_uitvoerders'
+  | 'programma_uitvoerders'
   | 'werkbelasting_toelichtingen'
 
 /** Leest een hele tabel (voor zover RLS hem laat zien). */
@@ -230,6 +252,7 @@ export type VerwijderTabel =
   | 'extra_uren'
   | 'taken'
   | 'taak_uitvoerders'
+  | 'programma_uitvoerders'
 
 export function verwijder(
   client: SupabaseClient,

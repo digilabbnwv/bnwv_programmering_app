@@ -25,6 +25,7 @@ const STAFFEL: StaffelSchijf[] = [
 
 const DBOS = { id: 'dbos', naam: 'dBos' }
 const BOEKSTART = { id: 'boekstart', naam: 'BoekStart' }
+const DIGILABS = { id: 'digilabs', naam: 'Digilabs' }
 
 function school(naam: string, leerlingen: number, correctie = 0, periode = { startdatum: '2026-01-01', einddatum: null as string | null }): SchoolInzet {
   return {
@@ -49,6 +50,7 @@ const MEMO: Invoer = {
     school('Speulderbrink Ermelo', 90),
     school('Da Costa Elspeet', 180),
   ],
+  uitvoering: [],
   projecten: [
     { projectgroepId: 'a', naam: 'Groepsbezoeken DigiLab', uren_per_jaar: 10, startdatum: '2026-01-01', einddatum: null },
     { projectgroepId: 'b', naam: 'Groepsbezoeken PO', uren_per_jaar: 10, startdatum: '2026-01-01', einddatum: null },
@@ -107,18 +109,17 @@ describe('overige taken', () => {
     expect(w.takenuren).toBeCloseTo(20 + (100 * 181) / 365)
     expect(w.overig).toBeCloseTo(433.2 - w.takenuren)
     expect(
-      w.percentage.scholen + w.percentage.projecten + w.percentage.taken + w.percentage.overig + w.percentage.mijmertijd,
+      w.percentage.scholen + w.percentage.uitvoering + w.percentage.projecten + w.percentage.taken + w.percentage.overig + w.percentage.mijmertijd,
     ).toBeCloseTo(100)
   })
 })
 
 describe('programma’s', () => {
-  it('telt de schooluren per programma op, op naam en zonder programma als laatste', () => {
+  it('telt de schooluren per programma op, op naam', () => {
     const w = berekenWerkbelasting({
       ...MEMO,
       scholen: [
         school('De Brug Harderwijk', 320, 30),
-        { ...school('Petraschool Nunspeet', 400), programma: null },
         { ...school('Dolfijntje', 200), programma: BOEKSTART },
         school('Da Costa Elspeet', 180),
       ],
@@ -126,9 +127,28 @@ describe('programma’s', () => {
     expect(w.programmas).toEqual([
       { programma: BOEKSTART, uren: 100, scholen: 1 },
       { programma: DBOS, uren: 250, scholen: 2 },
-      { programma: null, uren: 120, scholen: 1 },
     ])
     expect(w.programmas.reduce((s, p) => s + p.uren, 0)).toBeCloseTo(w.schooluren)
+  })
+
+  it('telt programma-uitvoering naar rato mee, bij het programma en in de verdeling', () => {
+    const w = berekenWerkbelasting({
+      ...MEMO,
+      scholen: [school('De Brug Harderwijk', 320, 30)],
+      uitvoering: [
+        { uitvoerderId: 'u1', programma: DIGILABS, uren_per_jaar: 200, startdatum: '2026-01-01', einddatum: null },
+        { uitvoerderId: 'u2', programma: DIGILABS, uren_per_jaar: 100, startdatum: '2025-01-01', einddatum: '2025-12-31' },
+      ],
+    })
+    expect(w.uitvoering.map((u) => [u.id, u.naam, u.jaaruren])).toEqual([['u1', 'Digilabs', 200]])
+    expect(w.uitvoeringsuren).toBe(200)
+    expect(w.programmas).toEqual([
+      { programma: DBOS, uren: 150, scholen: 1 },
+      { programma: DIGILABS, uren: 200, scholen: 0 },
+    ])
+    expect(w.programmas.reduce((s, p) => s + p.uren, 0)).toBeCloseTo(w.schooluren + w.uitvoeringsuren)
+    expect(w.overig).toBeCloseTo(w.beschikbaar - w.schooluren - 200 - w.projecturen - w.takenuren)
+    expect(w.percentage.uitvoering).toBeCloseTo((200 / w.contracturen) * 100)
   })
 
   it('telt een school met twee periodes in een jaar één keer, met de uren naar rato', () => {

@@ -6,6 +6,7 @@ import {
   type ExtraUren,
   type Medewerker,
   type Programma,
+  type ProgrammaUitvoerder,
   type Projectgroep,
   type Resultaat,
   type School,
@@ -49,6 +50,7 @@ export interface Rapportagegegevens {
   deelnemers: Deelnemer[]
   taken: Taak[]
   uitvoerders: TaakUitvoerder[]
+  programmaUitvoerders: ProgrammaUitvoerder[]
   extraUren: ExtraUren[]
   toelichtingen: Toelichting[]
 }
@@ -69,6 +71,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       Deelnemer[],
       Taak[],
       TaakUitvoerder[],
+      ProgrammaUitvoerder[],
       ExtraUren[],
       Toelichting[],
     ]
@@ -86,6 +89,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       lees<Deelnemer>(client, 'projectgroep_deelnemers', 'startdatum'),
       lees<Taak>(client, 'taken', 'naam'),
       lees<TaakUitvoerder>(client, 'taak_uitvoerders', 'startdatum'),
+      lees<ProgrammaUitvoerder>(client, 'programma_uitvoerders', 'startdatum'),
       lees<ExtraUren>(client, 'extra_uren', 'omschrijving', jaarFilter),
       lees<Toelichting>(client, 'werkbelasting_toelichtingen', 'medewerker_id', jaarFilter),
     ]),
@@ -104,6 +108,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
     deelnemers,
     taken,
     uitvoerders,
+    programmaUitvoerders,
     extraUren,
     toelichtingen,
   ] = res.data
@@ -122,6 +127,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       deelnemers,
       taken,
       uitvoerders,
+      programmaUitvoerders,
       extraUren,
       toelichtingen,
     },
@@ -139,18 +145,33 @@ export function bouwInvoer(g: Rapportagegegevens, medewerkerId: string, werkjaar
       .filter((t) => t.medewerker_id === medewerkerId)
       .flatMap((t) => {
         const school = g.scholen.find((s) => s.id === t.school_id)
-        if (!school) return []
+        const programma = g.programmas.find((p) => p.id === school?.programma_id)
+        if (!school || !programma) return []
         const jg = g.jaargegevens.find((j) => j.school_id === school.id && j.jaar === jaar)
-        const programma = g.programmas.find((p) => p.id === school.programma_id)
         return [
           {
             schoolId: school.id,
             naam: school.naam,
             soort: school.soort,
-            programma: programma ? { id: programma.id, naam: programma.naam } : null,
+            programma: { id: programma.id, naam: programma.naam },
             jaargegevens: jg ? { leerlingaantal: jg.leerlingaantal, uren_correctie: jg.uren_correctie } : null,
             startdatum: t.startdatum,
             einddatum: t.einddatum,
+          },
+        ]
+      }),
+    uitvoering: g.programmaUitvoerders
+      .filter((u) => u.medewerker_id === medewerkerId)
+      .flatMap((u) => {
+        const programma = g.programmas.find((p) => p.id === u.programma_id)
+        if (!programma) return []
+        return [
+          {
+            uitvoerderId: u.id,
+            programma: { id: programma.id, naam: programma.naam },
+            uren_per_jaar: u.uren_per_jaar,
+            startdatum: u.startdatum,
+            einddatum: u.einddatum,
           },
         ]
       }),
@@ -189,7 +210,7 @@ export interface Rij {
   gewijzigdNaVaststellen: boolean
 }
 
-/** Een rij per medewerker die in dit jaar een contract, school of projectgroep heeft (of actief is). */
+/** Een rij per medewerker die in dit jaar een contract of inzet heeft (of actief is). */
 export function teamRijen(g: Rapportagegegevens, werkjaar: Werkjaar): Rij[] {
   return g.medewerkers
     .map((medewerker) => {
@@ -204,35 +225,38 @@ export function teamRijen(g: Rapportagegegevens, werkjaar: Werkjaar): Rij[] {
     })
     .filter(
       ({ medewerker, werkbelasting: w }) =>
-        medewerker.actief || w.contracturen > 0 || w.scholen.length > 0 || w.projecten.length > 0 || w.taken.length > 0,
+        medewerker.actief ||
+        w.contracturen > 0 ||
+        w.scholen.length > 0 ||
+        w.uitvoering.length > 0 ||
+        w.projecten.length > 0 ||
+        w.taken.length > 0,
     )
     .sort((a, b) => a.medewerker.naam.localeCompare(b.medewerker.naam, 'nl'))
 }
 
-/** Naam voor in tabellen en grafieken; null is een school zonder programma. */
-export function programmaNaam(programma: ProgrammaRef | null): string {
-  return programma?.naam ?? 'Zonder programma'
-}
-
-/** Schooluren van het hele team per programma. */
+/** Uren van het hele team per programma: schooluren en programma-uitvoering samen. */
 export interface TeamProgramma {
-  programma: ProgrammaRef | null
+  programma: ProgrammaRef
   uren: number
   scholen: number
   medewerkers: number
 }
 
 export function teamProgrammas(rijen: readonly Rij[]): TeamProgramma[] {
-  type Groep = { programma: ProgrammaRef | null; uren: number; scholen: Set<string>; medewerkers: Set<string> }
-  const groepen = new Map<string | null, Groep>()
+  type Groep = { programma: ProgrammaRef; uren: number; scholen: Set<string>; medewerkers: Set<string> }
+  const groepen = new Map<string, Groep>()
   for (const { medewerker, werkbelasting } of rijen) {
-    for (const s of werkbelasting.scholen) {
-      const sleutel = s.programma?.id ?? null
-      const groep = groepen.get(sleutel) ?? { programma: s.programma, uren: 0, scholen: new Set(), medewerkers: new Set() }
-      groep.uren += s.jaaruren
-      groep.scholen.add(s.id)
+    const regels = [
+      ...werkbelasting.scholen.map((r) => ({ r, school: true })),
+      ...werkbelasting.uitvoering.map((r) => ({ r, school: false })),
+    ]
+    for (const { r, school } of regels) {
+      const groep = groepen.get(r.programma.id) ?? { programma: r.programma, uren: 0, scholen: new Set(), medewerkers: new Set() }
+      groep.uren += r.jaaruren
+      if (school) groep.scholen.add(r.id)
       groep.medewerkers.add(medewerker.id)
-      groepen.set(sleutel, groep)
+      groepen.set(r.programma.id, groep)
     }
   }
   return [...groepen.values()]
@@ -246,6 +270,7 @@ export function totalenVan(w: Werkbelasting): Totalen {
     contracturen: rond(w.contracturen),
     mijmertijd: rond(w.mijmertijd),
     schooluren: rond(w.schooluren),
+    uitvoeringsuren: rond(w.uitvoeringsuren),
     projecturen: rond(w.projecturen),
     takenuren: rond(w.takenuren),
     overig: rond(w.overig),
@@ -311,6 +336,7 @@ export function memoTeksten(naam: string, w: Werkbelasting): { inleiding: string
     w.contracturen === 0
       ? ''
       : `Van de totale contractomvang wordt ${formatPercentage(w.percentage.scholen)} ingezet op de scholen, ` +
+        (w.uitvoering.length > 0 ? `${formatPercentage(w.percentage.uitvoering)} aan programma-uitvoering, ` : '') +
         `${formatPercentage(w.percentage.projecten)} in projectgroepen en ` +
         `${formatPercentage(w.percentage.taken)} aan overige taken. ` +
         (vrij >= 0

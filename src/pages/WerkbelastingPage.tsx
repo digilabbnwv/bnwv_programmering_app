@@ -27,7 +27,6 @@ import {
   isGewijzigd,
   laadRapportage,
   memoTeksten,
-  programmaNaam,
   totalenVan,
   type Rapportagegegevens,
 } from '../werkbelasting/rapportage'
@@ -227,7 +226,7 @@ function StatusRegel({
         <div className="mt-3">
           <Melding soort="fout">
             De gegevens zijn na het vaststellen gewijzigd. De uren hieronder wijken af van de vastgestelde verdeling
-            {toelichting.totalen && ` (vastgesteld: ${formatUren(toelichting.totalen.schooluren)} uur scholen, ${formatUren(toelichting.totalen.projecturen)} uur projecten, ${formatUren(toelichting.totalen.takenuren ?? 0)} uur overige taken)`}
+            {toelichting.totalen && ` (vastgesteld: ${formatUren(toelichting.totalen.schooluren)} uur scholen, ${formatUren(toelichting.totalen.uitvoeringsuren ?? 0)} uur programma-uitvoering, ${formatUren(toelichting.totalen.projecturen)} uur projecten, ${formatUren(toelichting.totalen.takenuren ?? 0)} uur overige taken)`}
             .
           </Melding>
         </div>
@@ -314,7 +313,7 @@ function Memo({
               .sort((a, b) => programmaVolgorde(a, b) || a.naam.localeCompare(b.naam, 'nl'))
               .map((s) => [
                 s.naam,
-                programmaNaam(s.programma),
+                s.programma.naam,
                 s.aandeel < 1 ? formatPeriode(s.periode.startdatum, s.periode.einddatum) : 'Hele jaar',
                 formatUren(s.jaaruren),
                 week(s.jaaruren),
@@ -324,15 +323,34 @@ function Memo({
         )}
       </MemoSectie>
 
+      {w.uitvoering.length > 0 && (
+        <MemoSectie titel={`Programma-uitvoering ${w.jaar}`}>
+          <MemoTabel
+            bijschrift="Programma-uitvoering"
+            koppen={['Programma', 'Periode', 'Uren per jaar', 'Gemiddeld per week']}
+            getallen={[2, 3]}
+            rijen={[...w.uitvoering]
+              .sort((a, b) => programmaVolgorde(a, b) || a.periode.startdatum.localeCompare(b.periode.startdatum))
+              .map((u) => [
+                u.naam,
+                u.aandeel < 1 ? formatPeriode(u.periode.startdatum, u.periode.einddatum) : 'Hele jaar',
+                formatUren(u.jaaruren),
+                week(u.jaaruren),
+              ])}
+            totaal={['Totaal', '', formatUren(w.uitvoeringsuren), week(w.uitvoeringsuren)]}
+          />
+        </MemoSectie>
+      )}
+
       <MemoSectie titel="Verdeling van de werkuren">
         <MemoTabel
           bijschrift="Verdeling van de werkuren"
           koppen={['Onderdeel', 'Uren per jaar', 'Gemiddeld per week', 'Percentage']}
           getallen={[1, 2, 3]}
           rijen={[
-            // Schooluren per programma; zonder scholen één regel met nul.
+            // Uren per programma (scholen en uitvoering); zonder programma's één regel met nul.
             ...(w.programmas.length > 0
-              ? w.programmas.map((p) => [`Programma-uren ${programmaNaam(p.programma)}`, formatUren(p.uren), week(p.uren), deel(p.uren)])
+              ? w.programmas.map((p) => [`Programma-uren ${p.programma.naam}`, formatUren(p.uren), week(p.uren), deel(p.uren)])
               : [['Programma-uren scholen', formatUren(0), week(0), deel(0)]]),
             ['Projectgroepen', formatUren(w.projecturen), week(w.projecturen), formatPercentage(w.percentage.projecten)],
             ['Overige taken', formatUren(w.takenuren), week(w.takenuren), formatPercentage(w.percentage.taken)],

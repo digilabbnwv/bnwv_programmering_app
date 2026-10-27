@@ -46,7 +46,8 @@ select is(
     where n.nspname = 'public'
       and has_function_privilege('authenticated', p.oid, 'execute')),
   array['contract_opslaan', 'deelnemer_opslaan', 'extra_uren_opslaan', 'list_users',
-        'medewerker_opslaan', 'programma_opslaan', 'projectgroep_opslaan',
+        'medewerker_opslaan', 'programma_opslaan', 'programma_overdragen',
+        'programma_uitvoerder_opslaan', 'projectgroep_opslaan',
         'school_jaargegevens_opslaan', 'school_opslaan', 'school_toewijzen',
         'staffel_schijf_opslaan', 'taak_opslaan', 'taak_overdragen', 'toelichting_opslaan',
         'toewijzing_wijzigen', 'uitvoerder_opslaan', 'werkbelasting_heropenen', 'werkbelasting_vaststellen', 'werkbelasting_verwijderen',

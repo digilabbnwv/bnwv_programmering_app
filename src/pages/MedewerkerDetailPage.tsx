@@ -14,6 +14,8 @@ import {
   type Deelnemer,
   type ExtraUren,
   type Medewerker,
+  type Programma,
+  type ProgrammaUitvoerder,
   type Projectgroep,
   type Taak,
   type TaakUitvoerder,
@@ -42,7 +44,20 @@ export function MedewerkerDetailPage() {
   const laden = useCallback(
     async () =>
       alles<
-        [Medewerker[], Contract[], ExtraUren[], Toewijzing[], Deelnemer[], School[], Projectgroep[], Werkjaar[], TaakUitvoerder[], Taak[]]
+        [
+          Medewerker[],
+          Contract[],
+          ExtraUren[],
+          Toewijzing[],
+          Deelnemer[],
+          School[],
+          Projectgroep[],
+          Werkjaar[],
+          TaakUitvoerder[],
+          Taak[],
+          ProgrammaUitvoerder[],
+          Programma[],
+        ]
       >(
         await Promise.all([
           lees<Medewerker>(client, 'medewerkers', 'naam'),
@@ -55,6 +70,8 @@ export function MedewerkerDetailPage() {
           lees<Werkjaar>(client, 'werkjaren', 'jaar'),
           lees<TaakUitvoerder>(client, 'taak_uitvoerders', 'startdatum', { kolom: 'medewerker_id', waarde: id }),
           lees<Taak>(client, 'taken', 'naam'),
+          lees<ProgrammaUitvoerder>(client, 'programma_uitvoerders', 'startdatum', { kolom: 'medewerker_id', waarde: id }),
+          lees<Programma>(client, 'programmas', 'naam'),
         ]),
       ),
     [client, id],
@@ -71,8 +88,20 @@ export function MedewerkerDetailPage() {
     )
   }
 
-  const [medewerkers, contracten, extraUren, toewijzingen, deelnames, scholen, projectgroepen, werkjaren, uitvoeringen, taken] =
-    data
+  const [
+    medewerkers,
+    contracten,
+    extraUren,
+    toewijzingen,
+    deelnames,
+    scholen,
+    projectgroepen,
+    werkjaren,
+    uitvoeringen,
+    taken,
+    programmaUitvoeringen,
+    programmas,
+  ] = data
   const medewerker = medewerkers.find((m) => m.id === id)
   if (!medewerker) {
     return (
@@ -180,6 +209,27 @@ export function MedewerkerDetailPage() {
             },
             { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },
             { kop: 'Nu', inhoud: (t) => (loopt(t) ? 'Ja' : 'Nee') },
+          ]}
+        />
+      </Sectie>
+
+      <Sectie titel="Programma-uitvoering">
+        <Tabel
+          bijschrift="Programma's waarvan deze medewerker vaste uitvoerder is"
+          rijen={nieuwsteEerst(programmaUitvoeringen)}
+          sleutel={(u) => u.id}
+          leeg="Geen programma-uitvoering. Voeg uitvoerders toe vanaf de pagina van het programma."
+          kolommen={[
+            {
+              kop: 'Programma',
+              inhoud: (u) => (
+                <Link to={`/programmas/${u.programma_id}`} className="underline underline-offset-4 hover:no-underline">
+                  {programmas.find((p) => p.id === u.programma_id)?.naam ?? 'Onbekend'}
+                </Link>
+              ),
+            },
+            { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },
+            { kop: 'Periode', inhoud: (u) => formatPeriode(u.startdatum, u.einddatum) },
           ]}
         />
       </Sectie>

@@ -4,20 +4,24 @@ import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Tabel } from '../components/Tabel'
 import { Pagina } from '../layout/Pagina'
-import { lees, type Programma, type School } from '../werkbelasting/api'
+import { lees, PROGRAMMATYPES, type Programma, type ProgrammaUitvoerder, type School } from '../werkbelasting/api'
 import { Laadstatus } from '../werkbelasting/onderdelen'
-import { opNaam } from '../werkbelasting/opmaak'
+import { loopt, opNaam } from '../werkbelasting/opmaak'
 import { ProgrammaFormulier } from '../werkbelasting/ProgrammaFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
-/** Overzicht van programma's met het aantal scholen (werkbelasting.beheren). */
+/** Overzicht van programma's met het aantal scholen of uitvoerders (werkbelasting.beheren). */
 export function ProgrammasPage() {
   const { client } = useAuth()
   const navigate = useNavigate()
   const laden = useCallback(
     async () =>
-      alles<[Programma[], School[]]>(
-        await Promise.all([lees<Programma>(client, 'programmas', 'naam'), lees<School>(client, 'scholen', 'naam')]),
+      alles<[Programma[], School[], ProgrammaUitvoerder[]]>(
+        await Promise.all([
+          lees<Programma>(client, 'programmas', 'naam'),
+          lees<School>(client, 'scholen', 'naam'),
+          lees<ProgrammaUitvoerder>(client, 'programma_uitvoerders', 'startdatum'),
+        ]),
       ),
     [client],
   )
@@ -32,24 +36,24 @@ export function ProgrammasPage() {
     )
   }
 
-  const [programmas, scholen] = data
-  const actieveScholen = (id: string) => scholen.filter((s) => s.programma_id === id && s.actief).length
-  const zonderProgramma = scholen.filter((s) => s.actief && s.programma_id === null).length
+  const [programmas, scholen, uitvoerders] = data
+  const omvang = (p: Programma) => {
+    if (p.type === 'scholen') {
+      const aantal = scholen.filter((s) => s.programma_id === p.id && s.actief).length
+      return aantal === 1 ? '1 actieve school' : `${aantal} actieve scholen`
+    }
+    const aantal = new Set(uitvoerders.filter((u) => u.programma_id === p.id && loopt(u)).map((u) => u.medewerker_id)).size
+    return aantal === 1 ? '1 uitvoerder' : `${aantal} uitvoerders`
+  }
 
   return (
     <Pagina
       titel="Programma’s"
-      intro="Programma’s waaronder scholen vallen, zoals dBos of BoekStart. De rapportage verdeelt de schooluren per programma."
+      intro="Een programma werkt met scholen, zoals dBos of BoekStart, of met vaste uitvoerders, zoals Digilabs. De rapportage verdeelt de uren per programma."
     >
       <div className="mb-6">
         <Button onClick={() => setNieuw(true)}>Nieuw programma</Button>
       </div>
-
-      {zonderProgramma > 0 && (
-        <p role="status" className="mb-4 text-ui-sm text-neutral-700">
-          {zonderProgramma === 1 ? '1 actieve school valt' : `${zonderProgramma} actieve scholen vallen`} onder geen programma.
-        </p>
-      )}
 
       <Tabel
         bijschrift="Programma’s"
@@ -65,8 +69,9 @@ export function ProgrammasPage() {
               </Link>
             ),
           },
+          { kop: 'Soort', inhoud: (p) => PROGRAMMATYPES.find((t) => t.waarde === p.type)?.label ?? p.type },
           { kop: 'Omschrijving', inhoud: (p) => p.omschrijving },
-          { kop: 'Actieve scholen', inhoud: (p) => actieveScholen(p.id), getal: true },
+          { kop: 'Nu', inhoud: omvang },
         ]}
       />
 

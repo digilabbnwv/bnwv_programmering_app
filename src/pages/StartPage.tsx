@@ -11,7 +11,6 @@ import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import {
   bouwInvoer,
   laadRapportage,
-  programmaNaam,
   teamProgrammas,
   teamRijen,
   teamSignalen,
@@ -81,9 +80,18 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
         <p>Er is voor {w.jaar} nog geen contract vastgelegd.</p>
       ) : (
         <div className="space-y-8">
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <dl
+            className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${w.uitvoering.length > 0 ? 'xl:grid-cols-6' : 'xl:grid-cols-5'}`}
+          >
             <Kengetal label="Contract" waarde={`${week(w.contracturen)} uur p/w`} toelichting={`${formatUren(w.contracturen)} uur per jaar`} />
             <Kengetal label="Scholen" waarde={formatPercentage(w.percentage.scholen)} toelichting={`${week(w.schooluren)} uur p/w`} />
+            {w.uitvoering.length > 0 && (
+              <Kengetal
+                label="Programma-uitvoering"
+                waarde={formatPercentage(w.percentage.uitvoering)}
+                toelichting={`${week(w.uitvoeringsuren)} uur p/w`}
+              />
+            )}
             <Kengetal label="Projectgroepen" waarde={formatPercentage(w.percentage.projecten)} toelichting={`${week(w.projecturen)} uur p/w`} />
             <Kengetal label="Overige taken" waarde={formatPercentage(w.percentage.taken)} toelichting={`${week(w.takenuren)} uur p/w`} />
             <Kengetal
@@ -111,16 +119,16 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
           <div className="grid gap-8 lg:grid-cols-2">
             <Blok titel={`Mijn programma’s (${w.programmas.length})`}>
               {w.programmas.length === 0 ? (
-                <p>Geen scholen in {w.jaar}.</p>
+                <p>Geen programma’s in {w.jaar}.</p>
               ) : (
                 <Staafdiagram
-                  titel="Schooluren per programma in dit jaar"
+                  titel="Uren per programma in dit jaar"
                   staven={w.programmas.map((p) => ({
-                    id: p.programma?.id ?? 'zonder',
-                    label: programmaNaam(p.programma),
-                    naam: programmaNaam(p.programma),
+                    id: p.programma.id,
+                    label: p.programma.naam,
+                    naam: p.programma.naam,
                     waarde: p.uren,
-                    toelichting: p.scholen === 1 ? '1 school' : `${p.scholen} scholen`,
+                    toelichting: p.scholen === 0 ? 'Vaste uitvoering' : p.scholen === 1 ? '1 school' : `${p.scholen} scholen`,
                   }))}
                 />
               )}
@@ -226,17 +234,18 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
         )}
 
         {programmas.length > 0 && (
-          <Blok titel="Schooluren per programma">
+          <Blok titel="Uren per programma">
             <Staafdiagram
-              titel="Schooluren van het team per programma in dit jaar"
+              titel="Uren van het team per programma in dit jaar"
               staven={programmas.map((p) => ({
-                id: p.programma?.id ?? 'zonder',
-                label: programmaNaam(p.programma),
-                naam: programmaNaam(p.programma),
+                id: p.programma.id,
+                label: p.programma.naam,
+                naam: p.programma.naam,
                 waarde: p.uren,
-                toelichting: `${p.scholen === 1 ? '1 school' : `${p.scholen} scholen`}, ${
-                  p.medewerkers === 1 ? '1 medewerker' : `${p.medewerkers} medewerkers`
-                }`,
+                toelichting: [
+                  ...(p.scholen > 0 ? [p.scholen === 1 ? '1 school' : `${p.scholen} scholen`] : []),
+                  p.medewerkers === 1 ? '1 medewerker' : `${p.medewerkers} medewerkers`,
+                ].join(', '),
               }))}
             />
           </Blok>

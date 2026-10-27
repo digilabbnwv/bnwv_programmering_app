@@ -18,7 +18,7 @@ function medewerker(id: string, naam: string, actief = true): Medewerker {
   return { id, naam, email: '', functie: '', user_id: null, actief, opmerking: '' }
 }
 
-function school(id: string, naam: string, actief = true, programmaId: string | null = 'dbos'): School {
+function school(id: string, naam: string, actief = true, programmaId = 'dbos'): School {
   return {
     id,
     naam,
@@ -47,8 +47,9 @@ function gegevens(): Rapportagegegevens {
     ],
     scholen: [school('brug', 'De Brug'), school('dok', 'Dok 19'), school('leeg', 'Zonder iemand'), school('weg', 'Gesloten', false)],
     programmas: [
-      { id: 'dbos', naam: 'dBos', omschrijving: '' },
-      { id: 'boekstart', naam: 'BoekStart', omschrijving: '' },
+      { id: 'dbos', naam: 'dBos', omschrijving: '', type: 'scholen' },
+      { id: 'boekstart', naam: 'BoekStart', omschrijving: '', type: 'scholen' },
+      { id: 'digilabs', naam: 'Digilabs', omschrijving: '', type: 'uitvoerders' },
     ],
     jaargegevens: [
       { school_id: 'brug', jaar: 2026, leerlingaantal: 320, uren_correctie: 30, correctie_reden: 'PSZ' },
@@ -79,6 +80,7 @@ function gegevens(): Rapportagegegevens {
       { id: 'u1', taak_id: 'k1', medewerker_id: 'ing', uren_per_jaar: 20, startdatum: '2026-01-01', einddatum: null },
       { id: 'u2', taak_id: 'k1', medewerker_id: 'hil', uren_per_jaar: 10, startdatum: '2026-01-01', einddatum: null },
     ],
+    programmaUitvoerders: [],
     extraUren: [{ id: 'e1', medewerker_id: 'ing', jaar: 2026, omschrijving: 'NPO', uren: 40, financier: 'NPO', school_id: null }],
     toelichtingen: [],
   }
@@ -117,25 +119,31 @@ describe('teamRijen', () => {
 describe('teamProgrammas', () => {
   it('telt de schooluren van het team per programma, met scholen en medewerkers', () => {
     const g = gegevens()
-    expect(bouwInvoer(g, 'ing', WERKJAAR).scholen.map((s) => s.programma?.naam)).toEqual(['dBos', 'dBos'])
+    expect(bouwInvoer(g, 'ing', WERKJAAR).scholen.map((s) => s.programma.naam)).toEqual(['dBos', 'dBos'])
     expect(teamProgrammas(teamRijen(g, WERKJAAR))).toEqual([
       { programma: { id: 'dbos', naam: 'dBos' }, uren: expect.closeTo(150 + 100, 5) as number, scholen: 2, medewerkers: 2 },
     ])
   })
 
-  it('zet scholen zonder programma apart, als laatste', () => {
+  it('telt programma-uitvoering mee bij het programma, zonder scholen', () => {
     const g = gegevens()
-    g.scholen = g.scholen.map((s) => (s.id === 'dok' ? { ...s, programma_id: null } : s))
     g.toewijzingen.push({ id: 't4', school_id: 'leeg', medewerker_id: 'hil', startdatum: '2026-01-01', einddatum: null })
     g.scholen = g.scholen.map((s) => (s.id === 'leeg' ? { ...s, programma_id: 'boekstart' } : s))
     g.jaargegevens.push({ school_id: 'leeg', jaar: 2026, leerlingaantal: 50, uren_correctie: 0, correctie_reden: '' })
+    g.programmaUitvoerders = [
+      { id: 'v1', programma_id: 'digilabs', medewerker_id: 'ing', uren_per_jaar: 200, startdatum: '2026-01-01', einddatum: null },
+      { id: 'v2', programma_id: 'digilabs', medewerker_id: 'hil', uren_per_jaar: 100, startdatum: '2026-07-01', einddatum: null },
+    ]
     const verdeling = teamProgrammas(teamRijen(g, WERKJAAR))
-    expect(verdeling.map((p) => [p.programma?.naam ?? null, p.scholen, p.medewerkers])).toEqual([
+    expect(verdeling.map((p) => [p.programma.naam, p.scholen, p.medewerkers])).toEqual([
       ['BoekStart', 1, 1],
-      ['dBos', 1, 1],
-      [null, 1, 2],
+      ['dBos', 2, 2],
+      ['Digilabs', 0, 2],
     ])
-    expect(verdeling[2]?.uren).toBeCloseTo(100)
+    expect(verdeling[2]?.uren).toBeCloseTo(200 + (100 * 184) / 365)
+    expect(bouwInvoer(g, 'hil', WERKJAAR).uitvoering).toEqual([
+      { uitvoerderId: 'v2', programma: { id: 'digilabs', naam: 'Digilabs' }, uren_per_jaar: 100, startdatum: '2026-07-01', einddatum: null },
+    ])
   })
 })
 
@@ -190,6 +198,17 @@ describe('memoTeksten', () => {
     expect(conclusie).toContain('300,8 uur per jaar gereserveerd voor mijmertijd')
     expect(conclusie).toContain('Nog niet ingevuld is')
     expect(conclusie).toContain('aan overige taken')
+    expect(conclusie).not.toContain('programma-uitvoering')
+  })
+
+  it('noemt programma-uitvoering als die er is', () => {
+    const g = gegevens()
+    g.programmaUitvoerders = [
+      { id: 'v1', programma_id: 'digilabs', medewerker_id: 'ing', uren_per_jaar: 150.4, startdatum: '2026-01-01', einddatum: null },
+    ]
+    expect(memoTeksten('Ingeborg', berekenWerkbelasting(bouwInvoer(g, 'ing', WERKJAAR))).conclusie).toContain(
+      '10,0% aan programma-uitvoering',
+    )
   })
 
   it('benoemt overbelasting en een ontbrekend contract', () => {

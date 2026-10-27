@@ -11,9 +11,10 @@ select tests.create_user('lezer@test.nl',      'alleen-lezen');
 
 -- Testgegevens, als database-eigenaar.
 insert into public.werkjaren (jaar) values (2026);
-insert into public.scholen (id, naam, soort) values
-  ('00000000-0000-0000-0000-00000000a001', 'De Brug', 'PO'),
-  ('00000000-0000-0000-0000-00000000a002', 'Da Costa', 'PO');
+insert into public.scholen (id, naam, soort, programma_id)
+select v.id::uuid, v.naam, 'PO', (select id from public.programmas where naam = 'dBos')
+  from (values ('00000000-0000-0000-0000-00000000a001', 'De Brug'),
+               ('00000000-0000-0000-0000-00000000a002', 'Da Costa')) v (id, naam);
 insert into public.medewerkers (id, naam, user_id) values
   ('00000000-0000-0000-0000-00000000b001', 'Medewerker', tests.user_id('medewerker@test.nl')),
   ('00000000-0000-0000-0000-00000000b002', 'Collega',    tests.user_id('collega@test.nl'));
@@ -85,7 +86,7 @@ select is((select count(*) from public.medewerkers), 2::bigint, 'teamleider: zie
 select is((select count(*) from public.extra_uren),  1::bigint, 'teamleider: ziet alle extra uren');
 
 select lives_ok(
-  $$ select public.school_opslaan(null, 'Petraschool', 'PO', null, '12ab', ' P-2026-014 ', 'Straat 1', '8071 ab',
+  $$ select public.school_opslaan(null, 'Petraschool', 'PO', (select id from public.programmas where naam = 'dBos'), '12ab', ' P-2026-014 ', 'Straat 1', '8071 ab',
        'Nunspeet', '', 'Info@School.nl', '', '', true) $$,
   'teamleider: kan een school aanmaken');
 select is((select brin || ' ' || postcode || ' ' || email from public.scholen where naam = 'Petraschool'),

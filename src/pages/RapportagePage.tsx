@@ -8,7 +8,7 @@ import { Tabel } from '../components/Tabel'
 import { Pagina } from '../layout/Pagina'
 import { formatPercentage, formatPerWeek, formatUren, perWeek } from '../werkbelasting/berekening'
 import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
-import { laadRapportage, programmaNaam, teamProgrammas, teamRijen, teamSignalen, type Rij } from '../werkbelasting/rapportage'
+import { laadRapportage, teamProgrammas, teamRijen, teamSignalen, type Rij } from '../werkbelasting/rapportage'
 import { signaalTekst, teamsignaalTekst } from '../werkbelasting/signalen'
 import { useGegevens } from '../werkbelasting/useGegevens'
 
@@ -61,6 +61,8 @@ export function RapportagePage() {
   const som = (f: (r: Rij) => number) => rijen.reduce((s, r) => s + f(r), 0)
   const contracturen = som((r) => r.werkbelasting.contracturen)
   const schooluren = som((r) => r.werkbelasting.schooluren)
+  const uitvoeringsuren = som((r) => r.werkbelasting.uitvoeringsuren)
+  const programmauren = schooluren + uitvoeringsuren
   const projecturen = som((r) => r.werkbelasting.projecturen)
   const takenuren = som((r) => r.werkbelasting.takenuren)
   const overig = som((r) => r.werkbelasting.overig)
@@ -77,9 +79,10 @@ export function RapportagePage() {
         </Button>
       </div>
 
-      <dl className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <dl className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Kengetal label="Contracturen team" waarde={formatUren(contracturen)} toelichting={`${rijen.length} medewerkers`} />
         <Kengetal label="Scholen" waarde={formatUren(schooluren)} toelichting={deel(schooluren)} />
+        <Kengetal label="Programma-uitvoering" waarde={formatUren(uitvoeringsuren)} toelichting={deel(uitvoeringsuren)} />
         <Kengetal label="Projectgroepen" waarde={formatUren(projecturen)} toelichting={deel(projecturen)} />
         <Kengetal label="Overige taken" waarde={formatUren(takenuren)} toelichting={deel(takenuren)} />
         <Kengetal
@@ -123,22 +126,22 @@ export function RapportagePage() {
 
       <Sectie titel="Verdeling per programma">
         <p className="mb-4 max-w-prose text-neutral-700">
-          De schooluren per programma, naar het programma van de school. Projectgroepen en overige taken vallen buiten de
-          programma’s.
+          De uren per programma: de schooluren bij het programma van de school, en de uren van vaste uitvoerders.
+          Projectgroepen en overige taken vallen buiten de programma’s.
         </p>
         <Tabel
-          bijschrift={`Schooluren per programma ${jaar}`}
+          bijschrift={`Uren per programma ${jaar}`}
           rijen={programmas}
-          sleutel={(p) => p.programma?.id ?? 'zonder'}
-          leeg="Nog geen schooluren in dit jaar."
+          sleutel={(p) => p.programma.id}
+          leeg="Nog geen programma-uren in dit jaar."
           kolommen={[
-            { kop: 'Programma', inhoud: (p) => programmaNaam(p.programma) },
+            { kop: 'Programma', inhoud: (p) => p.programma.naam },
             { kop: 'Scholen', inhoud: (p) => p.scholen, getal: true },
             { kop: 'Medewerkers', inhoud: (p) => p.medewerkers, getal: true },
             { kop: 'Uren', inhoud: (p) => formatUren(p.uren), getal: true },
             {
-              kop: 'Deel van de schooluren',
-              inhoud: (p) => formatPercentage(schooluren > 0 ? (p.uren / schooluren) * 100 : 0),
+              kop: 'Deel van de programma-uren',
+              inhoud: (p) => formatPercentage(programmauren > 0 ? (p.uren / programmauren) * 100 : 0),
               getal: true,
             },
           ]}
@@ -146,8 +149,8 @@ export function RapportagePage() {
         {programmas.length > 0 && (
           <div className="mt-6">
             <Tabel
-              bijschrift={`Schooluren per medewerker en programma ${jaar}`}
-              rijen={rijen.filter((r) => r.werkbelasting.scholen.length > 0)}
+              bijschrift={`Programma-uren per medewerker ${jaar}`}
+              rijen={rijen.filter((r) => r.werkbelasting.programmas.length > 0)}
               sleutel={(r) => r.medewerker.id}
               kolommen={[
                 {
@@ -159,14 +162,18 @@ export function RapportagePage() {
                   ),
                 },
                 ...programmas.map((p) => ({
-                  kop: programmaNaam(p.programma),
+                  kop: p.programma.naam,
                   inhoud: (r: Rij) => {
-                    const uren = r.werkbelasting.programmas.find((q) => q.programma?.id === p.programma?.id)?.uren ?? 0
+                    const uren = r.werkbelasting.programmas.find((q) => q.programma.id === p.programma.id)?.uren ?? 0
                     return uren > 0 ? formatUren(uren) : '–'
                   },
                   getal: true,
                 })),
-                { kop: 'Totaal scholen', inhoud: (r) => formatUren(r.werkbelasting.schooluren), getal: true },
+                {
+                  kop: 'Totaal',
+                  inhoud: (r) => formatUren(r.werkbelasting.schooluren + r.werkbelasting.uitvoeringsuren),
+                  getal: true,
+                },
               ]}
             />
           </div>
@@ -204,6 +211,11 @@ export function RapportagePage() {
             {
               kop: 'Scholen',
               inhoud: (r) => <UrenEnDeel uren={r.werkbelasting.schooluren} deel={r.werkbelasting.percentage.scholen} />,
+              getal: true,
+            },
+            {
+              kop: 'Uitvoering',
+              inhoud: (r) => <UrenEnDeel uren={r.werkbelasting.uitvoeringsuren} deel={r.werkbelasting.percentage.uitvoering} />,
               getal: true,
             },
             {

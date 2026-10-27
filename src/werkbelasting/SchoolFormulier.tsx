@@ -19,10 +19,12 @@ export function SchoolFormulier({
   onGelukt: (id: string) => void
 }) {
   const { client } = useAuth()
+  // Alleen programma's die met scholen werken; dBos als voorkeur voor een nieuwe school.
+  const metScholen = programmas.filter((p) => p.type === 'scholen')
   const [v, setV] = useState({
     naam: school?.naam ?? '',
     soort: school?.soort ?? ('PO' as Schoolsoort),
-    programma_id: school ? (school.programma_id ?? '') : (programmas.find((p) => p.naam === 'dBos')?.id ?? ''),
+    programma_id: school?.programma_id ?? metScholen.find((p) => p.naam === 'dBos')?.id ?? metScholen[0]?.id ?? '',
     brin: school?.brin ?? '',
     matt_projectnummer: school?.matt_projectnummer ?? '',
     adres: school?.adres ?? '',
@@ -38,27 +40,33 @@ export function SchoolFormulier({
 
   async function opslaan() {
     if (!v.naam.trim()) return ongeldig('Vul de naam van de school in.')
+    if (!v.programma_id) return ongeldig('Kies het programma waaronder de school valt.')
     if (v.brin.trim() && !/^[0-9A-Z]{4}([0-9]{2})?$/i.test(v.brin.trim()))
       return ongeldig('Een BRIN-nummer bestaat uit 4 tekens, eventueel gevolgd door 2 cijfers (bijv. 12AB of 12AB00).')
     if (v.postcode.trim() && !/^[1-9][0-9]{3} ?[A-Z]{2}$/i.test(v.postcode.trim()))
       return ongeldig('Vul een postcode in zoals 3841 AB.')
     if (v.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) return ongeldig('Vul een geldig e-mailadres in.')
-    const res = await voerUit<string>(client, 'school_opslaan', {
-      p_id: school?.id ?? null,
-      p_naam: v.naam,
-      p_soort: v.soort,
-      p_programma_id: v.programma_id || null,
-      p_brin: v.brin,
-      p_matt_projectnummer: v.matt_projectnummer,
-      p_adres: v.adres,
-      p_postcode: v.postcode,
-      p_plaats: v.plaats,
-      p_contactpersoon: v.contactpersoon,
-      p_email: v.email,
-      p_telefoon: v.telefoon,
-      p_opmerking: v.opmerking,
-      p_actief: v.actief,
-    })
+    const res = await voerUit<string>(
+      client,
+      'school_opslaan',
+      {
+        p_id: school?.id ?? null,
+        p_naam: v.naam,
+        p_soort: v.soort,
+        p_programma_id: v.programma_id,
+        p_brin: v.brin,
+        p_matt_projectnummer: v.matt_projectnummer,
+        p_adres: v.adres,
+        p_postcode: v.postcode,
+        p_plaats: v.plaats,
+        p_contactpersoon: v.contactpersoon,
+        p_email: v.email,
+        p_telefoon: v.telefoon,
+        p_opmerking: v.opmerking,
+        p_actief: v.actief,
+      },
+      { '23503': 'Kies een programma dat met scholen werkt.' },
+    )
     if (res.ok) onGelukt(res.data)
     return res
   }
@@ -80,7 +88,7 @@ export function SchoolFormulier({
       <SelectField
         label="Programma"
         value={v.programma_id}
-        opties={[{ waarde: '', label: 'Geen programma' }, ...programmas.map((p) => ({ waarde: p.id, label: p.naam }))]}
+        opties={[{ waarde: '', label: 'Kies een programma' }, ...metScholen.map((p) => ({ waarde: p.id, label: p.naam }))]}
         onChange={(e) => zet('programma_id', e.target.value)}
       />
       <TextField label="BRIN-nummer" hint="Optioneel." maxLength={6} value={v.brin} onChange={(e) => zet('brin', e.target.value)} />
