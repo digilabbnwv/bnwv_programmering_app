@@ -264,6 +264,31 @@ export function teamProgrammas(rijen: readonly Rij[]): TeamProgramma[] {
     .sort(programmaVolgorde)
 }
 
+/** Filters voor de tabel per medewerker. Leeg of 'alle': geen filter. */
+export interface Rijfilter {
+  naam: string
+  programmaId: string
+  situatie: 'alle' | 'overbelast' | 'aandacht' | 'ruimte'
+}
+
+export function filterRijen(rijen: readonly Rij[], f: Rijfilter): Rij[] {
+  const zoek = f.naam.trim().toLocaleLowerCase('nl')
+  return rijen.filter(({ medewerker, werkbelasting: w, gewijzigdNaVaststellen }) => {
+    if (zoek && !medewerker.naam.toLocaleLowerCase('nl').includes(zoek)) return false
+    if (f.programmaId && !w.programmas.some((p) => p.programma.id === f.programmaId)) return false
+    switch (f.situatie) {
+      case 'overbelast':
+        return w.overig < -0.05
+      case 'aandacht':
+        return w.signalen.length > 0 || gewijzigdNaVaststellen
+      case 'ruimte':
+        return w.overig > 0.05
+      case 'alle':
+        return true
+    }
+  })
+}
+
 export function totalenVan(w: Werkbelasting): Totalen {
   const rond = (n: number) => Math.round(n * 10) / 10
   return {

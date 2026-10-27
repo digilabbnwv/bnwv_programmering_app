@@ -3,6 +3,7 @@ import type { Medewerker, School, Toelichting } from './api'
 import { berekenWerkbelasting } from './berekening'
 import {
   bouwInvoer,
+  filterRijen,
   isGewijzigd,
   memoTeksten,
   teamProgrammas,
@@ -144,6 +145,31 @@ describe('teamProgrammas', () => {
     expect(bouwInvoer(g, 'hil', WERKJAAR).uitvoering).toEqual([
       { uitvoerderId: 'v2', programma: { id: 'digilabs', naam: 'Digilabs' }, uren_per_jaar: 100, startdatum: '2026-07-01', einddatum: null },
     ])
+  })
+})
+
+describe('filterRijen', () => {
+  const alle = { naam: '', programmaId: '', situatie: 'alle' } as const
+  const namen = (g: Rapportagegegevens, f: Parameters<typeof filterRijen>[1]) =>
+    filterRijen(teamRijen(g, WERKJAAR), f).map((r) => r.medewerker.naam)
+
+  it('filtert op naam en programma', () => {
+    const g = gegevens()
+    expect(namen(g, alle)).toEqual(['Hillyanne', 'Ingeborg'])
+    expect(namen(g, { ...alle, naam: ' INGE ' })).toEqual(['Ingeborg'])
+    expect(namen(g, { ...alle, programmaId: 'digilabs' })).toEqual([])
+    g.programmaUitvoerders = [
+      { id: 'v1', programma_id: 'digilabs', medewerker_id: 'hil', uren_per_jaar: 50, startdatum: '2026-01-01', einddatum: null },
+    ]
+    expect(namen(g, { ...alle, programmaId: 'digilabs' })).toEqual(['Hillyanne'])
+  })
+
+  it('filtert op overbelast, ruimte en aandachtspunten', () => {
+    const g = gegevens()
+    g.contracten = g.contracten.map((c) => (c.medewerker_id === 'ing' ? { ...c, uren_per_week: 4 } : c))
+    expect(namen(g, { ...alle, situatie: 'overbelast' })).toEqual(['Ingeborg'])
+    expect(namen(g, { ...alle, situatie: 'aandacht' })).toEqual(['Ingeborg'])
+    expect(namen(g, { ...alle, situatie: 'ruimte' })).toEqual(['Hillyanne'])
   })
 })
 

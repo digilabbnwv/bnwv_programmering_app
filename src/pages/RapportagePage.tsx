@@ -1,14 +1,23 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Melding } from '../components/Melding'
 import { SelectField } from '../components/SelectField'
-import { Tabel } from '../components/Tabel'
+import { Tabel, type Kolom } from '../components/Tabel'
+import { TextField } from '../components/TextField'
 import { Pagina } from '../layout/Pagina'
-import { formatPercentage, formatPerWeek, formatUren, perWeek } from '../werkbelasting/berekening'
+import { formatPercentage, formatPerWeek, formatUren, perWeek, type ProgrammaRef, type Werkbelasting } from '../werkbelasting/berekening'
 import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
-import { laadRapportage, teamProgrammas, teamRijen, teamSignalen, type Rij } from '../werkbelasting/rapportage'
+import {
+  filterRijen,
+  laadRapportage,
+  teamProgrammas,
+  teamRijen,
+  teamSignalen,
+  type Rij,
+  type Rijfilter,
+} from '../werkbelasting/rapportage'
 import { signaalTekst, teamsignaalTekst } from '../werkbelasting/signalen'
 import { useGegevens } from '../werkbelasting/useGegevens'
 
@@ -81,7 +90,7 @@ export function RapportagePage() {
 
       <dl className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Kengetal label="Contracturen team" waarde={formatUren(contracturen)} toelichting={`${rijen.length} medewerkers`} />
-        <Kengetal label="Scholen" waarde={formatUren(schooluren)} toelichting={deel(schooluren)} />
+        <Kengetal label="Programma-scholen" waarde={formatUren(schooluren)} toelichting={deel(schooluren)} />
         <Kengetal label="Programma-uitvoering" waarde={formatUren(uitvoeringsuren)} toelichting={deel(uitvoeringsuren)} />
         <Kengetal label="Projectgroepen" waarde={formatUren(projecturen)} toelichting={deel(projecturen)} />
         <Kengetal label="Overige taken" waarde={formatUren(takenuren)} toelichting={deel(takenuren)} />
@@ -180,81 +189,7 @@ export function RapportagePage() {
         )}
       </Sectie>
 
-      <Sectie titel="Per medewerker">
-        {metSignaal > 0 && (
-          <div className="mb-4 print:hidden">
-            <Melding soort="info">
-              {metSignaal === 1 ? '1 medewerker heeft' : `${metSignaal} medewerkers hebben`} een aandachtspunt, zie de signalen hierboven.
-            </Melding>
-          </div>
-        )}
-        <Tabel
-          bijschrift={`Werkurenverdeling per medewerker ${jaar}`}
-          rijen={rijen}
-          sleutel={(r) => r.medewerker.id}
-          leeg="Geen medewerkers met inzet in dit jaar."
-          kolommen={[
-            {
-              kop: 'Medewerker',
-              inhoud: (r) => (
-                <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
-                  {r.medewerker.naam}
-                </Link>
-              ),
-            },
-            {
-              kop: 'Uren p/w',
-              inhoud: (r) => formatPerWeek(perWeek(r.werkbelasting.contracturen, r.werkbelasting.werkweken)),
-              getal: true,
-            },
-            { kop: 'Contracturen', inhoud: (r) => formatUren(r.werkbelasting.contracturen), getal: true },
-            {
-              kop: 'Scholen',
-              inhoud: (r) => <UrenEnDeel uren={r.werkbelasting.schooluren} deel={r.werkbelasting.percentage.scholen} />,
-              getal: true,
-            },
-            {
-              kop: 'Uitvoering',
-              inhoud: (r) => <UrenEnDeel uren={r.werkbelasting.uitvoeringsuren} deel={r.werkbelasting.percentage.uitvoering} />,
-              getal: true,
-            },
-            {
-              kop: 'Projecten',
-              inhoud: (r) => <UrenEnDeel uren={r.werkbelasting.projecturen} deel={r.werkbelasting.percentage.projecten} />,
-              getal: true,
-            },
-            {
-              kop: 'Taken',
-              inhoud: (r) => <UrenEnDeel uren={r.werkbelasting.takenuren} deel={r.werkbelasting.percentage.taken} />,
-              getal: true,
-            },
-            {
-              kop: 'Niet ingevuld',
-              inhoud: (r) =>
-                r.werkbelasting.overig < -0.05 ? (
-                  <strong>
-                    <UrenEnDeel uren={r.werkbelasting.overig} deel={r.werkbelasting.percentage.overig} />
-                  </strong>
-                ) : (
-                  <UrenEnDeel uren={r.werkbelasting.overig} deel={r.werkbelasting.percentage.overig} />
-                ),
-              getal: true,
-            },
-            { kop: 'Extra', inhoud: (r) => (r.werkbelasting.extraTotaal > 0 ? formatUren(r.werkbelasting.extraTotaal) : '–'), getal: true },
-            {
-              kop: 'Status',
-              inhoud: (r) =>
-                r.toelichting?.status !== 'vastgesteld' ? (
-                  'Concept'
-                ) : r.gewijzigdNaVaststellen ? (
-                  <strong>Vastgesteld, gewijzigd</strong>
-                ) : (
-                  'Vastgesteld'
-                ),
-            },
-          ]}
-        />
-      </Sectie>
+      <PerMedewerker rijen={rijen} jaar={jaar} programmas={programmas.map((p) => p.programma)} metSignaal={metSignaal} />
     </Pagina>
   )
 }
@@ -269,10 +204,155 @@ function Kengetal({ label, waarde, toelichting }: { label: string; waarde: strin
   )
 }
 
-function UrenEnDeel({ uren, deel }: { uren: number; deel: number }) {
+type Weergave = 'uren' | 'percentage'
+
+/** Onderdelen die als uren of als percentage van de contracturen te tonen zijn. */
+const ONDERDELEN: { kop: string; uren: (w: Werkbelasting) => number; deel: (w: Werkbelasting) => number }[] = [
+  { kop: 'Scholen', uren: (w) => w.schooluren, deel: (w) => w.percentage.scholen },
+  { kop: 'Uitvoering', uren: (w) => w.uitvoeringsuren, deel: (w) => w.percentage.uitvoering },
+  { kop: 'Projecten', uren: (w) => w.projecturen, deel: (w) => w.percentage.projecten },
+  { kop: 'Taken', uren: (w) => w.takenuren, deel: (w) => w.percentage.taken },
+  { kop: 'Niet ingevuld', uren: (w) => w.overig, deel: (w) => w.percentage.overig },
+]
+
+const SITUATIES: { waarde: Rijfilter['situatie']; label: string }[] = [
+  { waarde: 'alle', label: 'Iedereen' },
+  { waarde: 'overbelast', label: 'Overbelast' },
+  { waarde: 'aandacht', label: 'Met aandachtspunt' },
+  { waarde: 'ruimte', label: 'Nog uren over' },
+]
+
+/** De werkurenverdeling per medewerker, te filteren en te sorteren, in uren of percentages. */
+function PerMedewerker({
+  rijen,
+  jaar,
+  programmas,
+  metSignaal,
+}: {
+  rijen: Rij[]
+  jaar: number
+  programmas: ProgrammaRef[]
+  metSignaal: number
+}) {
+  const [filter, setFilter] = useState<Rijfilter>({ naam: '', programmaId: '', situatie: 'alle' })
+  const [weergave, setWeergave] = useState<Weergave>('uren')
+  const zet = <K extends keyof Rijfilter>(veld: K, waarde: Rijfilter[K]) => setFilter((oud) => ({ ...oud, [veld]: waarde }))
+  const gefilterd = filterRijen(rijen, filter)
+  const toon = (uren: number, deel: number) => (weergave === 'uren' ? formatUren(uren) : formatPercentage(deel))
+
+  const kolommen: Kolom<Rij>[] = [
+    {
+      kop: 'Medewerker',
+      inhoud: (r) => (
+        <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+          {r.medewerker.naam}
+        </Link>
+      ),
+      sorteer: (r) => r.medewerker.naam,
+    },
+    {
+      kop: 'Uren p/w',
+      inhoud: (r) => formatPerWeek(perWeek(r.werkbelasting.contracturen, r.werkbelasting.werkweken)),
+      getal: true,
+      sorteer: (r) => perWeek(r.werkbelasting.contracturen, r.werkbelasting.werkweken),
+    },
+    {
+      kop: 'Contracturen',
+      inhoud: (r) => formatUren(r.werkbelasting.contracturen),
+      getal: true,
+      sorteer: (r) => r.werkbelasting.contracturen,
+    },
+    ...ONDERDELEN.map(
+      (o): Kolom<Rij> => ({
+        kop: o.kop,
+        inhoud: (r) => {
+          const tekst = toon(o.uren(r.werkbelasting), o.deel(r.werkbelasting))
+          return o.kop === 'Niet ingevuld' && r.werkbelasting.overig < -0.05 ? <strong>{tekst}</strong> : tekst
+        },
+        getal: true,
+        sorteer: (r) => (weergave === 'uren' ? o.uren(r.werkbelasting) : o.deel(r.werkbelasting)),
+      }),
+    ),
+    {
+      kop: 'Extra',
+      inhoud: (r) => (r.werkbelasting.extraTotaal > 0 ? formatUren(r.werkbelasting.extraTotaal) : '–'),
+      getal: true,
+      sorteer: (r) => r.werkbelasting.extraTotaal,
+    },
+  ]
+
   return (
-    <>
-      {formatUren(uren)} <span className="text-neutral-700">({formatPercentage(deel)})</span>
-    </>
+    <Sectie titel="Per medewerker">
+      {metSignaal > 0 && (
+        <div className="mb-4 print:hidden">
+          <Melding soort="info">
+            {metSignaal === 1 ? '1 medewerker heeft' : `${metSignaal} medewerkers hebben`} een aandachtspunt, zie de signalen hierboven.
+          </Melding>
+        </div>
+      )}
+
+      <div className="mb-6 flex flex-wrap items-end gap-4 print:hidden">
+        <TextField
+          label="Zoek op naam"
+          type="search"
+          className="w-full sm:w-56"
+          value={filter.naam}
+          onChange={(e) => zet('naam', e.target.value)}
+        />
+        <SelectField
+          label="Programma"
+          className="w-full sm:w-48"
+          value={filter.programmaId}
+          opties={[{ waarde: '', label: 'Alle programma’s' }, ...programmas.map((p) => ({ waarde: p.id, label: p.naam }))]}
+          onChange={(e) => zet('programmaId', e.target.value)}
+        />
+        <SelectField
+          label="Toon"
+          className="w-full sm:w-52"
+          value={filter.situatie}
+          opties={SITUATIES}
+          onChange={(e) => zet('situatie', e.target.value as Rijfilter['situatie'])}
+        />
+        <fieldset>
+          <legend className="font-semibold">Weergave</legend>
+          <div className="mt-2 inline-flex rounded-md border-2 border-neutral-500 bg-neutral-0 p-0.5">
+            {(['uren', 'percentage'] as const).map((w) => (
+              <label
+                key={w}
+                className={`cursor-pointer rounded-sm px-4 py-2 text-ui-md has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+                  weergave === w ? 'bg-anthracite font-semibold text-white' : 'hover:bg-neutral-100'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="weergave"
+                  value={w}
+                  checked={weergave === w}
+                  onChange={() => setWeergave(w)}
+                  className="sr-only"
+                />
+                {w === 'uren' ? 'Uren' : 'Percentage'}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      </div>
+
+      <p role="status" className="mb-3 text-ui-sm text-neutral-700">
+        {gefilterd.length === rijen.length
+          ? `${rijen.length} medewerkers.`
+          : `${gefilterd.length} van ${rijen.length} medewerkers.`}{' '}
+        {weergave === 'uren' ? 'Uren per jaar.' : 'Percentage van de contracturen.'}
+      </p>
+
+      <Tabel
+        bijschrift={`Werkurenverdeling per medewerker ${jaar}`}
+        rijen={gefilterd}
+        sleutel={(r) => r.medewerker.id}
+        leeg={rijen.length === 0 ? 'Geen medewerkers met inzet in dit jaar.' : 'Geen medewerkers die aan de filters voldoen.'}
+        kolommen={kolommen}
+        standaardSortering={{ kop: 'Medewerker', richting: 'oplopend' }}
+      />
+    </Sectie>
   )
 }
