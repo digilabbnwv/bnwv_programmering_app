@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { Selectievakje } from '../components/Selectievakje'
 import { formatPercentage, formatPerWeek, formatUren, perWeek, type Werkbelasting } from './berekening'
+import { verdieping, type Deel } from './rapportage'
 
 /**
  * Grafieken van de werkbelasting. Kleuren per onderdeel liggen vast (nooit
@@ -185,60 +187,87 @@ export interface Teambalk {
   w: Werkbelasting
 }
 
+/** Een onderdeel opgesplitst in delen; mijmertijd en "nog niet ingevuld" zijn één deel. */
+function delenVan(w: Werkbelasting, o: Onderdeel): Deel[] {
+  if (o === 'overig' || o === 'mijmertijd') return [{ id: o, naam: '', uren: urenPerOnderdeel(w)[o] }]
+  return verdieping(w)[o]
+}
+
 /**
- * Per medewerker een gestapelde balk als deel van de contracturen. Wie over
- * het contract gaat is overbelast en krijgt een label (nooit alleen kleur).
+ * Per medewerker een gestapelde balk als deel van de contracturen. Elk
+ * onderdeel is opgedeeld in vakjes van dezelfde kleur (per programma,
+ * projectgroep of taak), met een smalle lijn ertussen; de naam staat in de
+ * tooltip en, met "Details tonen", als tekst onder de balk. Programma's
+ * krijgen geen eigen kleur: dat worden er te veel om uit elkaar te houden.
+ * Wie over het contract gaat is overbelast en krijgt een label (nooit alleen kleur).
  */
 export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
   const [hover, setHover] = useState<{ id: string } & Hover | null>(null)
-  const procent = (r: Teambalk, o: Onderdeel) => {
-    if (r.w.contracturen <= 0) return 0
-    const u = o === 'overig' ? Math.max(0, r.w.overig) : urenPerOnderdeel(r.w)[o]
-    return (u / r.w.contracturen) * 100
-  }
-  const totaalProcent = (r: Teambalk) => ONDERDELEN.reduce((s, o) => s + procent(r, o.sleutel), 0)
+  const [details, setDetails] = useState(false)
+  const procent = (r: Teambalk, uren: number) => (r.w.contracturen > 0 ? (uren / r.w.contracturen) * 100 : 0)
+  const totaalProcent = (r: Teambalk) => ONDERDELEN.reduce((s, o) => s + procent(r, urenPerOnderdeel(r.w)[o.sleutel]), 0)
   const schaal = Math.max(100, ...rijen.map(totaalProcent))
 
   return (
     <figure>
       <figcaption className="sr-only">Verdeling van de contracturen per medewerker</figcaption>
-      <ul className="space-y-3">
+      <Selectievakje
+        label="Details tonen (per programma, projectgroep en taak)"
+        checked={details}
+        onChange={(e) => setDetails(e.target.checked)}
+        className="mb-4 print:hidden"
+      />
+      <ul className="space-y-4">
         {rijen.map((r) => {
-          const delen = segmenten(
-            ONDERDELEN.map((o) => procent(r, o.sleutel)),
-            schaal,
-          )
           const overbelast = r.w.overig < -0.05
+          // Alle vakjes achter elkaar, met hun begin (in % van de balk) voor de tooltip.
+          let begin = 0
+          const blokken = ONDERDELEN.map((o) => {
+            const delen = delenVan(r.w, o.sleutel).map((d) => {
+              const breedte = schaal > 0 ? (procent(r, d.uren) / schaal) * 100 : 0
+              const vak = { ...d, breedte, midden: begin + breedte / 2 }
+              begin += breedte
+              return vak
+            })
+            return { o, delen, breedte: delen.reduce((s, d) => s + d.breedte, 0) }
+          }).filter((b) => b.breedte > 0)
+
           return (
-            <li key={r.id} className="grid items-center gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
+            <li key={r.id} className="grid items-start gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
               <Link to={r.link} className="truncate text-ui-sm font-semibold underline underline-offset-4 hover:no-underline">
                 {r.naam}
               </Link>
               <div>
                 <div className="relative" aria-hidden="true">
                   {hover?.id === r.id && <Tooltip hover={hover} />}
-                  <div className="flex h-4 gap-0.5 print:[print-color-adjust:exact]">
+                  <div className="flex h-5 gap-0.5 print:[print-color-adjust:exact]">
                     {r.w.contracturen > 0 &&
-                      ONDERDELEN.map((o, i) => {
-                        const { breedte, midden } = delen[i] ?? { breedte: 0, midden: 0 }
-                        if (breedte === 0) return null
-                        return (
-                          <div
-                            key={o.sleutel}
-                            role="presentation"
-                            className={`${o.kleur} first:rounded-l-sm last:rounded-r-sm`}
-                            style={{ width: `${breedte}%` }}
-                            onMouseEnter={() =>
-                              setHover({
-                                id: r.id,
-                                links: midden,
-                                tekst: `${r.naam} – ${o.label}: ${formatPercentage(procent(r, o.sleutel))}`,
-                              })
-                            }
-                            onMouseLeave={() => setHover(null)}
-                          />
-                        )
-                      })}
+                      blokken.map(({ o, delen, breedte }) => (
+                        <div
+                          key={o.sleutel}
+                          className="flex gap-px overflow-hidden first:rounded-l-sm last:rounded-r-sm"
+                          style={{ width: `${breedte}%` }}
+                        >
+                          {delen.map((d) => (
+                            <div
+                              key={d.id}
+                              role="presentation"
+                              className={`${o.kleur} min-w-0`}
+                              style={{ flexGrow: d.uren, flexBasis: 0 }}
+                              onMouseEnter={() =>
+                                setHover({
+                                  id: r.id,
+                                  links: d.midden,
+                                  tekst: `${r.naam} – ${o.label}${d.naam ? ` › ${d.naam}` : ''}: ${formatPercentage(
+                                    procent(r, d.uren),
+                                  )} (${formatUren(d.uren)} uur)`,
+                                })
+                              }
+                              onMouseLeave={() => setHover(null)}
+                            />
+                          ))}
+                        </div>
+                      ))}
                   </div>
                 </div>
                 <p className="mt-1 text-ui-xs text-neutral-700">
@@ -253,6 +282,24 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
                     `${formatUren(r.w.overig)} uur nog niet ingevuld (${formatPercentage(r.w.percentage.overig)})`
                   )}
                 </p>
+                {details && r.w.contracturen > 0 && (
+                  <ul className="mt-2 space-y-1 text-ui-sm">
+                    {blokken
+                      .filter(({ o }) => o.sleutel !== 'overig' && o.sleutel !== 'mijmertijd')
+                      .map(({ o, delen }) => (
+                        <li key={o.sleutel} className="flex gap-2">
+                          <span aria-hidden="true" className={`mt-1.5 inline-block size-3 shrink-0 rounded-sm ${o.kleur}`} />
+                          <span>
+                            <span className="font-semibold">
+                              {o.label} {formatPercentage(procent(r, urenPerOnderdeel(r.w)[o.sleutel]))}
+                            </span>
+                            {': '}
+                            {delen.map((d) => `${d.naam} ${formatPercentage(procent(r, d.uren))}`).join(' · ')}
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                )}
               </div>
             </li>
           )
@@ -286,7 +333,7 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
               <tr key={r.id}>
                 <th scope="row">{r.naam}</th>
                 {ONDERDELEN.map((o) => (
-                  <td key={o.sleutel}>{formatPercentage(procent(r, o.sleutel))}</td>
+                  <td key={o.sleutel}>{formatPercentage(procent(r, urenPerOnderdeel(r.w)[o.sleutel]))}</td>
                 ))}
                 <td>{formatUren(r.w.overig)}</td>
               </tr>

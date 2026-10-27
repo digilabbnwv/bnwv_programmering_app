@@ -10,6 +10,7 @@ import {
   teamRijen,
   teamSignalen,
   totalenVan,
+  verdieping,
   type Rapportagegegevens,
 } from './rapportage'
 
@@ -170,6 +171,26 @@ describe('filterRijen', () => {
     expect(namen(g, { ...alle, situatie: 'overbelast' })).toEqual(['Ingeborg'])
     expect(namen(g, { ...alle, situatie: 'aandacht' })).toEqual(['Ingeborg'])
     expect(namen(g, { ...alle, situatie: 'ruimte' })).toEqual(['Hillyanne'])
+  })
+})
+
+describe('verdieping', () => {
+  it('splitst scholen en uitvoering per programma en projecten per groep, grootste eerst', () => {
+    const g = gegevens()
+    g.scholen = g.scholen.map((s) => (s.id === 'dok' ? { ...s, programma_id: 'boekstart' } : s))
+    g.programmaUitvoerders = [
+      { id: 'v1', programma_id: 'digilabs', medewerker_id: 'ing', uren_per_jaar: 100, startdatum: '2026-01-01', einddatum: '2026-03-31' },
+      { id: 'v2', programma_id: 'digilabs', medewerker_id: 'ing', uren_per_jaar: 100, startdatum: '2026-07-01', einddatum: null },
+    ]
+    const d = verdieping(berekenWerkbelasting(bouwInvoer(g, 'ing', WERKJAAR)))
+    expect(d.scholen.map((x) => [x.naam, Math.round(x.uren)])).toEqual([
+      ['dBos', 150],
+      ['BoekStart', 50],
+    ])
+    expect(d.uitvoering).toHaveLength(1)
+    expect(d.uitvoering[0]?.uren).toBeCloseTo(100 * ((90 + 184) / 365))
+    expect(d.projecten.map((x) => x.naam)).toEqual(['Open Boek'])
+    expect(d.taken.map((x) => [x.naam, x.uren])).toEqual([['BHV', 20]])
   })
 })
 

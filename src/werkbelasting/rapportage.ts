@@ -264,6 +264,39 @@ export function teamProgrammas(rijen: readonly Rij[]): TeamProgramma[] {
     .sort(programmaVolgorde)
 }
 
+/** Eén deel van een onderdeel, bijv. BoekStart binnen de programma-scholen. */
+export interface Deel {
+  id: string
+  naam: string
+  uren: number
+}
+
+/**
+ * De onderdelen van de werkurenverdeling opgesplitst: scholen en uitvoering
+ * per programma, projectgroepen en overige taken per groep of taak. Grootste
+ * eerst. Twee periodes van dezelfde groep of taak tellen als één deel.
+ */
+export function verdieping(w: Werkbelasting): Record<'scholen' | 'uitvoering' | 'projecten' | 'taken', Deel[]> {
+  const opGrootte = (delen: Deel[]) => delen.filter((d) => d.uren > 0).sort((a, b) => b.uren - a.uren)
+  const samen = (regels: readonly { id: string; naam: string; jaaruren: number }[]) => {
+    const delen = new Map<string, Deel>()
+    for (const r of regels) {
+      const deel = delen.get(r.id) ?? { id: r.id, naam: r.naam, uren: 0 }
+      deel.uren += r.jaaruren
+      delen.set(r.id, deel)
+    }
+    return opGrootte([...delen.values()])
+  }
+  const perProgramma = (regels: readonly { programma: ProgrammaRef; jaaruren: number }[]) =>
+    samen(regels.map((r) => ({ id: r.programma.id, naam: r.programma.naam, jaaruren: r.jaaruren })))
+  return {
+    scholen: perProgramma(w.scholen),
+    uitvoering: perProgramma(w.uitvoering),
+    projecten: samen(w.projecten),
+    taken: samen(w.taken),
+  }
+}
+
 /** Filters voor de tabel per medewerker. Leeg of 'alle': geen filter. */
 export interface Rijfilter {
   naam: string
