@@ -83,7 +83,7 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
             className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${w.uitvoering.length > 0 ? 'xl:grid-cols-6' : 'xl:grid-cols-5'}`}
           >
             <Kengetal label="Contract" waarde={`${week(w.contracturen)} uur p/w`} toelichting={`${formatUren(w.contracturen)} uur per jaar`} />
-            <Kengetal label="Scholen" waarde={formatPercentage(w.percentage.scholen)} toelichting={`${week(w.schooluren)} uur p/w`} />
+            <Kengetal label="Programma-scholen" waarde={formatPercentage(w.percentage.scholen)} toelichting={`${week(w.schooluren)} uur p/w`} />
             {w.uitvoering.length > 0 && (
               <Kengetal
                 label="Programma-uitvoering"
