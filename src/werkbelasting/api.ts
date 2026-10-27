@@ -42,6 +42,7 @@ export interface School {
   soort: Schoolsoort
   programma_id: string | null
   brin: string | null
+  matt_projectnummer: string
   adres: string
   postcode: string
   plaats: string

@@ -107,6 +107,7 @@ export function SchoolDetailPage() {
             ['Status', school.actief ? 'Actief' : 'Inactief'],
             ['Programma', programma?.naam ?? 'Geen'],
             ['BRIN-nummer', school.brin ?? ''],
+            ['MATT projectnummer', school.matt_projectnummer],
             ['Adres', adres],
             ['Contactpersoon', school.contactpersoon],
             ['E-mailadres', school.email],

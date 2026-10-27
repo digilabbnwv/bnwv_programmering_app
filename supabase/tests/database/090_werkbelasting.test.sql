@@ -1,7 +1,7 @@
 -- Werkbelasting: wie ziet wat, wie mag wijzigen, en de regels in de database
 -- (geen overlap, school verplaatsen, auditlog).
 begin;
-select plan(37);
+select plan(38);
 
 select tests.create_user('beheerder@test.nl',  'beheerder');
 select tests.create_user('teamleider@test.nl', 'teamleider');
@@ -48,7 +48,7 @@ select is((select count(*) from public.extra_uren),              0::bigint, 'med
 select throws_ok($$ insert into public.scholen (naam, soort) values ('X', 'PO') $$, '42501', null,
   'medewerker: kan niet direct in tabellen schrijven');
 select throws_ok(
-  $$ select public.school_opslaan(null, 'X', 'PO', null, null, '', '', '', '', '', '', '', true) $$,
+  $$ select public.school_opslaan(null, 'X', 'PO', null, null, '', '', '', '', '', '', '', '', true) $$,
   '42501', null, 'medewerker: kan geen school opslaan');
 select throws_ok(
   $$ select public.werkbelasting_verwijderen('scholen', '00000000-0000-0000-0000-00000000a001') $$,
@@ -85,11 +85,13 @@ select is((select count(*) from public.medewerkers), 2::bigint, 'teamleider: zie
 select is((select count(*) from public.extra_uren),  1::bigint, 'teamleider: ziet alle extra uren');
 
 select lives_ok(
-  $$ select public.school_opslaan(null, 'Petraschool', 'PO', null, '12ab', 'Straat 1', '8071 ab',
+  $$ select public.school_opslaan(null, 'Petraschool', 'PO', null, '12ab', ' P-2026-014 ', 'Straat 1', '8071 ab',
        'Nunspeet', '', 'Info@School.nl', '', '', true) $$,
   'teamleider: kan een school aanmaken');
 select is((select brin || ' ' || postcode || ' ' || email from public.scholen where naam = 'Petraschool'),
   '12AB 8071 AB info@school.nl', 'school opslaan normaliseert BRIN, postcode en e-mail');
+select is((select matt_projectnummer from public.scholen where naam = 'Petraschool'),
+  'P-2026-014', 'school opslaan bewaart het MATT projectnummer zonder spaties eromheen');
 
 -- Da Costa per 1 oktober van Collega naar Medewerker.
 select lives_ok(

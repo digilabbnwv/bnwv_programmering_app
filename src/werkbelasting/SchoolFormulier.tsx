@@ -24,6 +24,7 @@ export function SchoolFormulier({
     soort: school?.soort ?? ('PO' as Schoolsoort),
     programma_id: school ? (school.programma_id ?? '') : (programmas.find((p) => p.naam === 'dBos')?.id ?? ''),
     brin: school?.brin ?? '',
+    matt_projectnummer: school?.matt_projectnummer ?? '',
     adres: school?.adres ?? '',
     postcode: school?.postcode ?? '',
     plaats: school?.plaats ?? '',
@@ -48,6 +49,7 @@ export function SchoolFormulier({
       p_soort: v.soort,
       p_programma_id: v.programma_id || null,
       p_brin: v.brin,
+      p_matt_projectnummer: v.matt_projectnummer,
       p_adres: v.adres,
       p_postcode: v.postcode,
       p_plaats: v.plaats,
@@ -82,6 +84,14 @@ export function SchoolFormulier({
         onChange={(e) => zet('programma_id', e.target.value)}
       />
       <TextField label="BRIN-nummer" hint="Optioneel." maxLength={6} value={v.brin} onChange={(e) => zet('brin', e.target.value)} />
+      <TextField
+        label="MATT projectnummer"
+        hint="Optioneel."
+        autoComplete="off"
+        maxLength={30}
+        value={v.matt_projectnummer}
+        onChange={(e) => zet('matt_projectnummer', e.target.value)}
+      />
       <TextField label="Adres" autoComplete="off" maxLength={200} value={v.adres} onChange={(e) => zet('adres', e.target.value)} />
       <div className="grid gap-5 sm:grid-cols-[10rem_1fr]">
         <TextField label="Postcode" autoComplete="off" maxLength={7} value={v.postcode} onChange={(e) => zet('postcode', e.target.value)} />

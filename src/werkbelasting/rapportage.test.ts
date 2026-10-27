@@ -24,6 +24,7 @@ function school(id: string, naam: string, actief = true): School {
     soort: 'PO',
     programma_id: null,
     brin: null,
+    matt_projectnummer: '',
     adres: '',
     postcode: '',
     plaats: '',
