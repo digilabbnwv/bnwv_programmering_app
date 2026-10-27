@@ -10,7 +10,7 @@ import { formatPercentage, formatPerWeek, formatUren, perWeek, type Werkbelastin
  * legenda met waarden en een tabel voor schermlezers.
  */
 export const ONDERDELEN = [
-  { sleutel: 'scholen', label: 'Scholen', kleur: 'bg-pijler-vraag' },
+  { sleutel: 'scholen', label: 'Programma-scholen', kleur: 'bg-pijler-vraag' },
   { sleutel: 'uitvoering', label: 'Programma-uitvoering', kleur: 'bg-pijler-doe' },
   { sleutel: 'projecten', label: 'Projectgroepen', kleur: 'bg-pijler-leer' },
   { sleutel: 'taken', label: 'Overige taken', kleur: 'bg-paars' },
@@ -186,9 +186,8 @@ export interface Teambalk {
 }
 
 /**
- * Per medewerker een gestapelde balk als deel van de contracturen. De lijn
- * staat op 100% van het contract; wie erover gaat is overbelast en krijgt
- * een label (nooit alleen kleur).
+ * Per medewerker een gestapelde balk als deel van de contracturen. Wie over
+ * het contract gaat is overbelast en krijgt een label (nooit alleen kleur).
  */
 export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
   const [hover, setHover] = useState<{ id: string } & Hover | null>(null)
@@ -199,7 +198,6 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
   }
   const totaalProcent = (r: Teambalk) => ONDERDELEN.reduce((s, o) => s + procent(r, o.sleutel), 0)
   const schaal = Math.max(100, ...rijen.map(totaalProcent))
-  const lijn = (100 / schaal) * 100
 
   return (
     <figure>
@@ -242,8 +240,6 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
                         )
                       })}
                   </div>
-                  {/* 100% van het contract */}
-                  <div className="absolute -top-1 -bottom-1 w-px bg-anthracite" style={{ left: `${lijn}%` }} />
                 </div>
                 <p className="mt-1 text-ui-xs text-neutral-700">
                   {r.w.contracturen <= 0 ? (
@@ -269,10 +265,6 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
             {o.label}
           </span>
         ))}
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="inline-block h-3 w-px bg-anthracite" />
-          100% van het contract
-        </span>
       </div>
       {/* Tabel voor schermlezers. sr-only op de div: op een <table> blijft het bijschrift soms zichtbaar. */}
       <div className="sr-only">

@@ -11,7 +11,6 @@ import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import {
   bouwInvoer,
   laadRapportage,
-  teamProgrammas,
   teamRijen,
   teamSignalen,
   type Rapportagegegevens,
@@ -69,7 +68,7 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
 
   return (
     <Sectie
-      titel={`Mijn werkbelasting ${w.jaar}`}
+      titel="Mijn werkbelasting"
       acties={
         <Link to={`/werkbelasting/${medewerkerId}`} className="font-semibold underline underline-offset-4 hover:no-underline">
           Volledige werkurenverdeling
@@ -193,11 +192,10 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
   const overbelast = rijen.filter((r) => r.werkbelasting.overig < -0.05).length
   const vastgesteld = rijen.filter((r) => r.toelichting?.status === 'vastgesteld').length
   const persoonlijkeSignalen = rijen.reduce((s, r) => s + r.werkbelasting.signalen.length, 0)
-  const programmas = teamProgrammas(rijen)
 
   return (
     <Sectie
-      titel={`Team ${jaar}`}
+      titel="Team"
       acties={
         <Link to={`/rapportage?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
           Naar de rapportage
@@ -216,7 +214,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
         </dl>
 
         {signalen.length > 0 && (
-          <Blok titel="Scholen en projectgroepen">
+          <Blok titel="Signalen">
             <ul className="list-disc space-y-1 pl-6">
               {signalen.slice(0, 5).map((s) => (
                 <li key={`${s.soort}-${s.naam}`}>{teamsignaalTekst(s)}</li>
@@ -230,24 +228,6 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
                 </Link>
               </p>
             )}
-          </Blok>
-        )}
-
-        {programmas.length > 0 && (
-          <Blok titel="Uren per programma">
-            <Staafdiagram
-              titel="Uren van het team per programma in dit jaar"
-              staven={programmas.map((p) => ({
-                id: p.programma.id,
-                label: p.programma.naam,
-                naam: p.programma.naam,
-                waarde: p.uren,
-                toelichting: [
-                  ...(p.scholen > 0 ? [p.scholen === 1 ? '1 school' : `${p.scholen} scholen`] : []),
-                  p.medewerkers === 1 ? '1 medewerker' : `${p.medewerkers} medewerkers`,
-                ].join(', '),
-              }))}
-            />
           </Blok>
         )}
 
