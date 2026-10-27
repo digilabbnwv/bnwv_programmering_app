@@ -5,6 +5,7 @@ import {
   type Deelnemer,
   type ExtraUren,
   type Medewerker,
+  type Programma,
   type Projectgroep,
   type Resultaat,
   type School,
@@ -24,7 +25,9 @@ import {
   formatPerWeek,
   formatUren,
   perWeek,
+  programmaVolgorde,
   type Invoer,
+  type ProgrammaRef,
   type Werkbelasting,
 } from './berekening'
 import { alles } from './useGegevens'
@@ -38,6 +41,7 @@ export interface Rapportagegegevens {
   medewerkers: Medewerker[]
   contracten: Contract[]
   scholen: School[]
+  programmas: Programma[]
   jaargegevens: SchoolJaargegevens[]
   staffel: StaffelSchijf[]
   toewijzingen: Toewijzing[]
@@ -57,6 +61,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       Medewerker[],
       Contract[],
       School[],
+      Programma[],
       SchoolJaargegevens[],
       StaffelSchijf[],
       Toewijzing[],
@@ -73,6 +78,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       lees<Medewerker>(client, 'medewerkers', 'naam'),
       lees<Contract>(client, 'contracten', 'ingangsdatum'),
       lees<School>(client, 'scholen', 'naam'),
+      lees<Programma>(client, 'programmas', 'naam'),
       lees<SchoolJaargegevens>(client, 'school_jaargegevens', 'school_id', jaarFilter),
       lees<StaffelSchijf>(client, 'staffel_schijven', 'min_leerlingen', jaarFilter),
       lees<Toewijzing>(client, 'school_toewijzingen', 'startdatum'),
@@ -90,6 +96,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
     medewerkers,
     contracten,
     scholen,
+    programmas,
     jaargegevens,
     staffel,
     toewijzingen,
@@ -107,6 +114,7 @@ export async function laadRapportage(client: SupabaseClient, jaar: number): Prom
       medewerkers,
       contracten,
       scholen,
+      programmas,
       jaargegevens,
       staffel,
       toewijzingen,
@@ -133,11 +141,13 @@ export function bouwInvoer(g: Rapportagegegevens, medewerkerId: string, werkjaar
         const school = g.scholen.find((s) => s.id === t.school_id)
         if (!school) return []
         const jg = g.jaargegevens.find((j) => j.school_id === school.id && j.jaar === jaar)
+        const programma = g.programmas.find((p) => p.id === school.programma_id)
         return [
           {
             schoolId: school.id,
             naam: school.naam,
             soort: school.soort,
+            programma: programma ? { id: programma.id, naam: programma.naam } : null,
             jaargegevens: jg ? { leerlingaantal: jg.leerlingaantal, uren_correctie: jg.uren_correctie } : null,
             startdatum: t.startdatum,
             einddatum: t.einddatum,
@@ -197,6 +207,37 @@ export function teamRijen(g: Rapportagegegevens, werkjaar: Werkjaar): Rij[] {
         medewerker.actief || w.contracturen > 0 || w.scholen.length > 0 || w.projecten.length > 0 || w.taken.length > 0,
     )
     .sort((a, b) => a.medewerker.naam.localeCompare(b.medewerker.naam, 'nl'))
+}
+
+/** Naam voor in tabellen en grafieken; null is een school zonder programma. */
+export function programmaNaam(programma: ProgrammaRef | null): string {
+  return programma?.naam ?? 'Zonder programma'
+}
+
+/** Schooluren van het hele team per programma. */
+export interface TeamProgramma {
+  programma: ProgrammaRef | null
+  uren: number
+  scholen: number
+  medewerkers: number
+}
+
+export function teamProgrammas(rijen: readonly Rij[]): TeamProgramma[] {
+  type Groep = { programma: ProgrammaRef | null; uren: number; scholen: Set<string>; medewerkers: Set<string> }
+  const groepen = new Map<string | null, Groep>()
+  for (const { medewerker, werkbelasting } of rijen) {
+    for (const s of werkbelasting.scholen) {
+      const sleutel = s.programma?.id ?? null
+      const groep = groepen.get(sleutel) ?? { programma: s.programma, uren: 0, scholen: new Set(), medewerkers: new Set() }
+      groep.uren += s.jaaruren
+      groep.scholen.add(s.id)
+      groep.medewerkers.add(medewerker.id)
+      groepen.set(sleutel, groep)
+    }
+  }
+  return [...groepen.values()]
+    .map((g) => ({ programma: g.programma, uren: g.uren, scholen: g.scholen.size, medewerkers: g.medewerkers.size }))
+    .sort(programmaVolgorde)
 }
 
 export function totalenVan(w: Werkbelasting): Totalen {

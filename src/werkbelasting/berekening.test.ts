@@ -6,6 +6,7 @@ import {
   formatPercentage,
   formatPerWeek,
   formatUren,
+  perProgramma,
   perWeek,
   staffelUren,
   type Invoer,
@@ -22,11 +23,15 @@ const STAFFEL: StaffelSchijf[] = [
   { jaar: 2026, schoolsoort: 'PO', min_leerlingen: 300, max_leerlingen: null, uren: 120 },
 ]
 
+const DBOS = { id: 'dbos', naam: 'dBos' }
+const BOEKSTART = { id: 'boekstart', naam: 'BoekStart' }
+
 function school(naam: string, leerlingen: number, correctie = 0, periode = { startdatum: '2026-01-01', einddatum: null as string | null }): SchoolInzet {
   return {
     schoolId: naam,
     naam,
     soort: 'PO',
+    programma: DBOS,
     jaargegevens: { leerlingaantal: leerlingen, uren_correctie: correctie },
     ...periode,
   }
@@ -104,6 +109,43 @@ describe('overige taken', () => {
     expect(
       w.percentage.scholen + w.percentage.projecten + w.percentage.taken + w.percentage.overig + w.percentage.mijmertijd,
     ).toBeCloseTo(100)
+  })
+})
+
+describe('programma’s', () => {
+  it('telt de schooluren per programma op, op naam en zonder programma als laatste', () => {
+    const w = berekenWerkbelasting({
+      ...MEMO,
+      scholen: [
+        school('De Brug Harderwijk', 320, 30),
+        { ...school('Petraschool Nunspeet', 400), programma: null },
+        { ...school('Dolfijntje', 200), programma: BOEKSTART },
+        school('Da Costa Elspeet', 180),
+      ],
+    })
+    expect(w.programmas).toEqual([
+      { programma: BOEKSTART, uren: 100, scholen: 1 },
+      { programma: DBOS, uren: 250, scholen: 2 },
+      { programma: null, uren: 120, scholen: 1 },
+    ])
+    expect(w.programmas.reduce((s, p) => s + p.uren, 0)).toBeCloseTo(w.schooluren)
+  })
+
+  it('telt een school met twee periodes in een jaar één keer, met de uren naar rato', () => {
+    const w = berekenWerkbelasting({
+      ...MEMO,
+      scholen: [
+        school('Dok 19', 200, 0, { startdatum: '2026-01-01', einddatum: '2026-03-31' }),
+        school('Dok 19', 200, 0, { startdatum: '2026-09-01', einddatum: null }),
+      ],
+    })
+    expect(w.programmas).toHaveLength(1)
+    expect(w.programmas[0]?.scholen).toBe(1)
+    expect(w.programmas[0]?.uren).toBeCloseTo(w.schooluren)
+  })
+
+  it('geeft een lege lijst zonder scholen', () => {
+    expect(perProgramma([])).toEqual([])
   })
 })
 

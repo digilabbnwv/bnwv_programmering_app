@@ -5,6 +5,7 @@ import {
   bouwInvoer,
   isGewijzigd,
   memoTeksten,
+  teamProgrammas,
   teamRijen,
   teamSignalen,
   totalenVan,
@@ -17,12 +18,12 @@ function medewerker(id: string, naam: string, actief = true): Medewerker {
   return { id, naam, email: '', functie: '', user_id: null, actief, opmerking: '' }
 }
 
-function school(id: string, naam: string, actief = true): School {
+function school(id: string, naam: string, actief = true, programmaId: string | null = 'dbos'): School {
   return {
     id,
     naam,
     soort: 'PO',
-    programma_id: null,
+    programma_id: programmaId,
     brin: null,
     matt_projectnummer: '',
     adres: '',
@@ -45,6 +46,10 @@ function gegevens(): Rapportagegegevens {
       { id: 'c2', medewerker_id: 'hil', ingangsdatum: '2020-01-01', uren_per_week: 24, werkweken: null, mijmer_percentage: null },
     ],
     scholen: [school('brug', 'De Brug'), school('dok', 'Dok 19'), school('leeg', 'Zonder iemand'), school('weg', 'Gesloten', false)],
+    programmas: [
+      { id: 'dbos', naam: 'dBos', omschrijving: '' },
+      { id: 'boekstart', naam: 'BoekStart', omschrijving: '' },
+    ],
     jaargegevens: [
       { school_id: 'brug', jaar: 2026, leerlingaantal: 320, uren_correctie: 30, correctie_reden: 'PSZ' },
       { school_id: 'dok', jaar: 2026, leerlingaantal: 200, uren_correctie: 0, correctie_reden: '' },
@@ -106,6 +111,31 @@ describe('bouwInvoer', () => {
 describe('teamRijen', () => {
   it('toont actieve medewerkers op naam, niet een inactieve zonder inzet', () => {
     expect(teamRijen(gegevens(), WERKJAAR).map((r) => r.medewerker.naam)).toEqual(['Hillyanne', 'Ingeborg'])
+  })
+})
+
+describe('teamProgrammas', () => {
+  it('telt de schooluren van het team per programma, met scholen en medewerkers', () => {
+    const g = gegevens()
+    expect(bouwInvoer(g, 'ing', WERKJAAR).scholen.map((s) => s.programma?.naam)).toEqual(['dBos', 'dBos'])
+    expect(teamProgrammas(teamRijen(g, WERKJAAR))).toEqual([
+      { programma: { id: 'dbos', naam: 'dBos' }, uren: expect.closeTo(150 + 100, 5) as number, scholen: 2, medewerkers: 2 },
+    ])
+  })
+
+  it('zet scholen zonder programma apart, als laatste', () => {
+    const g = gegevens()
+    g.scholen = g.scholen.map((s) => (s.id === 'dok' ? { ...s, programma_id: null } : s))
+    g.toewijzingen.push({ id: 't4', school_id: 'leeg', medewerker_id: 'hil', startdatum: '2026-01-01', einddatum: null })
+    g.scholen = g.scholen.map((s) => (s.id === 'leeg' ? { ...s, programma_id: 'boekstart' } : s))
+    g.jaargegevens.push({ school_id: 'leeg', jaar: 2026, leerlingaantal: 50, uren_correctie: 0, correctie_reden: '' })
+    const verdeling = teamProgrammas(teamRijen(g, WERKJAAR))
+    expect(verdeling.map((p) => [p.programma?.naam ?? null, p.scholen, p.medewerkers])).toEqual([
+      ['BoekStart', 1, 1],
+      ['dBos', 1, 1],
+      [null, 1, 2],
+    ])
+    expect(verdeling[2]?.uren).toBeCloseTo(100)
   })
 })
 

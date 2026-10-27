@@ -16,12 +16,21 @@ import {
   formatPerWeek,
   formatUren,
   perWeek,
+  programmaVolgorde,
   type Werkbelasting,
 } from '../werkbelasting/berekening'
 import { Verdelingsbalk } from '../werkbelasting/grafieken'
 import { FormulierDialoog, Laadstatus } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst } from '../werkbelasting/opmaak'
-import { bouwInvoer, isGewijzigd, laadRapportage, memoTeksten, totalenVan, type Rapportagegegevens } from '../werkbelasting/rapportage'
+import {
+  bouwInvoer,
+  isGewijzigd,
+  laadRapportage,
+  memoTeksten,
+  programmaNaam,
+  totalenVan,
+  type Rapportagegegevens,
+} from '../werkbelasting/rapportage'
 import { signaalTekst } from '../werkbelasting/signalen'
 import { useGegevens } from '../werkbelasting/useGegevens'
 
@@ -299,15 +308,18 @@ function Memo({
         ) : (
           <MemoTabel
             bijschrift="Programma-uren per schoollocatie"
-            koppen={['Schoollocatie', 'Periode', 'Jaaruren', 'Gemiddeld per week']}
-            getallen={[2, 3]}
-            rijen={w.scholen.map((s) => [
-              s.naam,
-              s.aandeel < 1 ? formatPeriode(s.periode.startdatum, s.periode.einddatum) : 'Hele jaar',
-              formatUren(s.jaaruren),
-              week(s.jaaruren),
-            ])}
-            totaal={['Totaal', '', formatUren(w.schooluren), week(w.schooluren)]}
+            koppen={['Schoollocatie', 'Programma', 'Periode', 'Jaaruren', 'Gemiddeld per week']}
+            getallen={[3, 4]}
+            rijen={[...w.scholen]
+              .sort((a, b) => programmaVolgorde(a, b) || a.naam.localeCompare(b.naam, 'nl'))
+              .map((s) => [
+                s.naam,
+                programmaNaam(s.programma),
+                s.aandeel < 1 ? formatPeriode(s.periode.startdatum, s.periode.einddatum) : 'Hele jaar',
+                formatUren(s.jaaruren),
+                week(s.jaaruren),
+              ])}
+            totaal={['Totaal', '', '', formatUren(w.schooluren), week(w.schooluren)]}
           />
         )}
       </MemoSectie>
@@ -318,7 +330,10 @@ function Memo({
           koppen={['Onderdeel', 'Uren per jaar', 'Gemiddeld per week', 'Percentage']}
           getallen={[1, 2, 3]}
           rijen={[
-            ['Programma-uren scholen', formatUren(w.schooluren), week(w.schooluren), formatPercentage(w.percentage.scholen)],
+            // Schooluren per programma; zonder scholen één regel met nul.
+            ...(w.programmas.length > 0
+              ? w.programmas.map((p) => [`Programma-uren ${programmaNaam(p.programma)}`, formatUren(p.uren), week(p.uren), deel(p.uren)])
+              : [['Programma-uren scholen', formatUren(0), week(0), deel(0)]]),
             ['Projectgroepen', formatUren(w.projecturen), week(w.projecturen), formatPercentage(w.percentage.projecten)],
             ['Overige taken', formatUren(w.takenuren), week(w.takenuren), formatPercentage(w.percentage.taken)],
             [

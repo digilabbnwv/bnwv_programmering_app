@@ -8,7 +8,15 @@ import { berekenWerkbelasting, formatPercentage, formatPerWeek, formatUren, perW
 import { Staafdiagram, TeamBalken, Verdelingsbalk, type Staaf } from '../werkbelasting/grafieken'
 import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
 import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
-import { bouwInvoer, laadRapportage, teamRijen, teamSignalen, type Rapportagegegevens } from '../werkbelasting/rapportage'
+import {
+  bouwInvoer,
+  laadRapportage,
+  programmaNaam,
+  teamProgrammas,
+  teamRijen,
+  teamSignalen,
+  type Rapportagegegevens,
+} from '../werkbelasting/rapportage'
 import { signaalTekst, teamsignaalTekst } from '../werkbelasting/signalen'
 import { useGegevens } from '../werkbelasting/useGegevens'
 
@@ -101,6 +109,22 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
           )}
 
           <div className="grid gap-8 lg:grid-cols-2">
+            <Blok titel={`Mijn programma’s (${w.programmas.length})`}>
+              {w.programmas.length === 0 ? (
+                <p>Geen scholen in {w.jaar}.</p>
+              ) : (
+                <Staafdiagram
+                  titel="Schooluren per programma in dit jaar"
+                  staven={w.programmas.map((p) => ({
+                    id: p.programma?.id ?? 'zonder',
+                    label: programmaNaam(p.programma),
+                    naam: programmaNaam(p.programma),
+                    waarde: p.uren,
+                    toelichting: p.scholen === 1 ? '1 school' : `${p.scholen} scholen`,
+                  }))}
+                />
+              )}
+            </Blok>
             <Blok titel={`Mijn scholen (${w.scholen.length})`}>
               {w.scholen.length === 0 ? (
                 <p>Geen scholen in {w.jaar}.</p>
@@ -161,6 +185,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
   const overbelast = rijen.filter((r) => r.werkbelasting.overig < -0.05).length
   const vastgesteld = rijen.filter((r) => r.toelichting?.status === 'vastgesteld').length
   const persoonlijkeSignalen = rijen.reduce((s, r) => s + r.werkbelasting.signalen.length, 0)
+  const programmas = teamProgrammas(rijen)
 
   return (
     <Sectie
@@ -197,6 +222,23 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
                 </Link>
               </p>
             )}
+          </Blok>
+        )}
+
+        {programmas.length > 0 && (
+          <Blok titel="Schooluren per programma">
+            <Staafdiagram
+              titel="Schooluren van het team per programma in dit jaar"
+              staven={programmas.map((p) => ({
+                id: p.programma?.id ?? 'zonder',
+                label: programmaNaam(p.programma),
+                naam: programmaNaam(p.programma),
+                waarde: p.uren,
+                toelichting: `${p.scholen === 1 ? '1 school' : `${p.scholen} scholen`}, ${
+                  p.medewerkers === 1 ? '1 medewerker' : `${p.medewerkers} medewerkers`
+                }`,
+              }))}
+            />
           </Blok>
         )}
 

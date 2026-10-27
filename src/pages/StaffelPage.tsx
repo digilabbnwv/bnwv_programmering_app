@@ -3,7 +3,6 @@ import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
-import { TextArea } from '../components/TextArea'
 import { TextField } from '../components/TextField'
 import { Pagina } from '../layout/Pagina'
 import {
@@ -11,7 +10,6 @@ import {
   SCHOOLSOORTEN,
   verwijder,
   voerUit,
-  type Programma,
   type Resultaat,
   type Schoolsoort,
   type StaffelSchijf,
@@ -27,19 +25,16 @@ type Dialoog =
   | { soort: 'jaar-wijzigen'; werkjaar: Werkjaar }
   | { soort: 'schijf'; schijf: StaffelSchijf | null; schoolsoort: Schoolsoort }
   | { soort: 'schijf-verwijderen'; schijf: StaffelSchijf }
-  | { soort: 'programma'; programma: Programma | null }
-  | { soort: 'programma-verwijderen'; programma: Programma }
 
-/** Jaarinstellingen, staffel per jaar en soort school, en programma's (werkbelasting.beheren). */
+/** Jaarinstellingen en staffel per jaar en soort school (werkbelasting.beheren). */
 export function StaffelPage() {
   const { client } = useAuth()
   const laden = useCallback(
     async () =>
-      alles<[Werkjaar[], StaffelSchijf[], Programma[]]>(
+      alles<[Werkjaar[], StaffelSchijf[]]>(
         await Promise.all([
           lees<Werkjaar>(client, 'werkjaren', 'jaar'),
           lees<StaffelSchijf>(client, 'staffel_schijven', 'min_leerlingen'),
-          lees<Programma>(client, 'programmas', 'naam'),
         ]),
       ),
     [client],
@@ -58,7 +53,7 @@ export function StaffelPage() {
     )
   }
 
-  const [werkjaren, staffel, programmas] = data
+  const [werkjaren, staffel] = data
   const ditJaar = new Date().getFullYear()
   const jaar =
     gekozenJaar ?? (werkjaren.some((w) => w.jaar === ditJaar) ? ditJaar : (werkjaren.at(-1)?.jaar ?? null))
@@ -179,35 +174,6 @@ export function StaffelPage() {
         <p>Voeg eerst een jaar toe.</p>
       )}
 
-      <Sectie
-        titel="Programma's"
-        acties={
-          <Button variant="secundair" onClick={() => setDialoog({ soort: 'programma', programma: null })}>
-            Programma toevoegen
-          </Button>
-        }
-      >
-        <Tabel
-          bijschrift="Programma's"
-          rijen={programmas}
-          sleutel={(p) => p.id}
-          kolommen={[
-            { kop: 'Naam', inhoud: (p) => p.naam },
-            { kop: 'Omschrijving', inhoud: (p) => p.omschrijving },
-          ]}
-          acties={(p) => (
-            <>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'programma', programma: p })}>
-                Wijzigen<span className="sr-only"> {p.naam}</span>
-              </Button>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'programma-verwijderen', programma: p })}>
-                Verwijderen<span className="sr-only"> {p.naam}</span>
-              </Button>
-            </>
-          )}
-        />
-      </Sectie>
-
       {(dialoog?.soort === 'jaar-nieuw' || dialoog?.soort === 'jaar-wijzigen') && (
         <WerkjaarFormulier
           werkjaar={dialoog.soort === 'jaar-wijzigen' ? dialoog.werkjaar : null}
@@ -227,21 +193,6 @@ export function StaffelPage() {
         <VerwijderDialoog
           wat="Schijf"
           onVerwijderen={() => verwijder(client, 'staffel_schijven', dialoog.schijf.id)}
-          onSluiten={sluit}
-          onGelukt={herlaad}
-        />
-      )}
-      {dialoog?.soort === 'programma' && (
-        <ProgrammaFormulier programma={dialoog.programma} onSluiten={sluit} onGelukt={herlaad} />
-      )}
-      {dialoog?.soort === 'programma-verwijderen' && (
-        <VerwijderDialoog
-          wat={`Programma ${dialoog.programma.naam}`}
-          onVerwijderen={() =>
-            verwijder(client, 'programmas', dialoog.programma.id, {
-              '23503': 'Er zijn nog scholen die onder dit programma vallen.',
-            })
-          }
           onSluiten={sluit}
           onGelukt={herlaad}
         />
@@ -367,42 +318,6 @@ function SchijfFormulier({
         onChange={(e) => setMax(e.target.value)}
       />
       <TextField label="Uren per jaar" inputMode="decimal" value={uren} onChange={(e) => setUren(e.target.value)} />
-    </FormulierDialoog>
-  )
-}
-
-function ProgrammaFormulier({
-  programma,
-  onSluiten,
-  onGelukt,
-}: {
-  programma: Programma | null
-  onSluiten: () => void
-  onGelukt: () => void
-}) {
-  const { client } = useAuth()
-  const [naam, setNaam] = useState(programma?.naam ?? '')
-  const [omschrijving, setOmschrijving] = useState(programma?.omschrijving ?? '')
-
-  function opslaan() {
-    if (!naam.trim()) return ongeldig('Vul een naam in.')
-    return voerUit(
-      client,
-      'programma_opslaan',
-      { p_id: programma?.id ?? null, p_naam: naam, p_omschrijving: omschrijving },
-      { '23505': 'Er is al een programma met deze naam.' },
-    )
-  }
-
-  return (
-    <FormulierDialoog
-      titel={programma ? 'Programma wijzigen' : 'Programma toevoegen'}
-      onOpslaan={opslaan}
-      onSluiten={onSluiten}
-      onGelukt={onGelukt}
-    >
-      <TextField label="Naam" maxLength={80} value={naam} onChange={(e) => setNaam(e.target.value)} />
-      <TextArea label="Omschrijving" maxLength={1000} value={omschrijving} onChange={(e) => setOmschrijving(e.target.value)} />
     </FormulierDialoog>
   )
 }

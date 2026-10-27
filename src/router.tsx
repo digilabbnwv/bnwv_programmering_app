@@ -13,6 +13,8 @@ import { MedewerkerDetailPage } from './pages/MedewerkerDetailPage'
 import { ProjectgroepenPage } from './pages/ProjectgroepenPage'
 import { ProjectgroepDetailPage } from './pages/ProjectgroepDetailPage'
 import { StaffelPage } from './pages/StaffelPage'
+import { ProgrammasPage } from './pages/ProgrammasPage'
+import { ProgrammaDetailPage } from './pages/ProgrammaDetailPage'
 import { TakenPage } from './pages/TakenPage'
 import { TaakDetailPage } from './pages/TaakDetailPage'
 import { RapportagePage } from './pages/RapportagePage'
@@ -107,6 +109,22 @@ export const router = createHashRouter([
             element: (
               <VereistRecht recht="werkbelasting.beheren">
                 <TaakDetailPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/programmas',
+            element: (
+              <VereistRecht recht="werkbelasting.beheren">
+                <ProgrammasPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/programmas/:id',
+            element: (
+              <VereistRecht recht="werkbelasting.beheren">
+                <ProgrammaDetailPage />
               </VereistRecht>
             ),
           },

@@ -37,10 +37,17 @@ export interface Periode {
   einddatum: string | null
 }
 
+export interface ProgrammaRef {
+  id: string
+  naam: string
+}
+
 export interface SchoolInzet extends Periode {
   schoolId: string
   naam: string
   soort: Schoolsoort
+  /** null: de school valt onder geen programma. */
+  programma: ProgrammaRef | null
   /** Gegevens van de school voor dit jaar; null als ze ontbreken. */
   jaargegevens: { leerlingaantal: number; uren_correctie: number } | null
 }
@@ -85,6 +92,18 @@ export interface Regel {
   periode: Periode
 }
 
+export interface SchoolRegel extends Regel {
+  programma: ProgrammaRef | null
+}
+
+/** Schooluren van één programma; programma null: scholen zonder programma. */
+export interface ProgrammaUren {
+  programma: ProgrammaRef | null
+  uren: number
+  /** Aantal verschillende scholen. */
+  scholen: number
+}
+
 export type Signaal =
   | { soort: 'geen-contract' }
   | { soort: 'overbelast'; tekortUren: number }
@@ -98,8 +117,10 @@ export interface Werkbelasting {
   contracturen: number
   mijmertijd: number
   beschikbaar: number
-  scholen: Regel[]
+  scholen: SchoolRegel[]
   schooluren: number
+  /** Schooluren per programma, op naam; zonder programma als laatste. */
+  programmas: ProgrammaUren[]
   projecten: Regel[]
   projecturen: number
   /** Overige taken met een eigen ureninschatting. */
@@ -189,7 +210,7 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
   if (contracturen === 0) signalen.push({ soort: 'geen-contract' })
   const beschikbaar = contracturen - mijmertijd
 
-  const scholen: Regel[] = []
+  const scholen: SchoolRegel[] = []
   for (const s of invoer.scholen) {
     const aandeel = aandeelInJaar(s, jaar)
     if (aandeel === 0) continue
@@ -208,6 +229,7 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
       aandeel,
       jaaruren: volleJaaruren * aandeel,
       periode: { startdatum: s.startdatum, einddatum: s.einddatum },
+      programma: s.programma,
     })
   }
 
@@ -238,6 +260,7 @@ export function berekenWerkbelasting(invoer: Invoer): Werkbelasting {
     beschikbaar,
     scholen,
     schooluren,
+    programmas: perProgramma(scholen),
     projecten,
     projecturen,
     taken,
@@ -275,6 +298,27 @@ function naarRato(
       },
     ]
   })
+}
+
+/** Schooluren opgeteld per programma, op naam; scholen zonder programma als laatste. */
+export function perProgramma(scholen: readonly SchoolRegel[]): ProgrammaUren[] {
+  const groepen = new Map<string | null, { programma: ProgrammaRef | null; uren: number; scholen: Set<string> }>()
+  for (const s of scholen) {
+    const sleutel = s.programma?.id ?? null
+    const groep = groepen.get(sleutel) ?? { programma: s.programma, uren: 0, scholen: new Set<string>() }
+    groep.uren += s.jaaruren
+    groep.scholen.add(s.id)
+    groepen.set(sleutel, groep)
+  }
+  return [...groepen.values()]
+    .map((g) => ({ programma: g.programma, uren: g.uren, scholen: g.scholen.size }))
+    .sort(programmaVolgorde)
+}
+
+/** Op programmanaam; "zonder programma" (null) als laatste. */
+export function programmaVolgorde(a: { programma: ProgrammaRef | null }, b: { programma: ProgrammaRef | null }): number {
+  if (!a.programma || !b.programma) return (a.programma ? 0 : 1) - (b.programma ? 0 : 1)
+  return a.programma.naam.localeCompare(b.programma.naam, 'nl')
 }
 
 /** Uren per week, uitgaande van de werkweken van de medewerker in dit jaar. */

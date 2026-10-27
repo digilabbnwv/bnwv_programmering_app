@@ -8,7 +8,7 @@ import { Tabel } from '../components/Tabel'
 import { Pagina } from '../layout/Pagina'
 import { formatPercentage, formatPerWeek, formatUren, perWeek } from '../werkbelasting/berekening'
 import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
-import { laadRapportage, teamRijen, teamSignalen, type Rij } from '../werkbelasting/rapportage'
+import { laadRapportage, programmaNaam, teamProgrammas, teamRijen, teamSignalen, type Rij } from '../werkbelasting/rapportage'
 import { signaalTekst, teamsignaalTekst } from '../werkbelasting/signalen'
 import { useGegevens } from '../werkbelasting/useGegevens'
 
@@ -57,6 +57,7 @@ export function RapportagePage() {
 
   const rijen = teamRijen(gegevens, werkjaar)
   const team = teamSignalen(gegevens, jaar)
+  const programmas = teamProgrammas(rijen)
   const som = (f: (r: Rij) => number) => rijen.reduce((s, r) => s + f(r), 0)
   const contracturen = som((r) => r.werkbelasting.contracturen)
   const schooluren = som((r) => r.werkbelasting.schooluren)
@@ -117,6 +118,58 @@ export function RapportagePage() {
                 : []),
             ])}
           </ul>
+        )}
+      </Sectie>
+
+      <Sectie titel="Verdeling per programma">
+        <p className="mb-4 max-w-prose text-neutral-700">
+          De schooluren per programma, naar het programma van de school. Projectgroepen en overige taken vallen buiten de
+          programma’s.
+        </p>
+        <Tabel
+          bijschrift={`Schooluren per programma ${jaar}`}
+          rijen={programmas}
+          sleutel={(p) => p.programma?.id ?? 'zonder'}
+          leeg="Nog geen schooluren in dit jaar."
+          kolommen={[
+            { kop: 'Programma', inhoud: (p) => programmaNaam(p.programma) },
+            { kop: 'Scholen', inhoud: (p) => p.scholen, getal: true },
+            { kop: 'Medewerkers', inhoud: (p) => p.medewerkers, getal: true },
+            { kop: 'Uren', inhoud: (p) => formatUren(p.uren), getal: true },
+            {
+              kop: 'Deel van de schooluren',
+              inhoud: (p) => formatPercentage(schooluren > 0 ? (p.uren / schooluren) * 100 : 0),
+              getal: true,
+            },
+          ]}
+        />
+        {programmas.length > 0 && (
+          <div className="mt-6">
+            <Tabel
+              bijschrift={`Schooluren per medewerker en programma ${jaar}`}
+              rijen={rijen.filter((r) => r.werkbelasting.scholen.length > 0)}
+              sleutel={(r) => r.medewerker.id}
+              kolommen={[
+                {
+                  kop: 'Medewerker',
+                  inhoud: (r) => (
+                    <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+                      {r.medewerker.naam}
+                    </Link>
+                  ),
+                },
+                ...programmas.map((p) => ({
+                  kop: programmaNaam(p.programma),
+                  inhoud: (r: Rij) => {
+                    const uren = r.werkbelasting.programmas.find((q) => q.programma?.id === p.programma?.id)?.uren ?? 0
+                    return uren > 0 ? formatUren(uren) : '–'
+                  },
+                  getal: true,
+                })),
+                { kop: 'Totaal scholen', inhoud: (r) => formatUren(r.werkbelasting.schooluren), getal: true },
+              ]}
+            />
+          </div>
         )}
       </Sectie>
 
