@@ -67,7 +67,7 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 3. **Medewerkers**: gegevens, koppeling met een account, contracthistorie, extra uren.
 4. **Projectgroepen**: gegevens, deelnemers met uren en periode.
    **Overige taken**: gegevens, uitvoerders met uren en periode, overdragen aan een collega per datum.
-5. **Rapportage** (`/rapportage`, `werkbelasting.bekijken`): teamoverzicht per jaar met kengetallen, signalen, de uren per programma (totaal en per medewerker), en uren en percentages per medewerker met status.
+5. **Rapportage** (`werkbelasting.bekijken`), drie pagina's met hetzelfde jaar (`?jaar=`): **Signalen** (`/rapportage/signalen`, ook via `/rapportage`) met kengetallen en aandachtspunten; **Verdeling per programma** (`/rapportage/programmas`) met de uren per programma, totaal en per medewerker; **Verdeling per medewerker** (`/rapportage/medewerkers`) met filters, sorteren en uren of percentages.
    **Werkurenverdeling** (`/werkbelasting/:id`): de memo per medewerker, printbaar, met toelichting. De scholen staan met hun programma, programma-uitvoering heeft een eigen blok; de verdeling van de werkuren splitst de programma-uren per programma. Iedereen ziet de eigen verdeling.
    **Vaststellen** (`werkbelasting.beheren`) bewaart de totalen van dat moment. Wijken de uren later af, dan meldt de pagina dat de gegevens na het vaststellen zijn gewijzigd. "Terug naar concept" heft de vaststelling op.
 6. **Dashboard (Start)**: mijn verdeling (grafiek), mijn programma's, mijn scholen, mijn projectgroepen, signalen. Het teamblok toont ook de uren per programma.

@@ -1,4 +1,4 @@
-import { createHashRouter } from 'react-router'
+import { createHashRouter, Navigate, useLocation } from 'react-router'
 import { AuthGate } from './auth/AuthGate'
 import { AppLayout } from './layout/AppLayout'
 import { VereistRecht } from './layout/Pagina'
@@ -17,7 +17,7 @@ import { ProgrammasPage } from './pages/ProgrammasPage'
 import { ProgrammaDetailPage } from './pages/ProgrammaDetailPage'
 import { TakenPage } from './pages/TakenPage'
 import { TaakDetailPage } from './pages/TaakDetailPage'
-import { RapportagePage } from './pages/RapportagePage'
+import { RapportageMedewerkersPage, RapportageProgrammasPage, RapportageSignalenPage } from './pages/RapportagePage'
 import { WerkbelastingPage } from './pages/WerkbelastingPage'
 
 // Hash-routing: GitHub Pages kan geen server-side rewrites doen.
@@ -31,11 +31,29 @@ export const router = createHashRouter([
         element: <AppLayout />,
         children: [
           { path: '/', element: <StartPage /> },
+          // Oude links naar /rapportage (met ?jaar=) komen op de signalen uit.
+          { path: '/rapportage', element: <NaarSignalen /> },
           {
-            path: '/rapportage',
+            path: '/rapportage/signalen',
             element: (
               <VereistRecht recht="werkbelasting.bekijken">
-                <RapportagePage />
+                <RapportageSignalenPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/rapportage/programmas',
+            element: (
+              <VereistRecht recht="werkbelasting.bekijken">
+                <RapportageProgrammasPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/rapportage/medewerkers',
+            element: (
+              <VereistRecht recht="werkbelasting.bekijken">
+                <RapportageMedewerkersPage />
               </VereistRecht>
             ),
           },
@@ -158,3 +176,8 @@ export const router = createHashRouter([
     ],
   },
 ])
+
+function NaarSignalen() {
+  const { search } = useLocation()
+  return <Navigate to={{ pathname: '/rapportage/signalen', search }} replace />
+}

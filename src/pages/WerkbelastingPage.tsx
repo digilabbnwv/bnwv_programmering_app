@@ -121,7 +121,7 @@ export function WerkbelastingPage() {
           </>
         )}
         {heeftRecht('werkbelasting.bekijken') && (
-          <Link to={`/rapportage?jaar=${jaar}`} className="pb-3 font-semibold underline underline-offset-4 hover:no-underline">
+          <Link to={`/rapportage/medewerkers?jaar=${jaar}`} className="pb-3 font-semibold underline underline-offset-4 hover:no-underline">
             Teamoverzicht
           </Link>
         )}

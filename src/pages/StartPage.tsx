@@ -197,7 +197,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
     <Sectie
       titel="Team"
       acties={
-        <Link to={`/rapportage?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Link to={`/rapportage/signalen?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
           Naar de rapportage
         </Link>
       }
@@ -223,7 +223,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
             {signalen.length > 5 && (
               <p className="mt-2 text-ui-sm">
                 En nog {signalen.length - 5}.{' '}
-                <Link to={`/rapportage?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+                <Link to={`/rapportage/signalen?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
                   Alle signalen
                 </Link>
               </p>
