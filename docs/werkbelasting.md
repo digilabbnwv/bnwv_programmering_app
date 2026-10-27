@@ -43,7 +43,7 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 | `medewerkers` | naam, e-mail, functie, actief, optioneel gekoppeld aan een inlogaccount |
 | `contracten` | per medewerker: ingangsdatum, uren per week, eventueel afwijkende werkweken of mijmerpercentage |
 | `school_toewijzingen` | school ↔ medewerker met start- en einddatum. Per school één medewerker tegelijk. |
-| `projectgroepen` | naam, omschrijving, start- en einddatum, trekker |
+| `projectgroepen` | naam, omschrijving, MATT projectnummer, start- en einddatum, trekker |
 | `projectgroep_deelnemers` | medewerker, uren per jaar, start- en einddatum |
 | `programma_uitvoerders` | bij een programma van het type `uitvoerders`: medewerker, uren per jaar, start- en einddatum |
 | `taken` | naam, omschrijving, start- en einddatum |

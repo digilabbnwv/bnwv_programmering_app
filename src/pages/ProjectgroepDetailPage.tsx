@@ -87,6 +87,7 @@ export function ProjectgroepDetailPage() {
           regels={[
             ['Periode', formatPeriode(projectgroep.startdatum, projectgroep.einddatum)],
             ['Trekker', naamVan(projectgroep.trekker_id) || 'Geen'],
+            ['MATT projectnummer', projectgroep.matt_projectnummer || '–'],
             ['Uren per jaar nu', `${formatUren(urenNu)} (alle huidige deelnemers samen)`],
           ]}
         />

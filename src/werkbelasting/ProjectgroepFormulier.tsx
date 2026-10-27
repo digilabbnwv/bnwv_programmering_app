@@ -20,6 +20,7 @@ export function ProjectgroepFormulier({
   const { client } = useAuth()
   const [naam, setNaam] = useState(projectgroep?.naam ?? '')
   const [omschrijving, setOmschrijving] = useState(projectgroep?.omschrijving ?? '')
+  const [matt, setMatt] = useState(projectgroep?.matt_projectnummer ?? '')
   const [start, setStart] = useState(projectgroep?.startdatum ?? `${new Date().getFullYear()}-01-01`)
   const [eind, setEind] = useState(projectgroep?.einddatum ?? '')
   const [trekker, setTrekker] = useState(projectgroep?.trekker_id ?? '')
@@ -32,6 +33,7 @@ export function ProjectgroepFormulier({
       p_id: projectgroep?.id ?? null,
       p_naam: naam,
       p_omschrijving: omschrijving,
+      p_matt_projectnummer: matt,
       p_startdatum: start,
       p_einddatum: eind || null,
       p_trekker_id: trekker || null,
@@ -49,6 +51,14 @@ export function ProjectgroepFormulier({
     >
       <TextField label="Naam" maxLength={120} value={naam} onChange={(e) => setNaam(e.target.value)} />
       <TextArea label="Omschrijving" maxLength={1000} value={omschrijving} onChange={(e) => setOmschrijving(e.target.value)} />
+      <TextField
+        label="MATT projectnummer"
+        hint="Optioneel."
+        autoComplete="off"
+        maxLength={30}
+        value={matt}
+        onChange={(e) => setMatt(e.target.value)}
+      />
       <TextField label="Ingangsdatum" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
       <TextField
         label="Einddatum"

@@ -103,6 +103,7 @@ export interface Projectgroep {
   id: string
   naam: string
   omschrijving: string
+  matt_projectnummer: string
   startdatum: string
   einddatum: string | null
   trekker_id: string | null

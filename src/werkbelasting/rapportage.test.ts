@@ -69,9 +69,9 @@ function gegevens(): Rapportagegegevens {
       { id: 't3', school_id: 'dok', medewerker_id: 'hil', startdatum: '2026-07-01', einddatum: null },
     ],
     projectgroepen: [
-      { id: 'p1', naam: 'Open Boek', omschrijving: '', startdatum: '2026-01-01', einddatum: null, trekker_id: null },
-      { id: 'p2', naam: 'Podcasting', omschrijving: '', startdatum: '2026-01-01', einddatum: null, trekker_id: null },
-      { id: 'p3', naam: 'Afgelopen', omschrijving: '', startdatum: '2024-01-01', einddatum: '2025-12-31', trekker_id: null },
+      { id: 'p1', naam: 'Open Boek', omschrijving: '', matt_projectnummer: '', startdatum: '2026-01-01', einddatum: null, trekker_id: null },
+      { id: 'p2', naam: 'Podcasting', omschrijving: '', matt_projectnummer: '', startdatum: '2026-01-01', einddatum: null, trekker_id: null },
+      { id: 'p3', naam: 'Afgelopen', omschrijving: '', matt_projectnummer: '', startdatum: '2024-01-01', einddatum: '2025-12-31', trekker_id: null },
     ],
     deelnemers: [{ id: 'd1', projectgroep_id: 'p1', medewerker_id: 'ing', uren_per_jaar: 40, startdatum: '2026-01-01', einddatum: null }],
     taken: [

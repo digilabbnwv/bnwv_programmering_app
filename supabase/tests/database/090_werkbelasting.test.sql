@@ -1,7 +1,7 @@
 -- Werkbelasting: wie ziet wat, wie mag wijzigen, en de regels in de database
 -- (geen overlap, school verplaatsen, auditlog).
 begin;
-select plan(38);
+select plan(40);
 
 select tests.create_user('beheerder@test.nl',  'beheerder');
 select tests.create_user('teamleider@test.nl', 'teamleider');
@@ -93,6 +93,11 @@ select is((select brin || ' ' || postcode || ' ' || email from public.scholen wh
   '12AB 8071 AB info@school.nl', 'school opslaan normaliseert BRIN, postcode en e-mail');
 select is((select matt_projectnummer from public.scholen where naam = 'Petraschool'),
   'P-2026-014', 'school opslaan bewaart het MATT projectnummer zonder spaties eromheen');
+select lives_ok(
+  $$ select public.projectgroep_opslaan(null, 'Kinderboekenweek', '', ' PG-2026-007 ', '2026-01-01', null, null) $$,
+  'teamleider: kan een projectgroep met MATT projectnummer aanmaken');
+select is((select matt_projectnummer from public.projectgroepen where naam = 'Kinderboekenweek'),
+  'PG-2026-007', 'projectgroep opslaan bewaart het MATT projectnummer zonder spaties eromheen');
 
 -- Da Costa per 1 oktober van Collega naar Medewerker.
 select lives_ok(
