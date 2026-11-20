@@ -14,6 +14,8 @@ import { ProjectgroepenPage } from './pages/ProjectgroepenPage'
 import { ProjectgroepDetailPage } from './pages/ProjectgroepDetailPage'
 import { StaffelPage } from './pages/StaffelPage'
 import { OrganisatiePage } from './pages/OrganisatiePage'
+import { JaarplanPage } from './pages/JaarplanPage'
+import { ProjectPage } from './pages/ProjectPage'
 import { ProgrammasPage } from './pages/ProgrammasPage'
 import { ProgrammaDetailPage } from './pages/ProgrammaDetailPage'
 import { TakenPage } from './pages/TakenPage'
@@ -152,6 +154,22 @@ export const router = createHashRouter([
             element: (
               <VereistRecht recht="werkbelasting.beheren">
                 <StaffelPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/jaarplan',
+            element: (
+              <VereistRecht recht="projectplan.bekijken">
+                <JaarplanPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/projecten/:id',
+            element: (
+              <VereistRecht recht="projectplan.bekijken">
+                <ProjectPage />
               </VereistRecht>
             ),
           },

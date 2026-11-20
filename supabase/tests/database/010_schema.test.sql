@@ -46,13 +46,15 @@ select is(
     where n.nspname = 'public'
       and has_function_privilege('authenticated', p.oid, 'execute')),
   array['afdeling_opslaan', 'contract_opslaan', 'deelnemer_opslaan', 'extra_uren_opslaan', 'functie_opslaan',
+        'inzet_opslaan', 'jaarplan_importeren', 'jaarplan_opslaan', 'jaarplan_verwijderen',
         'list_users', 'medewerker_opslaan', 'organisatie_verwijderen', 'programma_opslaan', 'programma_overdragen',
-        'programma_uitvoerder_opslaan', 'projectgroep_opslaan',
+        'programma_uitvoerder_opslaan', 'project_opslaan', 'projectgroep_opslaan', 'projectjaar_opslaan',
+        'projectplan_verwijderen',
         'school_jaargegevens_opslaan', 'school_jaargegevens_overnemen', 'school_opslaan', 'school_toewijzen',
         'staffel_schijf_opslaan', 'taak_opslaan', 'taak_overdragen', 'tak_opslaan', 'toelichting_opslaan',
         'toewijzing_wijzigen', 'uitvoerder_opslaan', 'werkbelasting_heropenen', 'werkbelasting_vaststellen', 'werkbelasting_verwijderen',
         'werkjaar_opslaan'],
-  'authenticated kan in public alleen list_users en de functies van werkbelasting en organisatie uitvoeren'
+  'authenticated kan in public alleen list_users en de functies van werkbelasting, organisatie en projectplanner uitvoeren'
 );
 
 select is(

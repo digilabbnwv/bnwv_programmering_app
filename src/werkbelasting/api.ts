@@ -222,6 +222,10 @@ type Tabel =
   | 'afdelingen'
   | 'functies'
   | 'takken'
+  | 'jaarplannen'
+  | 'projecten'
+  | 'projectjaren'
+  | 'projectjaar_inzet'
 
 /** Leest een hele tabel (voor zover RLS hem laat zien). */
 export async function lees<T>(

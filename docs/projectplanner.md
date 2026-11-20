@@ -1,8 +1,8 @@
 # Projectplanner: analyse en plan
 
 > **Status: plan vastgesteld (20-11-2026).** Alle vragen zijn beantwoord, zie
-> [besluiten](#5-besluiten). Fase 1 (organisatie) is gebouwd, zie
-> [fasering](#9-fasering). Volgende stap: fase 2.
+> [besluiten](#5-besluiten). Fase 1 (organisatie) en fase 2 (projecten en
+> jaarplan) zijn gebouwd, zie [fasering](#9-fasering). Volgende stap: fase 3.
 
 Bronnen: `202610-Concept-Projectplanner-BNWV-2027.xlsx` (concept-jaarplan van het
 MT voor 2027), `202108-bijlage A Functiestructuur versie 16.08.2021.pdf` en de
@@ -148,8 +148,10 @@ wordt dat "Anna 40 uur, Bram 40 uur". Daartussen moet een koppeling komen.
   gepland. Elke medewerker heeft een functie en een afdeling.
 - **Tak**: een indeling van projecten binnen een afdeling (Doorgaande leeslijn,
   Digitaal, HR, …).
-- **Project**: een projectgroep in de app, uitgebreid met afdeling, tak en
-  indiener. Heeft altijd een start- en een einddatum.
+- **Project**: wat het MT plant, met afdeling, tak, indiener en eventueel een
+  programma. Heeft altijd een begin- en een einddatum. Een project is (nog) geen
+  projectgroep: die ontstaat pas in de uitvoering (fase 5), zodat geplande
+  projecten niet in de werkbelasting en de signalen verschijnen.
 - **Jaarplan**: één per jaar, met een fase.
 - **Projectjaar**: een project in een jaarplan, met status en budget. Een project
   over de jaargrens heeft twee projectjaren.
@@ -206,11 +208,15 @@ import worden dat inzetregels met een functie, die Jasper kiest.
 | `functies` | naam, afkorting (uniek als hij er is), standaardafdeling, extern, actief |
 | `takken` | afdeling, naam (uniek binnen de afdeling), actief |
 | `medewerkers` (uitbreiden) | + afdeling, + functie (verwijzing). Het vrije tekstveld `functie` gaat weg zodra alle medewerkers een functie uit de lijst hebben. |
-| `jaarplannen` | jaar (verwijst naar `werkjaren`), fase (`wensen`, `concept`, `definitief`, `afgesloten`), proefjaar, vastgesteld op en door, momentopname |
-| `projectgroepen` (uitbreiden) | + afdeling, + tak, + indiener, + programma (optioneel). Einddatum wordt verplicht voor projecten in een jaarplan. De tabel houdt zijn naam, zodat de werkbelasting niet geraakt wordt; in de schermen heet het "project". |
-| `projectjaren` | project, jaar, status (`ingediend`, `akkoord`, `afgewezen`, `uitgesteld`), budget, toelichting budget, toelichting MT. Eén per project per jaar. |
+| `jaarplannen` | jaar, fase (`wensen`, `concept`, `definitief`, `afgesloten`), proefjaar. Vastgesteld op en door en de momentopname volgen in fase 4. |
+| `projecten` | naam, omschrijving, afdeling, tak (moet bij de afdeling horen), indiener, programma (optioneel), begin- en einddatum (verplicht) |
+| `projectjaren` | project, jaar, status (`ingediend`, `akkoord`, `afgewezen`, `uitgesteld`), budget (leeg = nog onbekend), toelichting. Eén per project per jaar; het jaar moet in de looptijd vallen. |
 | `projectjaar_inzet` | projectjaar, functie, fase (`voorbereiding`, `uitvoering`), aantal collega's, uren totaal, startdatum, einddatum (binnen het jaar en binnen de looptijd van het project) |
-| `projectgroep_deelnemers` (bestaand) | ongewijzigd. Toegewezen uren per functie volgen uit de functie van de deelnemer en de bestaande berekening naar rato. |
+| `projectgroepen` (fase 5) | + verwijzing naar het project, als de projectgroep start. Toegewezen uren per functie volgen dan uit de functie van de deelnemers en de bestaande berekening naar rato. |
+
+Afwijking van het eerste plan: projecten zijn een eigen tabel in plaats van een
+uitbreiding van `projectgroepen`. Anders zou elk gepland project direct als
+projectgroep in de werkbelasting staan, met het signaal "geen deelnemers".
 
 Schrijven gaat, net als nu, via databasefuncties die 2FA en het juiste recht
 eisen en de auditlog schrijven. Bij **definitief maken** bewaart de app een
@@ -237,11 +243,13 @@ zijn dan zichtbaar als afwijking.
 
 **Beheer**
 
-1. **Projecten** (vervangt Projectgroepen): lijst per jaar, te filteren op
-   afdeling, tak, status en functie. Detail: gegevens, projectjaren met status
-   en budget, inzetregels, deelnemers.
-2. **Jaarplan** (`/jaarplan/:jaar`): fase, aantallen per status, de knop naar de
-   volgende fase, en de controle vóór het definitief maken.
+1. **Jaarplan** (`/jaarplan?jaar=`): fase, kengetallen (projecten per status,
+   budget, uren), de projectenlijst te filteren op afdeling, tak, status en
+   functie, en project toevoegen. Een leeg jaarplan biedt de Excel-import aan.
+   Later: de controle vóór het definitief maken (fase 4).
+2. **Project** (`/projecten/:id`): gegevens, en per jaarplan de status, het
+   budget, de toelichting en de inzetregels. Vanaf fase 5 ook de projectgroep
+   met deelnemers.
 3. **Organisatie**: afdelingen, functies en takken.
 4. **Medewerkers**: afdeling en functie uit de lijst.
 
@@ -313,7 +321,7 @@ de cyclus van 2028.
 | Fase | Inhoud | Klaar als | Wanneer |
 | --- | --- | --- | --- |
 | 1 | **Organisatie**: afdelingen, functies, takken; medewerkers krijgen afdeling en functie; rol `mt` | lijsten beheerbaar, medewerkers Programmering ingedeeld | gebouwd nov 2026 |
-| 2 | **Projecten en jaarplan**: projectgroepen uitbreiden, jaarplannen, projectjaren, inzetregels; schermen Projecten en Jaarplan; import van de Excel 2027 | MT-concept 2027 staat in de app | dec 2026 |
+| 2 | **Projecten en jaarplan**: jaarplannen, projecten, projectjaren, inzetregels; schermen Jaarplan en Project; import uit de Excel | MT-concept 2027 staat in de app | gebouwd nov 2026 |
 | 3 | **Dashboard**: kengetallen, budget, inzet, drukte, tijdlijn, signalen | MT en directie zien het concept 2027 in de app | jan 2027 |
 | 4 | **Definitief maken**: momentopname en afwijkingen; vergelijking met de Excel 2027 | jaarplan 2027 vastgesteld, verschillen met de Excel verklaard | jan – feb 2027 |
 | 5 | **Uitvoering**: deelnemers koppelen vanuit het project, gepland tegenover toegewezen | teamleiders koppelen collega's vanuit het jaarplan | voorjaar 2027 |
@@ -347,14 +355,38 @@ Na het uitrollen: geef de MT-leden de rol MT (Instellingen → Gebruikers) en de
 de medewerkers van Programmering in. Het oude tekstveld `functie` gaat weg in
 een latere migratie, als iedereen is ingedeeld.
 
+### Fase 2: wat er gebouwd is
+
+- Migratie `20261121120000_projectplanner.sql`: tabellen `jaarplannen`,
+  `projecten`, `projectjaren` en `projectjaar_inzet`, leesbaar met
+  `projectplan.bekijken`. Schrijffuncties (projectplan.beheren):
+  `jaarplan_opslaan` (alleen wensen of concept), `jaarplan_verwijderen`,
+  `project_opslaan` (een nieuw project komt meteen in het jaarplan),
+  `projectjaar_opslaan`, `inzet_opslaan`, `projectplan_verwijderen` en
+  `jaarplan_importeren`. De database controleert dat jaren en inzet binnen de
+  looptijd vallen. Wijzigingen staan in de auditlog als `projectplan.<tabel>.<actie>`.
+- Schermen **Beheer → Jaarplan** en de projectpagina.
+- **Excel-import** in een leeg jaarplan, zie hieronder.
+
 ### Schaduwdraaien 2027
 
-- **Import** (fase 2): projectnaam, afdeling (tabblad), tak, en de inzetfunctie
-  waar die is ingevuld. Rijen die bij één project horen ("… programmering" en
-  "… LDV", samengevoegde cellen bij Staf) worden één project met meerdere
-  inzetregels. Rijen die een programma zijn (dBos, Boekstart in Kinderopvang,
-  Digilabs, Peuterbieb, Boekjes & Babbels, …) worden niet geïmporteerd. De import
-  maakt eerst een voorstel; Jasper controleert het, daarna gaat het de database in.
+- **Import** (fase 2): op de pagina van een leeg jaarplan kies je de
+  projectplanner-Excel. De browser leest het bestand (`src/projectplanner/excel.ts`)
+  en maakt een voorstel (`voorstel.ts`):
+  - tabbladen die een afdeling zijn (naam of afkorting), met de tak uit kolom A
+    (ook afgekort, zoals "D. Leeslijn");
+  - rijen van één project samengevoegd: dezelfde naam zonder "programmering",
+    "uitvoering LDV", "LDV", "Ondersteuning …" en dergelijke, samengevoegde
+    projectcellen, en naamloze rijen direct onder een project;
+  - programma's (naam gelijk aan een programma in de app) staan uit; projecten
+    waarvan de naam met een programmanaam begint, worden aan dat programma gekoppeld;
+  - projecten die op elkaar lijken (ook over tabbladen heen) worden gemarkeerd;
+  - budget uit de Excel, en de overige gegevens (projectleden, begin, duur,
+    inzet van, uren in het weekraster) in de toelichting.
+
+  Jasper vinkt aan wat erin komt. Alles komt erin als ingediend, met de
+  looptijd van het hele jaar. Het Excel-bestand zelf wordt nergens opgeslagen:
+  de repository is openbaar, dus de inhoud van het conceptplan hoort er niet in.
 - **Bijhouden**: wat het MT daarna in de Excel invult, zet Jasper over in de app.
 - **Vergelijken** (fase 4): per afdeling en per functie de totalen van app en
   Excel naast elkaar. Elk verschil is ofwel een invoerfout in de app, ofwel een

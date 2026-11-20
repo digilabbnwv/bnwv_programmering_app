@@ -19,18 +19,18 @@ const menu = (rol: string) =>
   )
 
 describe('zichtbaarMenu', () => {
-  it('beheerder en teamleider zien rapportage en beheer; alleen de beheerder ook de organisatie', () => {
+  it('beheerder en teamleider zien rapportage, beheer en het jaarplan; alleen de beheerder ook de organisatie', () => {
     const rapportage = 'Rapportage: Signalen, Verdeling per programma, Verdeling per medewerker'
     const beheer = 'Beheer: Scholen, Medewerkers, Projectgroepen, Overige taken, Programma’s, Jaar en staffel'
-    expect(menu('beheerder')).toEqual(['Start', rapportage, `${beheer}, Organisatie`])
-    expect(menu('teamleider')).toEqual(['Start', rapportage, beheer])
+    expect(menu('beheerder')).toEqual(['Start', rapportage, `${beheer}, Jaarplan, Organisatie`])
+    expect(menu('teamleider')).toEqual(['Start', rapportage, `${beheer}, Jaarplan`])
   })
 
-  it('het MT ziet de rapportage en beheert de organisatie', () => {
+  it('het MT ziet de rapportage en beheert het jaarplan en de organisatie', () => {
     expect(menu('mt')).toEqual([
       'Start',
       'Rapportage: Signalen, Verdeling per programma, Verdeling per medewerker',
-      'Beheer: Organisatie',
+      'Beheer: Jaarplan, Organisatie',
     ])
   })
 
