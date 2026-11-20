@@ -106,7 +106,7 @@ describe('inlogflow met echte Supabase Auth', () => {
     expect(c.must_change_password).toBe(false)
 
     const { data: rollen } = await client.from('roles').select('id')
-    expect(rollen).toHaveLength(4)
+    expect(rollen).toHaveLength(5) // beheerder, mt, teamleider, medewerker, alleen-lezen
   })
 
   it('schrijft inloggen en de wachtwoordwijziging naar de auditlog', () => {
