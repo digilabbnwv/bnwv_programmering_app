@@ -16,6 +16,7 @@ import { StaffelPage } from './pages/StaffelPage'
 import { OrganisatiePage } from './pages/OrganisatiePage'
 import { JaarplanPage } from './pages/JaarplanPage'
 import { ProjectPage } from './pages/ProjectPage'
+import { ProjectplannerDashboardPage } from './pages/ProjectplannerDashboardPage'
 import { ProgrammasPage } from './pages/ProgrammasPage'
 import { ProgrammaDetailPage } from './pages/ProgrammaDetailPage'
 import { TakenPage } from './pages/TakenPage'
@@ -57,6 +58,14 @@ export const router = createHashRouter([
             element: (
               <VereistRecht recht="werkbelasting.bekijken">
                 <RapportageMedewerkersPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/rapportage/projectplanner',
+            element: (
+              <VereistRecht recht="projectplan.bekijken">
+                <ProjectplannerDashboardPage />
               </VereistRecht>
             ),
           },

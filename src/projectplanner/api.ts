@@ -21,6 +21,20 @@ export interface Jaarplan {
   fase: JaarplanFase
   /** De app draait mee naast de Excel, die leidend is. */
   proefjaar: boolean
+  vastgesteld_op: string | null
+  vastgesteld_door_naam: string
+  /** Bij definitief maken bewaard; null in concept. */
+  momentopname: Momentopname[] | null
+}
+
+/** Een projectjaar zoals het was bij het definitief maken. */
+export interface Momentopname {
+  project_id: string
+  naam: string
+  afdeling_id: string
+  status: ProjectStatus
+  budget: number | null
+  inzet: { functie_id: string; fase: InzetFase; uren: number; startdatum: string; einddatum: string }[]
 }
 
 export interface Project {

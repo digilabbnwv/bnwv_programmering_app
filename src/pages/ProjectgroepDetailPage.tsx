@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
+import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
@@ -35,6 +36,7 @@ export function ProjectgroepDetailPage() {
     [client, id],
   )
   const { data, fout, herlaad } = useGegevens(laden)
+  const { heeftRecht } = useRechten()
   const [dialoog, setDialoog] = useState<Dialoog | null>(null)
   const sluit = () => setDialoog(null)
 
@@ -88,6 +90,16 @@ export function ProjectgroepDetailPage() {
             ['Periode', formatPeriode(projectgroep.startdatum, projectgroep.einddatum)],
             ['Trekker', naamVan(projectgroep.trekker_id) || 'Geen'],
             ['MATT projectnummer', projectgroep.matt_projectnummer || '–'],
+            [
+              'Uit de projectplanner',
+              projectgroep.project_id && heeftRecht('projectplan.bekijken') ? (
+                <Link to={`/projecten/${projectgroep.project_id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+                  Project bekijken
+                </Link>
+              ) : (
+                ''
+              ),
+            ],
             ['Uren per jaar nu', `${formatUren(urenNu)} (alle huidige deelnemers samen)`],
           ]}
         />

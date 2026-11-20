@@ -1,8 +1,9 @@
 # Projectplanner: analyse en plan
 
 > **Status: plan vastgesteld (20-11-2026).** Alle vragen zijn beantwoord, zie
-> [besluiten](#5-besluiten). Fase 1 (organisatie) en fase 2 (projecten en
-> jaarplan) zijn gebouwd, zie [fasering](#9-fasering). Volgende stap: fase 3.
+> [besluiten](#5-besluiten). Fase 1 tot en met 4 zijn gebouwd: organisatie,
+> projecten en jaarplan, dashboard, en definitief maken met projectgroepen. Zie
+> [fasering](#9-fasering). Volgende stap: fase 5.
 
 Bronnen: `202610-Concept-Projectplanner-BNWV-2027.xlsx` (concept-jaarplan van het
 MT voor 2027), `202108-bijlage A Functiestructuur versie 16.08.2021.pdf` en de
@@ -137,6 +138,7 @@ wordt dat "Anna 40 uur, Bram 40 uur". Daartussen moet een koppeling komen.
 | 12 | Evaluatie | Nog niet; komt later (zie [Later](#11-later)). |
 | 13 | Eindproduct | Een dashboard onder Rapportage waar MT en directie alles uit halen. Geen Excel-export. |
 | 14 | Realisatie | Alleen plannen, geen werkelijke uren of uitgaven. |
+| 15 | Van project naar projectgroep | Bij definitief maken krijgt elk akkoord project automatisch een projectgroep (of wordt een bestaande gekoppeld). Zie [van project naar projectgroep](#van-project-naar-projectgroep). |
 
 ## 6. Ontwerp
 
@@ -208,11 +210,11 @@ import worden dat inzetregels met een functie, die Jasper kiest.
 | `functies` | naam, afkorting (uniek als hij er is), standaardafdeling, extern, actief |
 | `takken` | afdeling, naam (uniek binnen de afdeling), actief |
 | `medewerkers` (uitbreiden) | + afdeling, + functie (verwijzing). Het vrije tekstveld `functie` gaat weg zodra alle medewerkers een functie uit de lijst hebben. |
-| `jaarplannen` | jaar, fase (`wensen`, `concept`, `definitief`, `afgesloten`), proefjaar. Vastgesteld op en door en de momentopname volgen in fase 4. |
+| `jaarplannen` | jaar, fase (`wensen`, `concept`, `definitief`, `afgesloten`), proefjaar, vastgesteld op, door (en de naam, voor wie de profielen niet mag lezen), momentopname |
 | `projecten` | naam, omschrijving, afdeling, tak (moet bij de afdeling horen), indiener, programma (optioneel), begin- en einddatum (verplicht) |
 | `projectjaren` | project, jaar, status (`ingediend`, `akkoord`, `afgewezen`, `uitgesteld`), budget (leeg = nog onbekend), toelichting. Eén per project per jaar; het jaar moet in de looptijd vallen. |
 | `projectjaar_inzet` | projectjaar, functie, fase (`voorbereiding`, `uitvoering`), aantal collega's, uren totaal, startdatum, einddatum (binnen het jaar en binnen de looptijd van het project) |
-| `projectgroepen` (fase 5) | + verwijzing naar het project, als de projectgroep start. Toegewezen uren per functie volgen dan uit de functie van de deelnemers en de bestaande berekening naar rato. |
+| `projectgroepen` | + `project_id` (uniek): het project uit de planner, gezet bij definitief maken of met "Projectgroep aanmaken". Toegewezen uren per functie volgen uit de functie van de deelnemers en de bestaande berekening naar rato (fase 5). |
 
 Afwijking van het eerste plan: projecten zijn een eigen tabel in plaats van een
 uitbreiding van `projectgroepen`. Anders zou elk gepland project direct als
@@ -322,8 +324,8 @@ de cyclus van 2028.
 | --- | --- | --- | --- |
 | 1 | **Organisatie**: afdelingen, functies, takken; medewerkers krijgen afdeling en functie; rol `mt` | lijsten beheerbaar, medewerkers Programmering ingedeeld | gebouwd nov 2026 |
 | 2 | **Projecten en jaarplan**: jaarplannen, projecten, projectjaren, inzetregels; schermen Jaarplan en Project; import uit de Excel | MT-concept 2027 staat in de app | gebouwd nov 2026 |
-| 3 | **Dashboard**: kengetallen, budget, inzet, drukte, tijdlijn, signalen | MT en directie zien het concept 2027 in de app | jan 2027 |
-| 4 | **Definitief maken**: momentopname en afwijkingen; vergelijking met de Excel 2027 | jaarplan 2027 vastgesteld, verschillen met de Excel verklaard | jan – feb 2027 |
+| 3 | **Dashboard**: kengetallen, budget, inzet, drukte, tijdlijn, signalen | MT en directie zien het concept 2027 in de app | gebouwd nov 2026 |
+| 4 | **Definitief maken**: momentopname en afwijkingen; projectgroepen voor akkoord projecten; vergelijking met de Excel 2027 | jaarplan 2027 vastgesteld, verschillen met de Excel verklaard | gebouwd nov 2026 |
 | 5 | **Uitvoering**: deelnemers koppelen vanuit het project, gepland tegenover toegewezen | teamleiders koppelen collega's vanuit het jaarplan | voorjaar 2027 |
 | 6 | **LDV en Staf**: medewerkers en contracten, rechten per afdeling, capaciteit voor alle functies | drukte toont bezetting voor alle functies | voor de zomer 2027 |
 | 7 | **Indienen**: fase `wensen`, projecten indienen door medewerkers, overnemen van vorig jaar | klaar voor de ronde van aug 2027 (jaarplan 2028) | jul 2027 |
@@ -367,6 +369,73 @@ een latere migratie, als iedereen is ingedeeld.
   looptijd vallen. Wijzigingen staan in de auditlog als `projectplan.<tabel>.<actie>`.
 - Schermen **Beheer → Jaarplan** en de projectpagina.
 - **Excel-import** in een leeg jaarplan, zie hieronder.
+
+### Fase 3: wat er gebouwd is
+
+- **Rapportage → Projectplanner** (`/rapportage/projectplanner?jaar=`), met
+  `projectplan.bekijken`. Filters: jaar, afdeling, en meetellen "akkoord en
+  ingediend" of "alleen akkoord". Uitgesteld en afgewezen tellen nooit mee.
+  Afdrukbaar.
+- Kengetallen: projecten per status, budget, uren (voorbereiding en uitvoering)
+  en de drukste week.
+- Signalen: functies met weken boven de capaciteit, functies met inzet maar
+  zonder bekende capaciteit, inactieve functies met inzet, geen werkjaar in
+  Jaar en staffel, projecten zonder inzet of budget.
+- Drukte: heatmap functie × ISO-week met uitleesregel, doorklikken naar de
+  projecten van een week, en de cijfers als tabel.
+- Kolomgrafiek met het aantal projecten in uitvoering per week, de tabel inzet
+  per functie (nodig, vrij voor projecten, bezetting, drukste week, weken te
+  vol), budget per afdeling en tak, en de tijdlijn.
+- Rekenregels in `src/projectplanner/drukte.ts` met unittests. De capaciteit komt
+  uit `berekenWerkbelasting` van het jaar (actieve medewerkers met een functie);
+  zonder `werkbelasting.bekijken` of zonder werkjaar is die onbekend.
+- Kleuren gecontroleerd met de dataviz-validator in licht en donker:
+  bezetting in één blauwe schaal, "te vol" rood met een uitroepteken,
+  voorbereiding groen en uitvoering blauw.
+
+### Van project naar projectgroep
+
+Een project in een concept-jaarplan is nog geen projectgroep, zodat een
+concept niet in de werkbelasting en de signalen terechtkomt. Bij definitief
+maken verandert dat (besluit 15, gebouwd in fase 4; punt 4 volgt in fase 5):
+
+1. **Bij definitief maken** maakt de app voor elk project met status akkoord een
+   projectgroep, gekoppeld aan het project (`projectgroepen.project_id`): naam,
+   omschrijving en looptijd uit het project. Trekker en MATT-nummer vul je
+   daarna in. Een project over de jaargrens krijgt één projectgroep voor de hele
+   looptijd.
+2. **Bestaat er al een projectgroep** (bijvoorbeeld in het proefjaar 2027, waar
+   teamleiders al groepen aanmaakten), dan stelt de app voor om die te koppelen
+   in plaats van een nieuwe te maken.
+3. **Daarna loopt alles via de bestaande stroom**: de projectgroep staat onder
+   Beheer → Projectgroepen, teamleiders koppelen deelnemers, de uren tellen in de
+   werkbelasting, en het signaal "projectgroep zonder deelnemers" klopt dan
+   precies: het project is goedgekeurd en heeft nog mensen nodig.
+4. **Op de projectpagina en in het dashboard** staat per functie gepland
+   (inzetregels) tegenover toegewezen (deelnemers met die functie). Wordt een
+   project later nog akkoord, dan maakt een knop "Projectgroep aanmaken" hem aan.
+
+### Fase 4: wat er gebouwd is
+
+- Migratie `20261122120000_jaarplan_definitief.sql`: `jaarplannen` krijgt
+  vastgesteld op, door, de naam en de momentopname; `projectgroepen` krijgt
+  `project_id`. Functies (projectplan.beheren): `jaarplan_definitief` (projectgroepen
+  maken of koppelen, momentopname, fase definitief), `jaarplan_heropenen`
+  (terug naar concept; projectgroepen blijven) en `project_naar_projectgroep`.
+- Jaarplan: knop **Definitief maken** met een controle (nog ingediend, akkoord
+  zonder inzet of budget, link naar de drukte) en per akkoord project de keuze
+  nieuwe of bestaande projectgroep. De app stelt een bestaande groep voor als
+  de naam op een jaartal na gelijk is en de looptijd overlapt.
+- Na definitief: wijzigen kan nog. De jaarplanpagina toont per project wat er
+  sinds het vaststellen veranderde (toegevoegd, weg, status, budget, uren, anders
+  verdeeld), welke akkoord projecten nog geen projectgroep hebben, en een kolom
+  projectgroep. Het dashboard meldt het aantal gewijzigde projecten.
+- Projectpagina: de gekoppelde projectgroep, of de knop **Projectgroep
+  aanmaken**. De projectgroeppagina linkt terug naar het project.
+- Proefjaar: **Vergelijken met de Excel** zet per afdelingstabblad budget, uren
+  en uren per code uit "inzet van" naast de app. Een functieafkorting (LMC)
+  telt die functie, een afdelingscode (LDV) de functies van die afdeling; MT
+  heeft geen tegenhanger.
 
 ### Schaduwdraaien 2027
 

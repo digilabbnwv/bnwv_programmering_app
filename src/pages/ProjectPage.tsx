@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
+import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { Pagina } from '../layout/Pagina'
 import { functieNaam, type Afdeling, type Functie, type Tak } from '../organisatie/api'
@@ -17,10 +18,11 @@ import {
 } from '../projectplanner/api'
 import { deelInJaar, formatEuro, totaalUren, urenPerPersoon, urenPerWeek } from '../projectplanner/berekening'
 import { InzetFormulier, ProjectFormulier, ProjectjaarFormulier } from '../projectplanner/formulieren'
-import { lees, type Medewerker, type Programma } from '../werkbelasting/api'
+import { voorgesteldeProjectgroep } from '../projectplanner/vaststellen'
+import { lees, voerUit, type Medewerker, type Programma, type Projectgroep } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { Gegevens, Laadstatus, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
-import { formatPeriode } from '../werkbelasting/opmaak'
+import { FormulierDialoog, Gegevens, Laadstatus, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
 type Dialoog =
@@ -30,6 +32,7 @@ type Dialoog =
   | { soort: 'projectjaar-verwijderen'; projectjaar: Projectjaar }
   | { soort: 'inzet'; projectjaar: Projectjaar; inzet: Inzet | null }
   | { soort: 'inzet-verwijderen'; inzet: Inzet }
+  | { soort: 'projectgroep' }
 
 const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 
@@ -43,7 +46,7 @@ export function ProjectPage() {
   const navigate = useNavigate()
   const laden = useCallback(
     async () =>
-      alles<[Project[], Projectjaar[], Inzet[], Jaarplan[], Afdeling[], Tak[], Functie[], Medewerker[], Programma[]]>(
+      alles<[Project[], Projectjaar[], Inzet[], Jaarplan[], Afdeling[], Tak[], Functie[], Medewerker[], Programma[], Projectgroep[]]>(
         await Promise.all([
           lees<Project>(client, 'projecten', 'naam', { kolom: 'id', waarde: id }),
           lees<Projectjaar>(client, 'projectjaren', 'jaar', { kolom: 'project_id', waarde: id }),
@@ -54,6 +57,7 @@ export function ProjectPage() {
           lees<Functie>(client, 'functies', 'naam'),
           lees<Medewerker>(client, 'medewerkers', 'naam'),
           lees<Programma>(client, 'programmas', 'naam'),
+          lees<Projectgroep>(client, 'projectgroepen', 'naam'),
         ]),
       ),
     [client, id],
@@ -72,7 +76,7 @@ export function ProjectPage() {
     )
   }
 
-  const [[project], projectjaren, alleInzet, jaarplannen, afdelingen, takken, functies, medewerkers, programmas] = data
+  const [[project], projectjaren, alleInzet, jaarplannen, afdelingen, takken, functies, medewerkers, programmas, projectgroepen] = data
   if (!project) {
     return (
       <Pagina titel="Project niet gevonden">
@@ -84,13 +88,17 @@ export function ProjectPage() {
   }
 
   const jaarplan = (jaar: number) => jaarplannen.find((j) => j.jaar === jaar)
+  // Ook na definitief te wijzigen (dan een afwijking); alleen een afgesloten jaar niet.
   const bewerkbaar = (jaar: number) => {
     const fase = jaarplan(jaar)?.fase
-    return magBeheren && (fase === 'wensen' || fase === 'concept')
+    return magBeheren && fase !== undefined && fase !== 'afgesloten'
   }
   const vrijeJaren = jaarplannen
-    .filter((j) => (j.fase === 'wensen' || j.fase === 'concept') && deelInJaar(project, j.jaar) && !projectjaren.some((p) => p.jaar === j.jaar))
+    .filter((j) => j.fase !== 'afgesloten' && deelInJaar(project, j.jaar) && !projectjaren.some((p) => p.jaar === j.jaar))
     .map((j) => j.jaar)
+  const projectgroep = projectgroepen.find((g) => g.project_id === project.id)
+  const isAkkoord = projectjaren.some((p) => p.status === 'akkoord')
+  const naarProjectgroep = heeftRecht('werkbelasting.beheren')
   const functie = (functieId: string) => functies.find((f) => f.id === functieId)
   const naam = (lijst: { id: string; naam: string }[], zoekId: string | null) => lijst.find((x) => x.id === zoekId)?.naam ?? ''
 
@@ -124,8 +132,31 @@ export function ProjectPage() {
             ['Looptijd', formatPeriode(project.startdatum, project.einddatum)],
             ['Ingediend door', naam(medewerkers, project.indiener_id)],
             ['Hoort bij programma', naam(programmas, project.programma_id)],
+            [
+              'Projectgroep',
+              projectgroep ? (
+                naarProjectgroep ? (
+                  <Link to={`/projectgroepen/${projectgroep.id}`} className={linkStijl}>
+                    {projectgroep.naam}
+                  </Link>
+                ) : (
+                  projectgroep.naam
+                )
+              ) : isAkkoord ? (
+                'nog niet aangemaakt'
+              ) : (
+                'komt er als het project akkoord is en het jaarplan definitief'
+              ),
+            ],
           ]}
         />
+        {!projectgroep && isAkkoord && magBeheren && (
+          <p className="mt-4">
+            <Button variant="secundair" onClick={() => setDialoog({ soort: 'projectgroep' })}>
+              Projectgroep aanmaken
+            </Button>
+          </p>
+        )}
       </Sectie>
 
       {projectjaren.map((pj) => {
@@ -262,6 +293,9 @@ export function ProjectPage() {
           onGelukt={herlaad}
         />
       )}
+      {dialoog?.soort === 'projectgroep' && (
+        <ProjectgroepKoppelen project={project} projectgroepen={projectgroepen} onSluiten={sluit} onGelukt={herlaad} />
+      )}
       {dialoog?.soort === 'inzet-verwijderen' && (
         <VerwijderDialoog
           wat="Inzet"
@@ -271,5 +305,45 @@ export function ProjectPage() {
         />
       )}
     </Pagina>
+  )
+}
+
+/** Een projectgroep voor een project dat akkoord is: nieuw, of een bestaande koppelen. */
+function ProjectgroepKoppelen({
+  project,
+  projectgroepen,
+  onSluiten,
+  onGelukt,
+}: {
+  project: Project
+  projectgroepen: Projectgroep[]
+  onSluiten: () => void
+  onGelukt: () => void
+}) {
+  const { client } = useAuth()
+  const vrij = projectgroepen.filter((g) => !g.project_id).sort(opNaam)
+  const [keuze, setKeuze] = useState(voorgesteldeProjectgroep(project, vrij)?.id ?? '')
+
+  return (
+    <FormulierDialoog
+      titel="Projectgroep aanmaken"
+      opslaanLabel={keuze ? 'Koppelen' : 'Aanmaken'}
+      onOpslaan={() =>
+        voerUit(client, 'project_naar_projectgroep', { p_project_id: project.id, p_projectgroep_id: keuze || null }, {
+          P0002: 'Deze projectgroep bestaat niet meer of hoort al bij een ander project. Ververs de pagina.',
+          '23514': 'Alleen een project met status akkoord krijgt een projectgroep.',
+        })
+      }
+      onSluiten={onSluiten}
+      onGelukt={onGelukt}
+    >
+      <p>Een nieuwe projectgroep krijgt de naam, omschrijving en looptijd van het project. Bestaat hij al, kies hem dan.</p>
+      <SelectField
+        label="Projectgroep"
+        value={keuze}
+        opties={[{ waarde: '', label: 'Nieuwe projectgroep' }, ...vrij.map((g) => ({ waarde: g.id, label: `Bestaande: ${g.naam}` }))]}
+        onChange={(e) => setKeuze(e.target.value)}
+      />
+    </FormulierDialoog>
   )
 }

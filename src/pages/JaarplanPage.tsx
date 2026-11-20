@@ -11,13 +11,20 @@ import { faseLabel, STATUSSEN, statusLabel, type Inzet, type Jaarplan, type Proj
 import { filterRegels, formatEuro, GEEN_FILTER, kengetallen, projectregels, totaalUren, type Filter } from '../projectplanner/berekening'
 import { JaarplanFormulier, ProjectFormulier } from '../projectplanner/formulieren'
 import { ExcelImport } from '../projectplanner/ExcelImport'
-import { lees, type Medewerker, type Programma } from '../werkbelasting/api'
+import { Afwijkingen, DefinitiefMaken, ExcelVergelijking } from '../projectplanner/DefinitiefMaken'
+import { lees, voerUit, type Medewerker, type Programma, type Projectgroep } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, Laadstatus, Sectie } from '../werkbelasting/onderdelen'
 import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
-type Dialoog = { soort: 'jaarplan-nieuw' } | { soort: 'jaarplan-wijzigen'; jaarplan: Jaarplan } | { soort: 'project' }
+type Dialoog =
+  | { soort: 'jaarplan-nieuw' }
+  | { soort: 'jaarplan-wijzigen'; jaarplan: Jaarplan }
+  | { soort: 'project' }
+  | { soort: 'heropenen'; jaarplan: Jaarplan }
+
+const datumTijd = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
 
 const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 
@@ -34,7 +41,7 @@ export function JaarplanPage() {
   const [zoek, setZoek] = useSearchParams()
   const laden = useCallback(
     async () =>
-      alles<[Jaarplan[], Project[], Projectjaar[], Inzet[], Afdeling[], Tak[], Functie[], Medewerker[], Programma[]]>(
+      alles<[Jaarplan[], Project[], Projectjaar[], Inzet[], Afdeling[], Tak[], Functie[], Medewerker[], Programma[], Projectgroep[]]>(
         await Promise.all([
           lees<Jaarplan>(client, 'jaarplannen', 'jaar'),
           lees<Project>(client, 'projecten', 'naam'),
@@ -45,6 +52,7 @@ export function JaarplanPage() {
           lees<Functie>(client, 'functies', 'naam'),
           lees<Medewerker>(client, 'medewerkers', 'naam'),
           lees<Programma>(client, 'programmas', 'naam'),
+          lees<Projectgroep>(client, 'projectgroepen', 'naam'),
         ]),
       ),
     [client],
@@ -52,6 +60,8 @@ export function JaarplanPage() {
   const { data, fout, herlaad } = useGegevens(laden)
   const [filter, setFilter] = useState<Filter>(GEEN_FILTER)
   const [dialoog, setDialoog] = useState<Dialoog | null>(null)
+  const [vaststellen, setVaststellen] = useState(false)
+  const [bericht, setBericht] = useState<string | null>(null)
   const sluit = () => setDialoog(null)
 
   if (!data) {
@@ -62,7 +72,7 @@ export function JaarplanPage() {
     )
   }
 
-  const [jaarplannen, projecten, projectjaren, inzet, afdelingen, takken, functies, medewerkers, programmas] = data
+  const [jaarplannen, projecten, projectjaren, inzet, afdelingen, takken, functies, medewerkers, programmas, projectgroepen] = data
   const gevraagd = Number(zoek.get('jaar'))
   const volgendJaar = new Date().getFullYear() + 1
   const jaarplan =
@@ -73,6 +83,8 @@ export function JaarplanPage() {
   const kiesJaar = (jaar: number) => {
     setZoek({ jaar: String(jaar) })
     setFilter(GEEN_FILTER)
+    setVaststellen(false)
+    setBericht(null)
   }
 
   const dialogen = (
@@ -100,6 +112,20 @@ export function JaarplanPage() {
           onGelukt={(id) => void navigate(`/projecten/${id}?jaar=${jaarplan.jaar}`)}
         />
       )}
+      {dialoog?.soort === 'heropenen' && (
+        <FormulierDialoog
+          titel={`Jaarplan ${dialoog.jaarplan.jaar} terug naar concept`}
+          opslaanLabel="Terug naar concept"
+          onOpslaan={() => voerUit(client, 'jaarplan_heropenen', { p_jaar: dialoog.jaarplan.jaar })}
+          onSluiten={sluit}
+          onGelukt={() => {
+            setBericht(null)
+            herlaad()
+          }}
+        >
+          <p>De vaststelling en de bewaarde stand vervallen. De projectgroepen blijven bestaan, met hun deelnemers.</p>
+        </FormulierDialoog>
+      )}
     </>
   )
 
@@ -116,12 +142,15 @@ export function JaarplanPage() {
   const alleRegels = projectregels(jaarplan.jaar, projecten, projectjaren, inzet)
   const regels = filterRegels(alleRegels, filter)
   const k = kengetallen(regels)
-  const bewerkbaar = magBeheren && (jaarplan.fase === 'wensen' || jaarplan.fase === 'concept')
+  const inConcept = jaarplan.fase === 'wensen' || jaarplan.fase === 'concept'
+  // Na definitief mag het MT nog wijzigen; de pagina toont dat als afwijking.
+  const bewerkbaar = magBeheren && jaarplan.fase !== 'afgesloten'
+  const projectgroepVan = (projectId: string) => projectgroepen.find((g) => g.project_id === projectId)
   const afdeling = (id: string) => afdelingen.find((a) => a.id === id)
   const tak = (id: string | null) => takken.find((t) => t.id === id)
   const zet = <K extends keyof Filter>(veld: K, waarde: Filter[K]) =>
     setFilter((oud) => ({ ...oud, [veld]: waarde, ...(veld === 'afdelingId' ? { takId: '' } : {}) }))
-  const kanImporteren = bewerkbaar && alleRegels.length === 0
+  const kanImporteren = magBeheren && inConcept && alleRegels.length === 0
 
   return (
     <Pagina
@@ -145,8 +174,10 @@ export function JaarplanPage() {
 
       <p className="mb-6">
         <span className="font-semibold">Fase: {faseLabel(jaarplan.fase)}.</span>
+        {jaarplan.vastgesteld_op &&
+          ` Vastgesteld op ${datumTijd.format(new Date(jaarplan.vastgesteld_op))}${jaarplan.vastgesteld_door_naam ? ` door ${jaarplan.vastgesteld_door_naam}` : ''}.`}
         {jaarplan.proefjaar && ' Proefjaar: de Excel blijft leidend, de app draait mee.'}
-        {bewerkbaar && (
+        {magBeheren && inConcept && (
           <>
             {' '}
             <Button variant="link" onClick={() => setDialoog({ soort: 'jaarplan-wijzigen', jaarplan })}>
@@ -154,7 +185,45 @@ export function JaarplanPage() {
             </Button>
           </>
         )}
+        {magBeheren && jaarplan.fase === 'definitief' && (
+          <>
+            {' '}
+            <Button variant="link" onClick={() => setDialoog({ soort: 'heropenen', jaarplan })}>
+              Terug naar concept
+            </Button>
+          </>
+        )}
       </p>
+
+      {bericht && (
+        <div className="mb-6">
+          <p role="status" className="font-semibold">
+            {bericht}
+          </p>
+        </div>
+      )}
+
+      {magBeheren && inConcept && alleRegels.length > 0 && !vaststellen && (
+        <p className="mb-8">
+          <Button onClick={() => setVaststellen(true)}>Definitief maken</Button>
+        </p>
+      )}
+      {vaststellen && inConcept && (
+        <DefinitiefMaken
+          jaar={jaarplan.jaar}
+          regels={alleRegels}
+          projectgroepen={projectgroepen}
+          onAnnuleren={() => setVaststellen(false)}
+          onGelukt={(nieuw) => {
+            setVaststellen(false)
+            setBericht(
+              `Het jaarplan ${jaarplan.jaar} is definitief. ${nieuw === 1 ? 'Er is 1 nieuwe projectgroep' : `Er zijn ${nieuw} nieuwe projectgroepen`} aangemaakt; koppel er collega’s aan onder Projectgroepen.`,
+            )
+            herlaad()
+          }}
+        />
+      )}
+      {jaarplan.fase === 'definitief' && <Afwijkingen jaarplan={jaarplan} regels={alleRegels} projectgroepen={projectgroepen} />}
 
       {kanImporteren && (
         <ExcelImport jaar={jaarplan.jaar} afdelingen={afdelingen} takken={takken} programmas={programmas} onGelukt={herlaad} />
@@ -255,9 +324,18 @@ export function JaarplanPage() {
               sorteer: (r) => totaalUren(r.inzet),
             },
             { kop: 'Looptijd', inhoud: (r) => formatPeriode(r.project.startdatum, r.project.einddatum), sorteer: (r) => r.project.startdatum },
+            ...(jaarplan.fase === 'wensen' || jaarplan.fase === 'concept'
+              ? []
+              : [{ kop: 'Projectgroep', inhoud: (r: (typeof regels)[number]) => (projectgroepVan(r.project.id) ? 'ja' : '–') }]),
           ]}
         />
       </Sectie>
+
+      {jaarplan.proefjaar && alleRegels.length > 0 && (
+        <Sectie titel="Vergelijken met de Excel">
+          <ExcelVergelijking regels={alleRegels} afdelingen={afdelingen} functies={functies} />
+        </Sectie>
+      )}
 
       {dialogen}
     </Pagina>

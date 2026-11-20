@@ -85,7 +85,7 @@ function alsTekst(waarde: Celwaarde | undefined): string {
   return String(waarde).trim()
 }
 
-interface Rij {
+export interface Rij {
   rij: number
   naam: string
   takNaam: string
@@ -101,7 +101,7 @@ interface Rij {
 }
 
 /** Leest de projectrijen van één afdelingstabblad. */
-function leesRijen(blad: Werkblad): Rij[] {
+export function leesRijen(blad: Werkblad): Rij[] {
   const cel = (kolom: number, rij: number) => blad.cellen.get(`${kolomLetters(kolom)}${rij}`)
   const bereiken = blad.samengevoegd.map((b) => {
     const [van, tot] = b.split(':') as [string, string]
@@ -215,7 +215,7 @@ export function takPast(uitExcel: string, takNaam: string): boolean {
 }
 
 /** Zoekt het afdelingstabblad: op naam of afkorting van de afdeling. */
-function afdelingVan(blad: Werkblad, afdelingen: readonly Afdeling[]): Afdeling | undefined {
+export function afdelingVan(blad: Werkblad, afdelingen: readonly Afdeling[]): Afdeling | undefined {
   const naam = normaal(blad.naam)
   return afdelingen.find((a) => normaal(a.naam) === naam || (a.afkorting && normaal(a.afkorting) === naam))
 }

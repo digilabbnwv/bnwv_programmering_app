@@ -110,6 +110,8 @@ export interface Projectgroep {
   startdatum: string
   einddatum: string | null
   trekker_id: string | null
+  /** Het project uit de projectplanner, als de projectgroep daaruit is ontstaan. */
+  project_id: string | null
 }
 
 export interface Deelnemer {
