@@ -40,7 +40,7 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 | `staffel_schijven` | jaar, soort school, van–tot leerlingen → uren |
 | `scholen` | naam, soort, programma (verplicht, type `scholen`), BRIN, adres, postcode, plaats, contactpersoon, e-mail, telefoon, opmerking, actief |
 | `school_jaargegevens` | per school per jaar: leerlingaantal, urencorrectie + reden, markering `overgenomen` (van het vorige jaar, nog niet met de hand opgeslagen) |
-| `medewerkers` | naam, e-mail, functie, actief, optioneel gekoppeld aan een inlogaccount |
+| `medewerkers` | naam, e-mail, afdeling en functie (uit de lijsten van de [organisatie](projectplanner.md#functies)), actief, optioneel gekoppeld aan een inlogaccount. Het oude tekstveld `functie` blijft tot iedereen is ingedeeld. |
 | `contracten` | per medewerker: ingangsdatum, uren per week, eventueel afwijkende werkweken of mijmerpercentage |
 | `school_toewijzingen` | school ↔ medewerker met start- en einddatum. Per school één medewerker tegelijk. |
 | `projectgroepen` | naam, omschrijving, MATT projectnummer, start- en einddatum, trekker |
@@ -59,12 +59,15 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 | `werkbelasting.bekijken` | teamleider, beheerder | werkbelasting van het hele team zien |
 | `werkbelasting.beheren` | teamleider, beheerder | alles hierboven wijzigen |
 
+Het MT (rol `mt`) heeft `werkbelasting.bekijken`, maar wijzigt niets. Zie
+[projectplanner.md](projectplanner.md#rechten) voor de rechten van de projectplanner.
+
 ## Schermen
 
 1. **Scholen**: lijst per jaar en formulier (NAW, soort, programma), leerlingaantal en correctie per jaar. Voor een nieuw jaar neemt "Leerlingaantallen van … overnemen" in één keer het aantal (en desgewenst de correctie) van het vorige jaar over voor alle actieve scholen zonder gegevens; die krijgen het label "overgenomen" tot ze bij de school worden bijgewerkt. Verder: huidige medewerker en historie, school verplaatsen naar een collega per datum.
 2. **Staffel en jaarinstellingen**: schijven per jaar en soort, werkweken en mijmerpercentage.
    **Programma's** (`/programmas`): lijst met soort en het aantal actieve scholen of uitvoerders. De detailpagina toont bij een programma met scholen de scholen (het programma kies je bij de school), en bij een programma met vaste uitvoerders de uitvoerders met uren en periode, met overdragen aan een collega per datum.
-3. **Medewerkers**: gegevens, koppeling met een account, contracthistorie, extra uren.
+3. **Medewerkers**: gegevens, functie en afdeling, koppeling met een account, contracthistorie, extra uren.
 4. **Projectgroepen**: gegevens, deelnemers met uren en periode.
    **Overige taken**: gegevens, uitvoerders met uren en periode, overdragen aan een collega per datum.
 5. **Rapportage** (`werkbelasting.bekijken`), drie pagina's met hetzelfde jaar (`?jaar=`): **Signalen** (`/rapportage/signalen`, ook via `/rapportage`) met kengetallen en aandachtspunten; **Verdeling per programma** (`/rapportage/programmas`) met de uren per programma, totaal en per medewerker; **Verdeling per medewerker** (`/rapportage/medewerkers`) met filters, sorteren en uren of percentages.

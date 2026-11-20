@@ -6,6 +6,7 @@ import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
 import { Pagina } from '../layout/Pagina'
+import { indeling, type Afdeling, type Functie } from '../organisatie/api'
 import {
   lees,
   verwijder,
@@ -57,6 +58,8 @@ export function MedewerkerDetailPage() {
           Taak[],
           ProgrammaUitvoerder[],
           Programma[],
+          Afdeling[],
+          Functie[],
         ]
       >(
         await Promise.all([
@@ -72,6 +75,8 @@ export function MedewerkerDetailPage() {
           lees<Taak>(client, 'taken', 'naam'),
           lees<ProgrammaUitvoerder>(client, 'programma_uitvoerders', 'startdatum', { kolom: 'medewerker_id', waarde: id }),
           lees<Programma>(client, 'programmas', 'naam'),
+          lees<Afdeling>(client, 'afdelingen', 'volgorde'),
+          lees<Functie>(client, 'functies', 'naam'),
         ]),
       ),
     [client, id],
@@ -101,6 +106,8 @@ export function MedewerkerDetailPage() {
     taken,
     programmaUitvoeringen,
     programmas,
+    afdelingen,
+    functies,
   ] = data
   const medewerker = medewerkers.find((m) => m.id === id)
   if (!medewerker) {
@@ -119,7 +126,7 @@ export function MedewerkerDetailPage() {
     [...rijen].sort((a, b) => b.startdatum.localeCompare(a.startdatum))
 
   return (
-    <Pagina titel={medewerker.naam} intro={medewerker.functie || undefined}>
+    <Pagina titel={medewerker.naam} intro={indeling(medewerker, functies, afdelingen) ?? 'Nog niet ingedeeld in een functie en afdeling.'}>
       <p className="mb-8 flex flex-wrap gap-x-6 gap-y-2">
         <Link to="/medewerkers" className="font-semibold underline underline-offset-4 hover:no-underline">
           Alle medewerkers
@@ -316,6 +323,8 @@ export function MedewerkerDetailPage() {
         <MedewerkerFormulier
           medewerker={medewerker}
           gekoppeld={medewerkers.flatMap((m) => (m.user_id && m.id !== medewerker.id ? [m.user_id] : []))}
+          afdelingen={afdelingen}
+          functies={functies}
           onSluiten={sluit}
           onGelukt={herlaad}
         />

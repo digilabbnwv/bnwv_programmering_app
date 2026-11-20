@@ -76,7 +76,10 @@ export interface Medewerker {
   id: string
   naam: string
   email: string
+  /** Vrije tekst van vóór de functielijst; verdwijnt als iedereen is ingedeeld. */
   functie: string
+  afdeling_id: string | null
+  functie_id: string | null
   user_id: string | null
   actief: boolean
   opmerking: string
@@ -216,6 +219,9 @@ type Tabel =
   | 'taak_uitvoerders'
   | 'programma_uitvoerders'
   | 'werkbelasting_toelichtingen'
+  | 'afdelingen'
+  | 'functies'
+  | 'takken'
 
 /** Leest een hele tabel (voor zover RLS hem laat zien). */
 export async function lees<T>(

@@ -15,8 +15,8 @@ select tests.authenticate_as('beheerder@test.nl');
 
 select is((select count(*) from public.profiles),         4::bigint, 'beheerder: ziet alle profielen');
 select is((select count(*) from public.user_roles),       4::bigint, 'beheerder: ziet alle rollen van gebruikers');
-select is((select count(*) from public.roles),            4::bigint, 'beheerder: ziet de rollen');
-select is((select count(*) from public.role_permissions), 12::bigint, 'beheerder: ziet alle rechten per rol');
+select is((select count(*) from public.roles),            5::bigint, 'beheerder: ziet de rollen');
+select is((select count(*) from public.role_permissions), 19::bigint, 'beheerder: ziet alle rechten per rol');
 select ok((select count(*) from public.audit_log) > 0,               'beheerder: leest de auditlog');
 select lives_ok($$ select * from public.list_users() $$,             'beheerder: ziet het gebruikersoverzicht');
 select is((select count(*) from public.list_users()),     4::bigint, 'beheerder: gebruikersoverzicht is compleet');
@@ -40,8 +40,8 @@ select tests.authenticate_as('teamleider@test.nl');
 
 select is((select count(*) from public.profiles),         4::bigint, 'teamleider: ziet alle profielen');
 select is((select count(*) from public.user_roles),       4::bigint, 'teamleider: ziet alle rollen van gebruikers');
-select is((select count(*) from public.roles),            4::bigint, 'teamleider: ziet de rollen');
-select is((select count(*) from public.role_permissions), 12::bigint, 'teamleider: ziet alle rechten per rol');
+select is((select count(*) from public.roles),            5::bigint, 'teamleider: ziet de rollen');
+select is((select count(*) from public.role_permissions), 19::bigint, 'teamleider: ziet alle rechten per rol');
 select is((select count(*) from public.audit_log),        0::bigint, 'teamleider: leest de auditlog niet');
 select lives_ok($$ select * from public.list_users() $$,             'teamleider: ziet het gebruikersoverzicht');
 
@@ -68,7 +68,7 @@ select is((select count(*) from public.profiles),         1::bigint, 'medewerker
 select is((select user_id from public.profiles), tests.user_id('medewerker@test.nl'),
   'medewerker: het zichtbare profiel is het eigen profiel');
 select is((select count(*) from public.user_roles),       1::bigint, 'medewerker: ziet alleen de eigen rol');
-select is((select count(*) from public.roles),            4::bigint, 'medewerker: ziet de rollen');
+select is((select count(*) from public.roles),            5::bigint, 'medewerker: ziet de rollen');
 select is((select count(*) from public.role_permissions), 1::bigint, 'medewerker: ziet alleen de eigen rechten');
 select is((select count(*) from public.audit_log),        0::bigint, 'medewerker: leest de auditlog niet');
 select throws_ok($$ select * from public.list_users() $$, '42501', null,
@@ -91,7 +91,7 @@ select tests.authenticate_as('lezer@test.nl');
 
 select is((select count(*) from public.profiles),         1::bigint, 'alleen-lezen: ziet alleen het eigen profiel');
 select is((select count(*) from public.user_roles),       1::bigint, 'alleen-lezen: ziet alleen de eigen rol');
-select is((select count(*) from public.roles),            4::bigint, 'alleen-lezen: ziet de rollen');
+select is((select count(*) from public.roles),            5::bigint, 'alleen-lezen: ziet de rollen');
 select is((select count(*) from public.role_permissions), 1::bigint, 'alleen-lezen: ziet alleen de eigen rechten');
 select is((select count(*) from public.audit_log),        0::bigint, 'alleen-lezen: leest de auditlog niet');
 select throws_ok($$ select * from public.list_users() $$, '42501', null,

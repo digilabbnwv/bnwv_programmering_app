@@ -45,14 +45,14 @@ select is(
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['contract_opslaan', 'deelnemer_opslaan', 'extra_uren_opslaan', 'list_users',
-        'medewerker_opslaan', 'programma_opslaan', 'programma_overdragen',
+  array['afdeling_opslaan', 'contract_opslaan', 'deelnemer_opslaan', 'extra_uren_opslaan', 'functie_opslaan',
+        'list_users', 'medewerker_opslaan', 'organisatie_verwijderen', 'programma_opslaan', 'programma_overdragen',
         'programma_uitvoerder_opslaan', 'projectgroep_opslaan',
         'school_jaargegevens_opslaan', 'school_jaargegevens_overnemen', 'school_opslaan', 'school_toewijzen',
-        'staffel_schijf_opslaan', 'taak_opslaan', 'taak_overdragen', 'toelichting_opslaan',
+        'staffel_schijf_opslaan', 'taak_opslaan', 'taak_overdragen', 'tak_opslaan', 'toelichting_opslaan',
         'toewijzing_wijzigen', 'uitvoerder_opslaan', 'werkbelasting_heropenen', 'werkbelasting_vaststellen', 'werkbelasting_verwijderen',
         'werkjaar_opslaan'],
-  'authenticated kan in public alleen list_users en de werkbelastingfuncties uitvoeren'
+  'authenticated kan in public alleen list_users en de functies van werkbelasting en organisatie uitvoeren'
 );
 
 select is(
@@ -83,9 +83,12 @@ select results_eq(
   $$ values
        ('alleen-lezen', array['app.gebruiken']),
        ('beheerder',    array['app.gebruiken', 'auditlog.lezen', 'gebruikers.beheren', 'gebruikers.bekijken',
+                              'projectplan.beheren', 'projectplan.bekijken',
                               'werkbelasting.beheren', 'werkbelasting.bekijken']),
        ('medewerker',   array['app.gebruiken']),
-       ('teamleider',   array['app.gebruiken', 'gebruikers.bekijken',
+       ('mt',           array['app.gebruiken', 'projectplan.beheren', 'projectplan.bekijken',
+                              'werkbelasting.bekijken']),
+       ('teamleider',   array['app.gebruiken', 'gebruikers.bekijken', 'projectplan.bekijken',
                               'werkbelasting.beheren', 'werkbelasting.bekijken']) $$,
   'rechten per rol zoals afgesproken'
 );

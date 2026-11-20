@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { hoortBij, initialen, isGroep, MENU, zichtbaarMenu, zichtbareInstellingen } from './navigatie'
 
-// Rechten per rol, gelijk aan de seed in de migraties basis_rechten en werkbelasting.
+// Rechten per rol, gelijk aan de seed in de migraties basis_rechten, werkbelasting en organisatie.
 const WERKBELASTING = ['werkbelasting.bekijken', 'werkbelasting.beheren']
+const PROJECTPLAN = ['projectplan.bekijken', 'projectplan.beheren']
 const ROLLEN: Record<string, string[]> = {
-  beheerder: ['app.gebruiken', 'gebruikers.bekijken', 'gebruikers.beheren', 'auditlog.lezen', ...WERKBELASTING],
-  teamleider: ['app.gebruiken', 'gebruikers.bekijken', ...WERKBELASTING],
+  beheerder: ['app.gebruiken', 'gebruikers.bekijken', 'gebruikers.beheren', 'auditlog.lezen', ...WERKBELASTING, ...PROJECTPLAN],
+  mt: ['app.gebruiken', 'werkbelasting.bekijken', ...PROJECTPLAN],
+  teamleider: ['app.gebruiken', 'gebruikers.bekijken', ...WERKBELASTING, 'projectplan.bekijken'],
   medewerker: ['app.gebruiken'],
   'alleen-lezen': ['app.gebruiken'],
 }
@@ -17,14 +19,19 @@ const menu = (rol: string) =>
   )
 
 describe('zichtbaarMenu', () => {
-  it('beheerder en teamleider zien rapportage en beheer', () => {
-    const verwacht = [
+  it('beheerder en teamleider zien rapportage en beheer; alleen de beheerder ook de organisatie', () => {
+    const rapportage = 'Rapportage: Signalen, Verdeling per programma, Verdeling per medewerker'
+    const beheer = 'Beheer: Scholen, Medewerkers, Projectgroepen, Overige taken, Programma’s, Jaar en staffel'
+    expect(menu('beheerder')).toEqual(['Start', rapportage, `${beheer}, Organisatie`])
+    expect(menu('teamleider')).toEqual(['Start', rapportage, beheer])
+  })
+
+  it('het MT ziet de rapportage en beheert de organisatie', () => {
+    expect(menu('mt')).toEqual([
       'Start',
       'Rapportage: Signalen, Verdeling per programma, Verdeling per medewerker',
-      'Beheer: Scholen, Medewerkers, Projectgroepen, Overige taken, Programma’s, Jaar en staffel',
-    ]
-    expect(menu('beheerder')).toEqual(verwacht)
-    expect(menu('teamleider')).toEqual(verwacht)
+      'Beheer: Organisatie',
+    ])
   })
 
   it('medewerker en alleen-lezen zien alleen Start', () => {
@@ -48,6 +55,7 @@ describe('zichtbareInstellingen', () => {
   it('alleen de beheerder heeft instellingen', () => {
     expect(instellingen('beheerder')).toEqual(['Gebruikers', 'Auditlog'])
     expect(instellingen('teamleider')).toEqual([])
+    expect(instellingen('mt')).toEqual([])
     expect(instellingen('medewerker')).toEqual([])
   })
 })

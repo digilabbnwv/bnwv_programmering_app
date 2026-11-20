@@ -13,6 +13,7 @@ import { MedewerkerDetailPage } from './pages/MedewerkerDetailPage'
 import { ProjectgroepenPage } from './pages/ProjectgroepenPage'
 import { ProjectgroepDetailPage } from './pages/ProjectgroepDetailPage'
 import { StaffelPage } from './pages/StaffelPage'
+import { OrganisatiePage } from './pages/OrganisatiePage'
 import { ProgrammasPage } from './pages/ProgrammasPage'
 import { ProgrammaDetailPage } from './pages/ProgrammaDetailPage'
 import { TakenPage } from './pages/TakenPage'
@@ -151,6 +152,14 @@ export const router = createHashRouter([
             element: (
               <VereistRecht recht="werkbelasting.beheren">
                 <StaffelPage />
+              </VereistRecht>
+            ),
+          },
+          {
+            path: '/organisatie',
+            element: (
+              <VereistRecht recht="projectplan.beheren">
+                <OrganisatiePage />
               </VereistRecht>
             ),
           },

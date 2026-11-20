@@ -55,7 +55,7 @@ select throws_ok(
   $$ select public.werkbelasting_verwijderen('scholen', '00000000-0000-0000-0000-00000000a001') $$,
   '42501', null, 'medewerker: kan niets verwijderen');
 select throws_ok(
-  $$ select public.medewerker_opslaan('00000000-0000-0000-0000-00000000b001', 'Ik', '', '', null, true, '') $$,
+  $$ select public.medewerker_opslaan('00000000-0000-0000-0000-00000000b001', 'Ik', '', null, null, null, true, '') $$,
   '42501', null, 'medewerker: kan zichzelf niet wijzigen');
 select throws_ok(
   $$ select public.werkbelasting_vaststellen('00000000-0000-0000-0000-00000000b001', 2026::smallint, '{}') $$,

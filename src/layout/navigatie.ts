@@ -36,6 +36,7 @@ export const MENU: readonly NavRegel[] = [
       { pad: '/taken', label: 'Overige taken', recht: 'werkbelasting.beheren' },
       { pad: '/programmas', label: 'Programma’s', recht: 'werkbelasting.beheren' },
       { pad: '/staffel', label: 'Jaar en staffel', recht: 'werkbelasting.beheren' },
+      { pad: '/organisatie', label: 'Organisatie', recht: 'projectplan.beheren' },
     ],
   },
 ]

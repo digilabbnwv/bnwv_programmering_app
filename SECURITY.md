@@ -19,8 +19,11 @@ Meld een kwetsbaarheid niet in een openbaar issue. De repository is publiek. Geb
 
 - **RLS overal:** Row Level Security staat aan op elke tabel. `anon` mag niets en `authenticated` mag alleen lezen. Wijzigen gaat alleen via databasefuncties:
   - gebruikers en rollen via functies die alleen de service role mag uitvoeren, dus alleen via de Edge Functions;
-  - de werkbelasting (scholen, medewerkers, projectgroepen, staffel) via functies die de frontend aanroept. Elke functie eist eerst het recht `werkbelasting.beheren` via `private.authorize()`, dus ook AAL2. De lijst met functies die `authenticated` mag uitvoeren staat vast in een pgTAP-test.
-- **Werkbelasting lezen:** een medewerker ziet alleen de eigen gegevens (de medewerker die aan het eigen account gekoppeld is). Het hele team zien vereist `werkbelasting.bekijken`. Scholen, staffel en projectgroepen zijn voor iedereen met `app.gebruiken` leesbaar.
+  - de werkbelasting (scholen, medewerkers, projectgroepen, staffel) via functies die de frontend aanroept. Elke functie eist eerst het recht `werkbelasting.beheren` via `private.authorize()`, dus ook AAL2;
+  - de organisatie (afdelingen, functies, takken) op dezelfde manier, met het recht `projectplan.beheren` (rollen mt en beheerder).
+
+  De lijst met functies die `authenticated` mag uitvoeren staat vast in een pgTAP-test.
+- **Werkbelasting lezen:** een medewerker ziet alleen de eigen gegevens (de medewerker die aan het eigen account gekoppeld is). Het hele team zien vereist `werkbelasting.bekijken`. Scholen, staffel, projectgroepen, afdelingen, functies en takken zijn voor iedereen met `app.gebruiken` leesbaar.
 - **Eén controle voor alles:** elke policy gaat via `private.authorize()`. Die eist:
   - AAL2 (2FA gedaan);
   - een actief account;

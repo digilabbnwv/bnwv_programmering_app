@@ -5,6 +5,7 @@ import { Button } from '../components/Button'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
 import { Pagina } from '../layout/Pagina'
+import { indeling, type Afdeling, type Functie } from '../organisatie/api'
 import { lees, type Contract, type Deelnemer, type Medewerker, type Toewijzing } from '../werkbelasting/api'
 import { contractPeriodes } from '../werkbelasting/berekening'
 import { MedewerkerFormulier } from '../werkbelasting/MedewerkerFormulier'
@@ -18,12 +19,14 @@ export function MedewerkersPage() {
   const navigate = useNavigate()
   const laden = useCallback(
     async () =>
-      alles<[Medewerker[], Contract[], Toewijzing[], Deelnemer[]]>(
+      alles<[Medewerker[], Contract[], Toewijzing[], Deelnemer[], Afdeling[], Functie[]]>(
         await Promise.all([
           lees<Medewerker>(client, 'medewerkers', 'naam'),
           lees<Contract>(client, 'contracten', 'ingangsdatum'),
           lees<Toewijzing>(client, 'school_toewijzingen', 'startdatum'),
           lees<Deelnemer>(client, 'projectgroep_deelnemers', 'startdatum'),
+          lees<Afdeling>(client, 'afdelingen', 'volgorde'),
+          lees<Functie>(client, 'functies', 'naam'),
         ]),
       ),
     [client],
@@ -40,7 +43,7 @@ export function MedewerkersPage() {
     )
   }
 
-  const [medewerkers, contracten, toewijzingen, deelnemers] = data
+  const [medewerkers, contracten, toewijzingen, deelnemers, afdelingen, functies] = data
   const urenPerWeek = (id: string) =>
     contractPeriodes(contracten.filter((c) => c.medewerker_id === id)).find((c) => loopt(c))?.uren_per_week ?? null
   const aantal = (rijen: { medewerker_id: string; startdatum: string; einddatum: string | null }[], id: string) =>
@@ -68,7 +71,11 @@ export function MedewerkersPage() {
               </Link>
             ),
           },
-          { kop: 'Functie', inhoud: (m) => m.functie },
+          {
+            kop: 'Functie en afdeling',
+            inhoud: (m) => indeling(m, functies, afdelingen) ?? <span className="font-semibold">Niet ingedeeld</span>,
+            sorteer: (m) => indeling(m, functies, afdelingen) ?? '',
+          },
           {
             kop: 'Uren per week',
             inhoud: (m) => {
@@ -88,6 +95,8 @@ export function MedewerkersPage() {
         <MedewerkerFormulier
           medewerker={null}
           gekoppeld={medewerkers.flatMap((m) => (m.user_id ? [m.user_id] : []))}
+          afdelingen={afdelingen}
+          functies={functies}
           onSluiten={() => setNieuw(false)}
           onGelukt={(id) => void navigate(`/medewerkers/${id}`)}
         />

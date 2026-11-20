@@ -17,7 +17,7 @@ import {
 const WERKJAAR = { jaar: 2026, werkweken: 47, mijmer_percentage: 20 }
 
 function medewerker(id: string, naam: string, actief = true): Medewerker {
-  return { id, naam, email: '', functie: '', user_id: null, actief, opmerking: '' }
+  return { id, naam, email: '', functie: '', afdeling_id: null, functie_id: null, user_id: null, actief, opmerking: '' }
 }
 
 function school(id: string, naam: string, actief = true, programmaId = 'dbos'): School {
