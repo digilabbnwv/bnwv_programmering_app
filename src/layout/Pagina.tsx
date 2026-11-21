@@ -29,9 +29,9 @@ export function usePaginaTitel(titel: string) {
   }, [titel])
 }
 
-/** Houdt de inhoud op de gekozen breedte, midden in het venster. Op papier de volle breedte. */
+/** Houdt de inhoud op de gekozen breedte, links uitgelijnd naast de zijbalk, zodat de linkerrand op elke pagina gelijk is. Op papier de volle breedte. */
 export function PaginaKader({ breedte = 'standaard', children }: { breedte?: Breedte; children: ReactNode }) {
-  return <div className={`mx-auto w-full ${BREEDTE[breedte]} print:max-w-none`}>{children}</div>
+  return <div className={`w-full ${BREEDTE[breedte]} print:max-w-none`}>{children}</div>
 }
 
 /**

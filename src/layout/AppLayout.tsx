@@ -75,7 +75,7 @@ function Kader() {
           ref={main}
           id="inhoud"
           tabIndex={-1}
-          className="w-full min-w-0 flex-1 px-4 py-8 outline-none md:px-8 md:py-10 print:p-0"
+          className="w-full min-w-0 flex-1 px-4 py-8 outline-none md:px-10 md:py-10 xl:px-16 print:p-0"
         >
           <Outlet />
         </main>
