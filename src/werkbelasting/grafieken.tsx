@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { Link } from 'react-router'
 import { Selectievakje } from '../components/Selectievakje'
+import { Tekstlink } from '../components/Tekstlink'
 import { formatPercentage, formatPerWeek, formatUren, perWeek, type Werkbelasting } from './berekening'
 import { verdieping, type Deel } from './rapportage'
 
@@ -234,9 +234,9 @@ export function TeamBalken({ rijen }: { rijen: Teambalk[] }) {
 
           return (
             <li key={r.id} className="grid items-start gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
-              <Link to={r.link} className="truncate text-ui-sm font-semibold underline underline-offset-4 hover:no-underline">
+              <Tekstlink to={r.link} className="truncate text-ui-sm">
                 {r.naam}
-              </Link>
+              </Tekstlink>
               <div>
                 <div className="relative" aria-hidden="true">
                   {hover?.id === r.id && <Tooltip hover={hover} />}

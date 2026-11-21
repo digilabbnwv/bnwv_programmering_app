@@ -1,9 +1,9 @@
 import { useId, useState } from 'react'
-import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Melding } from '../components/Melding'
 import { SelectField } from '../components/SelectField'
+import { Tekstlink } from '../components/Tekstlink'
 import type { Afdeling, Functie } from '../organisatie/api'
 import { voerUit, type Projectgroep } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
@@ -13,7 +13,6 @@ import { formatEuro, type Projectregel } from './berekening'
 import { leesWerkboek } from './excel'
 import { afwijkingen, controle, vergelijkMetExcel, voorgesteldeProjectgroep, type Afwijking, type Vergelijkregel } from './vaststellen'
 
-const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 const NIEUW = ''
 
 function Projectlijst({ regels, jaar }: { regels: Projectregel[]; jaar: number }) {
@@ -22,9 +21,9 @@ function Projectlijst({ regels, jaar }: { regels: Projectregel[]; jaar: number }
       {regels.map((r, i) => (
         <span key={r.projectjaar.id}>
           {i > 0 && ', '}
-          <Link to={`/projecten/${r.project.id}?jaar=${jaar}`} className={linkStijl}>
+          <Tekstlink to={`/projecten/${r.project.id}?jaar=${jaar}`}>
             {r.project.naam}
-          </Link>
+          </Tekstlink>
         </span>
       ))}
     </span>
@@ -119,9 +118,9 @@ export function DefinitiefMaken({
         )}
         <li>
           Bekijk de drukte per functie in het{' '}
-          <Link to={`/rapportage/projectplanner?jaar=${jaar}`} className={linkStijl}>
+          <Tekstlink to={`/rapportage/projectplanner?jaar=${jaar}`}>
             dashboard
-          </Link>
+          </Tekstlink>
           .
         </li>
       </ul>
@@ -222,9 +221,9 @@ export function Afwijkingen({
                   {lijst.some((a) => a.projectId === id && a.soort === 'weg') ? (
                     <span className="font-semibold">{p.naam}</span>
                   ) : (
-                    <Link to={`/projecten/${id}?jaar=${jaarplan.jaar}`} className={linkStijl}>
+                    <Tekstlink to={`/projecten/${id}?jaar=${jaarplan.jaar}`}>
                       {p.naam}
-                    </Link>
+                    </Tekstlink>
                   )}
                   : {p.teksten.join('; ')}
                 </li>

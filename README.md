@@ -35,8 +35,8 @@ Beveiligingskeuzes en resterende risico's staan in [SECURITY.md](SECURITY.md).
 src/
   auth/        inlogflow, sessie, 2FA, inactiviteit, rechten van de gebruiker
   beheer/      gebruikersbeheer en auditlog (API-laag en dialogen)
-  components/  knoppen, velden, meldingen, dialoog
-  layout/      header, navigatie per recht, paginakader
+  components/  knoppen, velden, meldingen, dialoog, kengetallen, secties, tekstlinks, filterbalk
+  layout/      header, navigatie per recht, paginakader; paginas.ts: pad en recht van elke pagina
   lib/         configuratie en de Supabase-client (alleen de publishable key)
   pages/       één bestand per pagina
 supabase/
@@ -45,7 +45,7 @@ supabase/
   tests/       pgTAP-tests voor rechten en RLS
 tests/integratie/  tests tegen een lokale Supabase met echte Auth (CI)
 scripts/       Node-check en de secret-check op de build
-docs/          BNWV Design System
+docs/          BNWV Design System en plannen (werkbelasting, projectplanner, navigatie)
 ```
 
 ## Lokaal ontwikkelen

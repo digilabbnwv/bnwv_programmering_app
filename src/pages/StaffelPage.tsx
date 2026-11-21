@@ -1,9 +1,12 @@
 import { useCallback, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
+import { Filterbalk } from '../components/Filterbalk'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
+import { Gegevens, Sectie } from '../components/Sectie'
+import { Laadstatus } from '../components/Melding'
 import { Pagina } from '../layout/Pagina'
 import {
   lees,
@@ -16,7 +19,7 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Gegevens, Laadstatus, ongeldig, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, ongeldig, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { getalAlsTekst, leesGetal } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
@@ -83,7 +86,7 @@ export function StaffelPage() {
     >
       {fout && <Laadstatus fout={fout} />}
 
-      <div className="mb-8 flex flex-wrap items-end gap-3">
+      <Filterbalk>
         {werkjaren.length > 0 && jaar !== null && (
           <SelectField
             label="Jaar"
@@ -96,7 +99,7 @@ export function StaffelPage() {
         <Button variant="secundair" onClick={() => setDialoog({ soort: 'jaar-nieuw' })}>
           Jaar toevoegen
         </Button>
-      </div>
+      </Filterbalk>
 
       {werkjaar ? (
         <>

@@ -1,9 +1,12 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
+import { Gegevens, Sectie } from '../components/Sectie'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import {
   lees,
@@ -16,7 +19,7 @@ import {
   type Toewijzing,
 } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { Gegevens, Laadstatus, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { loopt, opNaam } from '../werkbelasting/opmaak'
 import { ProgrammaFormulier } from '../werkbelasting/ProgrammaFormulier'
 import { UitvoerdersSectie } from '../werkbelasting/Uitvoerders'
@@ -63,9 +66,9 @@ export function ProgrammaDetailPage() {
   if (!programma) {
     return (
       <Pagina titel="Programma niet gevonden">
-        <Link to="/programmas" className="font-semibold underline underline-offset-4">
+        <Tekstlink to="/programmas">
           Terug naar programma’s
-        </Link>
+        </Tekstlink>
       </Pagina>
     )
   }
@@ -82,9 +85,9 @@ export function ProgrammaDetailPage() {
   return (
     <Pagina titel={programma.naam} intro={programma.omschrijving || undefined}>
       <p className="mb-8">
-        <Link to="/programmas" className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Tekstlink to="/programmas">
           Alle programma’s
-        </Link>
+        </Tekstlink>
       </p>
 
       <Sectie
@@ -129,9 +132,9 @@ export function ProgrammaDetailPage() {
               {
                 kop: 'School',
                 inhoud: (s) => (
-                  <Link to={`/scholen/${s.id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+                  <Tekstlink to={`/scholen/${s.id}`}>
                     {s.naam}
-                  </Link>
+                  </Tekstlink>
                 ),
               },
               { kop: 'Soort', inhoud: (s) => s.soort },

@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
-import { Melding } from '../components/Melding'
+import { Filterbalk } from '../components/Filterbalk'
+import { Laadstatus, Melding } from '../components/Melding'
 import { Selectievakje } from '../components/Selectievakje'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
+import { Tekstlink } from '../components/Tekstlink'
 import { TextField } from '../components/TextField'
 import { Pagina } from '../layout/Pagina'
 import {
@@ -21,7 +23,7 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Laadstatus, Overgenomen } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, Overgenomen } from '../werkbelasting/onderdelen'
 import { loopt, opNaam } from '../werkbelasting/opmaak'
 import { SchoolFormulier } from '../werkbelasting/SchoolFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
@@ -105,7 +107,7 @@ export function ScholenPage() {
 
   return (
     <Pagina titel="Scholen" intro={`Scholen met hun medewerker en de uren voor ${jaar} volgens de staffel.`}>
-      <div className="mb-6 flex flex-wrap items-end gap-3">
+      <Filterbalk>
         <Button onClick={() => setNieuw(true)}>Nieuwe school</Button>
         {werkjaren.length > 0 && (
           <SelectField
@@ -124,7 +126,7 @@ export function ScholenPage() {
             Leerlingaantallen van {jaar - 1} overnemen
           </Button>
         )}
-      </div>
+      </Filterbalk>
 
       {resultaat && (
         <div className="mb-6">
@@ -134,9 +136,9 @@ export function ScholenPage() {
       {laatsteJaar === jaar && (
         <p className="mb-6 max-w-prose text-ui-sm text-neutral-700">
           Wil je {jaar + 1} voorbereiden? Voeg het jaar eerst toe bij{' '}
-          <Link to="/staffel" className="font-semibold underline underline-offset-4 hover:no-underline">
+          <Tekstlink to="/staffel">
             Jaar en staffel
-          </Link>
+          </Tekstlink>
           . Daarna kun je hier de leerlingaantallen van {jaar} overnemen.
         </p>
       )}
@@ -168,9 +170,9 @@ export function ScholenPage() {
           {
             kop: 'School',
             inhoud: (s) => (
-              <Link to={`/scholen/${s.id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+              <Tekstlink to={`/scholen/${s.id}`}>
                 {s.naam}
-              </Link>
+              </Tekstlink>
             ),
           },
           { kop: 'Soort', inhoud: (s) => s.soort },

@@ -1,10 +1,13 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
+import { Gegevens, Sectie } from '../components/Sectie'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import {
   lees,
@@ -20,7 +23,7 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Gegevens, Laadstatus, ongeldig, Overgenomen, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, ongeldig, Overgenomen, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst, leesGetal, loopt, opNaam, vandaag } from '../werkbelasting/opmaak'
 import { SchoolFormulier } from '../werkbelasting/SchoolFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
@@ -68,9 +71,9 @@ export function SchoolDetailPage() {
   if (!school) {
     return (
       <Pagina titel="School niet gevonden">
-        <Link to="/scholen" className="font-semibold underline underline-offset-4">
+        <Tekstlink to="/scholen">
           Terug naar scholen
-        </Link>
+        </Tekstlink>
       </Pagina>
     )
   }
@@ -84,9 +87,9 @@ export function SchoolDetailPage() {
   return (
     <Pagina titel={school.naam} intro={SCHOOLSOORTEN.find((s) => s.waarde === school.soort)?.label}>
       <p className="mb-8">
-        <Link to="/scholen" className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Tekstlink to="/scholen">
           Alle scholen
-        </Link>
+        </Tekstlink>
       </p>
 
       <Sectie
@@ -139,9 +142,9 @@ export function SchoolDetailPage() {
             {
               kop: 'Medewerker',
               inhoud: (t) => (
-                <Link to={`/medewerkers/${t.medewerker_id}`} className="underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/medewerkers/${t.medewerker_id}`} licht>
                   {naamVan(t.medewerker_id)}
-                </Link>
+                </Tekstlink>
               ),
             },
             { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },

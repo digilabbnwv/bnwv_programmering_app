@@ -1,10 +1,15 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
+import { Filterbalk } from '../components/Filterbalk'
+import { Kengetal, Kengetallen } from '../components/Kengetal'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
+import { Laadstatus } from '../components/Melding'
+import { Sectie } from '../components/Sectie'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { functieOpties, type Afdeling, type Functie, type Tak } from '../organisatie/api'
 import { faseLabel, STATUSSEN, statusLabel, type Inzet, type Jaarplan, type Project, type Projectjaar, type ProjectStatus } from '../projectplanner/api'
@@ -14,7 +19,7 @@ import { ExcelImport } from '../projectplanner/ExcelImport'
 import { Afwijkingen, DefinitiefMaken, ExcelVergelijking } from '../projectplanner/DefinitiefMaken'
 import { lees, voerUit, type Medewerker, type Programma, type Projectgroep } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Laadstatus, Sectie } from '../werkbelasting/onderdelen'
+import { FormulierDialoog } from '../werkbelasting/onderdelen'
 import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
@@ -25,8 +30,6 @@ type Dialoog =
   | { soort: 'heropenen'; jaarplan: Jaarplan }
 
 const datumTijd = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
-
-const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 
 /**
  * Het jaarplan van één jaar (projectplan.bekijken): kengetallen en de
@@ -157,7 +160,7 @@ export function JaarplanPage() {
       titel={`Jaarplan ${jaarplan.jaar}`}
       intro="De projecten van dit jaar met hun status, budget en de benodigde inzet per functie."
     >
-      <div className="mb-8 flex flex-wrap items-end gap-3">
+      <Filterbalk>
         <SelectField
           label="Jaar"
           value={String(jaarplan.jaar)}
@@ -170,7 +173,7 @@ export function JaarplanPage() {
             Jaarplan toevoegen
           </Button>
         )}
-      </div>
+      </Filterbalk>
 
       <p className="mb-6">
         <span className="font-semibold">Fase: {faseLabel(jaarplan.fase)}.</span>
@@ -229,7 +232,7 @@ export function JaarplanPage() {
         <ExcelImport jaar={jaarplan.jaar} afdelingen={afdelingen} takken={takken} programmas={programmas} onGelukt={herlaad} />
       )}
 
-      <dl className="my-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Kengetallen className="my-8">
         <Kengetal
           label="Projecten"
           waarde={String(k.aantal)}
@@ -248,7 +251,7 @@ export function JaarplanPage() {
           toelichting={k.zonderInzet === 0 ? 'zonder afgewezen projecten' : `${k.zonderInzet} zonder inzet, afgewezen niet meegeteld`}
         />
         <Kengetal label="Afdelingen" waarde={String(new Set(regels.map((r) => r.project.afdeling_id)).size)} toelichting="met projecten in deze selectie" />
-      </dl>
+      </Kengetallen>
 
       <Sectie
         titel="Projecten"
@@ -302,9 +305,9 @@ export function JaarplanPage() {
             {
               kop: 'Project',
               inhoud: (r) => (
-                <Link to={`/projecten/${r.project.id}?jaar=${jaarplan.jaar}`} className={linkStijl}>
+                <Tekstlink to={`/projecten/${r.project.id}?jaar=${jaarplan.jaar}`}>
                   {r.project.naam}
-                </Link>
+                </Tekstlink>
               ),
               sorteer: (r) => r.project.naam,
             },
@@ -339,15 +342,5 @@ export function JaarplanPage() {
 
       {dialogen}
     </Pagina>
-  )
-}
-
-function Kengetal({ label, waarde, toelichting }: { label: string; waarde: string; toelichting: string }) {
-  return (
-    <div className="rounded-card bg-neutral-0 p-5 shadow-card">
-      <dt className="text-ui-sm font-semibold text-neutral-700">{label}</dt>
-      <dd className="mt-1 text-subkop font-bold tabular-nums">{waarde}</dd>
-      <dd className="text-ui-sm text-neutral-700">{toelichting}</dd>
-    </div>
   )
 }

@@ -1,12 +1,13 @@
-import { useCallback, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { useCallback } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
-import { Melding } from '../components/Melding'
+import { Laadstatus, Melding } from '../components/Melding'
+import { Kengetal, Kengetallen } from '../components/Kengetal'
+import { Blok, Sectie } from '../components/Sectie'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { berekenWerkbelasting, formatPercentage, formatPerWeek, formatUren, perWeek, type Regel, type Werkbelasting } from '../werkbelasting/berekening'
 import { Staafdiagram, TeamBalken, Verdelingsbalk, type Staaf } from '../werkbelasting/grafieken'
-import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
 import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import {
   bouwInvoer,
@@ -70,18 +71,16 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
     <Sectie
       titel="Mijn werkbelasting"
       acties={
-        <Link to={`/werkbelasting/${medewerkerId}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Tekstlink to={`/werkbelasting/${medewerkerId}`}>
           Volledige werkurenverdeling
-        </Link>
+        </Tekstlink>
       }
     >
       {w.contracturen <= 0 ? (
         <p>Er is voor {w.jaar} nog geen contract vastgelegd.</p>
       ) : (
         <div className="space-y-8">
-          <dl
-            className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${w.uitvoering.length > 0 ? 'xl:grid-cols-6' : 'xl:grid-cols-5'}`}
-          >
+          <Kengetallen>
             <Kengetal label="Contract" waarde={`${week(w.contracturen)} uur p/w`} toelichting={`${formatUren(w.contracturen)} uur per jaar`} />
             <Kengetal label="Programma-scholen" waarde={formatPercentage(w.percentage.scholen)} toelichting={`${week(w.schooluren)} uur p/w`} />
             {w.uitvoering.length > 0 && (
@@ -98,7 +97,7 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
               waarde={`${week(w.overig)} uur p/w`}
               toelichting={toelichting?.status === 'vastgesteld' ? 'Verdeling vastgesteld' : 'Verdeling in concept'}
             />
-          </dl>
+          </Kengetallen>
 
           <Blok titel="Verdeling van mijn contracturen">
             <Verdelingsbalk w={w} />
@@ -197,13 +196,13 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
     <Sectie
       titel="Team"
       acties={
-        <Link to={`/rapportage/signalen?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Tekstlink to={`/rapportage/signalen?jaar=${jaar}`}>
           Naar de rapportage
-        </Link>
+        </Tekstlink>
       }
     >
       <div className="space-y-8">
-        <dl className="grid gap-4 sm:grid-cols-3">
+        <Kengetallen>
           <Kengetal label="Medewerkers" waarde={String(rijen.length)} toelichting={`${vastgesteld} verdelingen vastgesteld`} />
           <Kengetal label="Overbelast" waarde={String(overbelast)} toelichting={overbelast === 0 ? 'Niemand' : 'Zie hieronder'} />
           <Kengetal
@@ -211,7 +210,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
             waarde={String(signalen.length + persoonlijkeSignalen)}
             toelichting={`${signalen.length} over scholen en projectgroepen`}
           />
-        </dl>
+        </Kengetallen>
 
         {signalen.length > 0 && (
           <Blok titel="Signalen">
@@ -223,9 +222,9 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
             {signalen.length > 5 && (
               <p className="mt-2 text-ui-sm">
                 En nog {signalen.length - 5}.{' '}
-                <Link to={`/rapportage/signalen?jaar=${jaar}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/rapportage/signalen?jaar=${jaar}`}>
                   Alle signalen
-                </Link>
+                </Tekstlink>
               </p>
             )}
           </Blok>
@@ -249,24 +248,5 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
         </Blok>
       </div>
     </Sectie>
-  )
-}
-
-function Blok({ titel, children }: { titel: string; children: ReactNode }) {
-  return (
-    <div className="rounded-card bg-neutral-0 p-5 shadow-card md:p-6">
-      <h3 className="mb-4 font-bold">{titel}</h3>
-      {children}
-    </div>
-  )
-}
-
-function Kengetal({ label, waarde, toelichting }: { label: string; waarde: string; toelichting: string }) {
-  return (
-    <div className="rounded-card bg-neutral-0 p-5 shadow-card">
-      <dt className="text-ui-sm font-semibold text-neutral-700">{label}</dt>
-      <dd className="mt-1 text-subkop font-bold">{waarde}</dd>
-      <dd className="text-ui-sm text-neutral-700">{toelichting}</dd>
-    </div>
   )
 }

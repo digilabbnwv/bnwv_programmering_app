@@ -1,10 +1,13 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
+import { Gegevens, Sectie } from '../components/Sectie'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { indeling, type Afdeling, type Functie } from '../organisatie/api'
 import {
@@ -26,7 +29,7 @@ import {
 } from '../werkbelasting/api'
 import { contractPeriodes, formatUren } from '../werkbelasting/berekening'
 import { MedewerkerFormulier } from '../werkbelasting/MedewerkerFormulier'
-import { FormulierDialoog, Gegevens, Laadstatus, ongeldig, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, ongeldig, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst, leesGetal, loopt, opNaam } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
@@ -113,9 +116,9 @@ export function MedewerkerDetailPage() {
   if (!medewerker) {
     return (
       <Pagina titel="Medewerker niet gevonden">
-        <Link to="/medewerkers" className="font-semibold underline underline-offset-4">
+        <Tekstlink to="/medewerkers">
           Terug naar medewerkers
-        </Link>
+        </Tekstlink>
       </Pagina>
     )
   }
@@ -128,12 +131,12 @@ export function MedewerkerDetailPage() {
   return (
     <Pagina titel={medewerker.naam} intro={indeling(medewerker, functies, afdelingen) ?? 'Nog niet ingedeeld in een functie en afdeling.'}>
       <p className="mb-8 flex flex-wrap gap-x-6 gap-y-2">
-        <Link to="/medewerkers" className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Tekstlink to="/medewerkers">
           Alle medewerkers
-        </Link>
-        <Link to={`/werkbelasting/${medewerker.id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+        </Tekstlink>
+        <Tekstlink to={`/werkbelasting/${medewerker.id}`}>
           Werkurenverdeling bekijken
-        </Link>
+        </Tekstlink>
       </p>
 
       <Sectie
@@ -209,9 +212,9 @@ export function MedewerkerDetailPage() {
             {
               kop: 'School',
               inhoud: (t) => (
-                <Link to={`/scholen/${t.school_id}`} className="underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/scholen/${t.school_id}`} licht>
                   {schoolNaam(t.school_id)}
-                </Link>
+                </Tekstlink>
               ),
             },
             { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },
@@ -230,9 +233,9 @@ export function MedewerkerDetailPage() {
             {
               kop: 'Programma',
               inhoud: (u) => (
-                <Link to={`/programmas/${u.programma_id}`} className="underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/programmas/${u.programma_id}`} licht>
                   {programmas.find((p) => p.id === u.programma_id)?.naam ?? 'Onbekend'}
-                </Link>
+                </Tekstlink>
               ),
             },
             { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },
@@ -251,9 +254,9 @@ export function MedewerkerDetailPage() {
             {
               kop: 'Projectgroep',
               inhoud: (d) => (
-                <Link to={`/projectgroepen/${d.projectgroep_id}`} className="underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/projectgroepen/${d.projectgroep_id}`} licht>
                   {projectgroepen.find((p) => p.id === d.projectgroep_id)?.naam ?? 'Onbekend'}
-                </Link>
+                </Tekstlink>
               ),
             },
             { kop: 'Uren per jaar', inhoud: (d) => formatUren(d.uren_per_jaar), getal: true },
@@ -272,9 +275,9 @@ export function MedewerkerDetailPage() {
             {
               kop: 'Taak',
               inhoud: (u) => (
-                <Link to={`/taken/${u.taak_id}`} className="underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/taken/${u.taak_id}`} licht>
                   {taken.find((t) => t.id === u.taak_id)?.naam ?? 'Onbekend'}
-                </Link>
+                </Tekstlink>
               ),
             },
             { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },

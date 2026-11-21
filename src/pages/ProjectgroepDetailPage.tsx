@@ -1,15 +1,18 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
+import { Gegevens, Sectie } from '../components/Sectie'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { lees, verwijder, voerUit, type Deelnemer, type Medewerker, type Projectgroep } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Gegevens, Laadstatus, ongeldig, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, ongeldig, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatPeriode, getalAlsTekst, leesGetal, loopt, opNaam } from '../werkbelasting/opmaak'
 import { ProjectgroepFormulier } from '../werkbelasting/ProjectgroepFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
@@ -52,9 +55,9 @@ export function ProjectgroepDetailPage() {
   if (!projectgroep) {
     return (
       <Pagina titel="Projectgroep niet gevonden">
-        <Link to="/projectgroepen" className="font-semibold underline underline-offset-4">
+        <Tekstlink to="/projectgroepen">
           Terug naar projectgroepen
-        </Link>
+        </Tekstlink>
       </Pagina>
     )
   }
@@ -67,9 +70,9 @@ export function ProjectgroepDetailPage() {
   return (
     <Pagina titel={projectgroep.naam} intro={projectgroep.omschrijving || undefined}>
       <p className="mb-8">
-        <Link to="/projectgroepen" className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Tekstlink to="/projectgroepen">
           Alle projectgroepen
-        </Link>
+        </Tekstlink>
       </p>
 
       <Sectie
@@ -93,9 +96,9 @@ export function ProjectgroepDetailPage() {
             [
               'Uit de projectplanner',
               projectgroep.project_id && heeftRecht('projectplan.bekijken') ? (
-                <Link to={`/projecten/${projectgroep.project_id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/projecten/${projectgroep.project_id}`}>
                   Project bekijken
-                </Link>
+                </Tekstlink>
               ) : (
                 ''
               ),
@@ -118,9 +121,9 @@ export function ProjectgroepDetailPage() {
             {
               kop: 'Medewerker',
               inhoud: (d) => (
-                <Link to={`/medewerkers/${d.medewerker_id}`} className="underline underline-offset-4 hover:no-underline">
+                <Tekstlink to={`/medewerkers/${d.medewerker_id}`} licht>
                   {naamVan(d.medewerker_id)}
-                </Link>
+                </Tekstlink>
               ),
             },
             { kop: 'Uren per jaar', inhoud: (d) => formatUren(d.uren_per_jaar), getal: true },

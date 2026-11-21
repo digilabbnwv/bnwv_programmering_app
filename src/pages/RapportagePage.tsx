@@ -1,15 +1,18 @@
 import { useCallback, useId, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
-import { Melding } from '../components/Melding'
+import { Filterbalk } from '../components/Filterbalk'
+import { Kengetal, Kengetallen } from '../components/Kengetal'
+import { Laadstatus, Melding } from '../components/Melding'
 import { SelectField } from '../components/SelectField'
 import { Tabel, type Kolom } from '../components/Tabel'
 import { TextField } from '../components/TextField'
+import { Sectie } from '../components/Sectie'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import type { Werkjaar } from '../werkbelasting/api'
 import { formatPercentage, formatPerWeek, formatUren, perWeek, type ProgrammaRef, type Werkbelasting } from '../werkbelasting/berekening'
-import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
 import {
   filterRijen,
   laadRapportage,
@@ -82,18 +85,16 @@ function Rapportage({ titel, intro, children }: { titel: string; intro: string; 
 
   return (
     <Pagina titel={titel} intro={`${intro} Jaar ${jaar}.`}>
-      <div className="mb-8 flex flex-wrap items-end gap-3 print:hidden">
+      <Filterbalk>
         {jaarKeuze}
         <Button variant="secundair" onClick={() => window.print()}>
           Afdrukken
         </Button>
-      </div>
+      </Filterbalk>
       {children({ gegevens, werkjaar, jaar, rijen: teamRijen(gegevens, werkjaar) })}
     </Pagina>
   )
 }
-
-const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 
 /** Kengetallen van het team en alle signalen. */
 export function RapportageSignalenPage() {
@@ -114,7 +115,7 @@ export function RapportageSignalenPage() {
 
         return (
           <>
-            <dl className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <Kengetallen className="mb-10">
               <Kengetal label="Contracturen team" waarde={formatUren(contracturen)} toelichting={`${rijen.length} medewerkers`} />
               <Kengetal label="Programma-scholen" waarde={formatUren(schooluren)} toelichting={deel(schooluren)} />
               <Kengetal label="Programma-uitvoering" waarde={formatUren(uitvoeringsuren)} toelichting={deel(uitvoeringsuren)} />
@@ -125,7 +126,7 @@ export function RapportageSignalenPage() {
                 waarde={formatUren(overig)}
                 toelichting={`${vastgesteld} van ${rijen.length} vastgesteld`}
               />
-            </dl>
+            </Kengetallen>
 
             <Sectie titel="Aandachtspunten">
               {team.length === 0 && metSignaal === 0 ? (
@@ -138,18 +139,18 @@ export function RapportageSignalenPage() {
                   {rijen.flatMap((r) => [
                     ...r.werkbelasting.signalen.map((s) => (
                       <li key={`${r.medewerker.id}-${JSON.stringify(s)}`}>
-                        <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className={linkStijl}>
+                        <Tekstlink to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`}>
                           {r.medewerker.naam}
-                        </Link>
+                        </Tekstlink>
                         : {signaalTekst(s)}
                       </li>
                     )),
                     ...(r.gewijzigdNaVaststellen
                       ? [
                           <li key={`${r.medewerker.id}-gewijzigd`}>
-                            <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className={linkStijl}>
+                            <Tekstlink to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`}>
                               {r.medewerker.naam}
-                            </Link>
+                            </Tekstlink>
                             : gegevens gewijzigd na het vaststellen.
                           </li>,
                         ]
@@ -222,16 +223,6 @@ export function RapportageMedewerkersPage() {
         />
       )}
     </Rapportage>
-  )
-}
-
-function Kengetal({ label, waarde, toelichting }: { label: string; waarde: string; toelichting: string }) {
-  return (
-    <div className="rounded-card bg-neutral-0 p-5 shadow-card print:border print:border-neutral-300 print:shadow-none">
-      <dt className="text-ui-sm font-semibold text-neutral-700">{label}</dt>
-      <dd className="mt-1 text-subkop font-bold tabular-nums">{waarde}</dd>
-      <dd className="text-ui-sm text-neutral-700">{toelichting}</dd>
-    </div>
   )
 }
 
@@ -309,14 +300,14 @@ function PerMedewerker({
         <div className="mb-4 print:hidden">
           <Melding soort="info">
             {metSignaal === 1 ? '1 medewerker heeft' : `${metSignaal} medewerkers hebben`} een aandachtspunt.{' '}
-            <Link to={`/rapportage/signalen?jaar=${jaar}`} className={linkStijl}>
+            <Tekstlink to={`/rapportage/signalen?jaar=${jaar}`}>
               Naar de signalen
-            </Link>
+            </Tekstlink>
           </Melding>
         </div>
       )}
 
-      <Filterbalk
+      <Rijfilters
         filter={filter}
         onFilter={setFilter}
         programmas={programmas}
@@ -344,16 +335,16 @@ function medewerkerKolom(jaar: number): Kolom<Rij> {
   return {
     kop: 'Medewerker',
     inhoud: (r) => (
-      <Link to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`} className={linkStijl}>
+      <Tekstlink to={`/werkbelasting/${r.medewerker.id}?jaar=${jaar}`}>
         {r.medewerker.naam}
-      </Link>
+      </Tekstlink>
     ),
     sorteer: (r) => r.medewerker.naam,
   }
 }
 
 /** Zoeken, filters en de wissel tussen uren en percentage, met de telling eronder. */
-function Filterbalk({
+function Rijfilters({
   filter,
   onFilter,
   programmas,
@@ -455,7 +446,7 @@ function PerMedewerkerEnProgramma({ rijen, jaar, programmas }: { rijen: Rij[]; j
 
   return (
     <>
-      <Filterbalk
+      <Rijfilters
         filter={filter}
         onFilter={setFilter}
         programmas={programmas}

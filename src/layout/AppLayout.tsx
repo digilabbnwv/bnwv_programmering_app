@@ -57,11 +57,12 @@ function Kader() {
       </a>
       {/* Remount bij een andere pagina: het mobiele menu klapt dan dicht. */}
       <Kop key={pathname} />
+      {/* Volle breedte; de pagina bepaalt zelf hoe breed de inhoud is (Pagina, prop breedte). */}
       <main
         ref={main}
         id="inhoud"
         tabIndex={-1}
-        className="mx-auto w-full max-w-page flex-1 px-4 py-8 outline-none md:px-8 md:py-12 print:max-w-none print:p-0"
+        className="w-full flex-1 px-4 py-8 outline-none md:px-8 md:py-12 print:p-0"
       >
         <Outlet />
       </main>

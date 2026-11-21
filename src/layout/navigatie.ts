@@ -1,8 +1,11 @@
+import { PAGINAS } from './paginas'
+
 /**
  * Het hoofdmenu: losse items en groepen (op een groot scherm een uitklapmenu).
- * Elk item heeft het recht dat nodig is om het te zien; een groep zonder
- * zichtbare items verdwijnt. Een nieuw onderdeel van de app krijgt hier een
- * regel en een route in router.tsx met hetzelfde recht.
+ * Pad, naam en recht komen uit PAGINAS (paginas.ts), net als de routes; een
+ * groep zonder zichtbare items verdwijnt. Een nieuw onderdeel van de app krijgt
+ * een regel in PAGINAS, een route in router.tsx en, als het in het menu hoort,
+ * een plek hieronder.
  */
 export interface NavItem {
   pad: string
@@ -18,27 +21,22 @@ export interface NavGroep {
 export type NavRegel = NavItem | NavGroep
 
 export const MENU: readonly NavRegel[] = [
-  { pad: '/', label: 'Start', recht: 'app.gebruiken' },
+  PAGINAS.start,
   {
     label: 'Rapportage',
-    items: [
-      { pad: '/rapportage/signalen', label: 'Signalen', recht: 'werkbelasting.bekijken' },
-      { pad: '/rapportage/programmas', label: 'Verdeling per programma', recht: 'werkbelasting.bekijken' },
-      { pad: '/rapportage/medewerkers', label: 'Verdeling per medewerker', recht: 'werkbelasting.bekijken' },
-      { pad: '/rapportage/projectplanner', label: 'Projectplanner', recht: 'projectplan.bekijken' },
-    ],
+    items: [PAGINAS.signalen, PAGINAS.verdelingProgrammas, PAGINAS.verdelingMedewerkers, PAGINAS.projectplanner],
   },
   {
     label: 'Beheer',
     items: [
-      { pad: '/scholen', label: 'Scholen', recht: 'werkbelasting.beheren' },
-      { pad: '/medewerkers', label: 'Medewerkers', recht: 'werkbelasting.beheren' },
-      { pad: '/projectgroepen', label: 'Projectgroepen', recht: 'werkbelasting.beheren' },
-      { pad: '/taken', label: 'Overige taken', recht: 'werkbelasting.beheren' },
-      { pad: '/programmas', label: 'Programma’s', recht: 'werkbelasting.beheren' },
-      { pad: '/staffel', label: 'Jaar en staffel', recht: 'werkbelasting.beheren' },
-      { pad: '/jaarplan', label: 'Jaarplan', recht: 'projectplan.bekijken' },
-      { pad: '/organisatie', label: 'Organisatie', recht: 'projectplan.beheren' },
+      PAGINAS.scholen,
+      PAGINAS.medewerkers,
+      PAGINAS.projectgroepen,
+      PAGINAS.taken,
+      PAGINAS.programmas,
+      PAGINAS.staffel,
+      PAGINAS.jaarplan,
+      PAGINAS.organisatie,
     ],
   },
 ]
@@ -46,10 +44,7 @@ export const MENU: readonly NavRegel[] = [
 /** Instellingen staan in het gebruikersmenu rechtsboven, niet in het hoofdmenu. */
 export const INSTELLINGEN: NavGroep = {
   label: 'Instellingen',
-  items: [
-    { pad: '/gebruikers', label: 'Gebruikers', recht: 'gebruikers.beheren' },
-    { pad: '/auditlog', label: 'Auditlog', recht: 'auditlog.lezen' },
-  ],
+  items: [PAGINAS.gebruikers, PAGINAS.auditlog],
 }
 
 /** De instellingen waar je recht op hebt; leeg als er geen zijn. */

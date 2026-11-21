@@ -15,3 +15,9 @@ export function Melding({ soort, children }: { soort: Soort; children: ReactNode
     </div>
   )
 }
+
+/** Laad- en foutstatus van een pagina. */
+export function Laadstatus({ fout }: { fout: string | null }) {
+  if (fout) return <Melding soort="fout">{fout}</Melding>
+  return <p role="status">Bezig met laden…</p>
+}

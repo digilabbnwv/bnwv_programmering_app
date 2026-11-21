@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
-import { Melding } from '../components/Melding'
+import { Filterbalk } from '../components/Filterbalk'
+import { Laadstatus, Melding } from '../components/Melding'
 import { SelectField } from '../components/SelectField'
+import { Tekstlink } from '../components/Tekstlink'
 import { TextArea } from '../components/TextArea'
 import { Pagina } from '../layout/Pagina'
 import { voerUit, type Toelichting } from '../werkbelasting/api'
@@ -20,7 +22,7 @@ import {
   type Werkbelasting,
 } from '../werkbelasting/berekening'
 import { Verdelingsbalk } from '../werkbelasting/grafieken'
-import { FormulierDialoog, Laadstatus } from '../werkbelasting/onderdelen'
+import { FormulierDialoog } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst } from '../werkbelasting/opmaak'
 import {
   bouwInvoer,
@@ -101,7 +103,7 @@ export function WerkbelastingPage() {
 
   return (
     <Pagina titel={`Werkurenverdeling ${jaar} – ${medewerker.naam}`}>
-      <div className="mb-8 flex flex-wrap items-end gap-3 print:hidden">
+      <Filterbalk>
         {jaarKeuze}
         <Button variant="secundair" onClick={() => window.print()}>
           Afdrukken
@@ -121,11 +123,11 @@ export function WerkbelastingPage() {
           </>
         )}
         {heeftRecht('werkbelasting.bekijken') && (
-          <Link to={`/rapportage/medewerkers?jaar=${jaar}`} className="pb-3 font-semibold underline underline-offset-4 hover:no-underline">
+          <Tekstlink to={`/rapportage/medewerkers?jaar=${jaar}`} className="pb-3">
             Teamoverzicht
-          </Link>
+          </Tekstlink>
         )}
-      </div>
+      </Filterbalk>
 
       <Memo
         w={w}

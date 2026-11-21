@@ -1,10 +1,13 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
+import { Gegevens, Sectie } from '../components/Sectie'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { functieNaam, type Afdeling, type Functie, type Tak } from '../organisatie/api'
 import {
@@ -21,7 +24,7 @@ import { InzetFormulier, ProjectFormulier, ProjectjaarFormulier } from '../proje
 import { voorgesteldeProjectgroep } from '../projectplanner/vaststellen'
 import { lees, voerUit, type Medewerker, type Programma, type Projectgroep } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Gegevens, Laadstatus, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { FormulierDialoog, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
@@ -33,8 +36,6 @@ type Dialoog =
   | { soort: 'inzet'; projectjaar: Projectjaar; inzet: Inzet | null }
   | { soort: 'inzet-verwijderen'; inzet: Inzet }
   | { soort: 'projectgroep' }
-
-const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 
 /** Eén project met zijn jaren, status, budget en inzet (projectplan.bekijken; wijzigen met projectplan.beheren). */
 export function ProjectPage() {
@@ -80,9 +81,9 @@ export function ProjectPage() {
   if (!project) {
     return (
       <Pagina titel="Project niet gevonden">
-        <Link to={terug} className={linkStijl}>
+        <Tekstlink to={terug}>
           Terug naar het jaarplan
-        </Link>
+        </Tekstlink>
       </Pagina>
     )
   }
@@ -105,9 +106,9 @@ export function ProjectPage() {
   return (
     <Pagina titel={project.naam} intro={project.omschrijving ? <span className="whitespace-pre-line">{project.omschrijving}</span> : undefined}>
       <p className="mb-8">
-        <Link to={terug} className={linkStijl}>
+        <Tekstlink to={terug}>
           Terug naar het jaarplan
-        </Link>
+        </Tekstlink>
       </p>
 
       <Sectie
@@ -136,9 +137,9 @@ export function ProjectPage() {
               'Projectgroep',
               projectgroep ? (
                 naarProjectgroep ? (
-                  <Link to={`/projectgroepen/${projectgroep.id}`} className={linkStijl}>
+                  <Tekstlink to={`/projectgroepen/${projectgroep.id}`}>
                     {projectgroep.naam}
-                  </Link>
+                  </Tekstlink>
                 ) : (
                   projectgroep.naam
                 )

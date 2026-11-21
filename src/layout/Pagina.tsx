@@ -1,8 +1,21 @@
 import { useEffect, type ReactNode } from 'react'
-import { Link } from 'react-router'
 import { useRechten } from '../auth/RechtenProvider'
+import { Tekstlink } from '../components/Tekstlink'
 
 const APP_NAAM = 'BNWV Team Programmering'
+
+/**
+ * Breedte van de inhoud (docs/navigatie.md, hoofdstuk 5): `smal` voor
+ * formulieren, `standaard` voor lijsten en detailpagina's, `breed` voor
+ * dashboards en grote tabellen. Lopende tekst blijft op `max-w-prose`.
+ */
+export type Breedte = 'smal' | 'standaard' | 'breed'
+
+const BREEDTE: Record<Breedte, string> = {
+  smal: 'max-w-smal',
+  standaard: 'max-w-page',
+  breed: 'max-w-breed',
+}
 
 /** Zet de titel van het browsertabblad (WCAG 2.4.2). */
 export function usePaginaTitel(titel: string) {
@@ -14,15 +27,30 @@ export function usePaginaTitel(titel: string) {
   }, [titel])
 }
 
+/** Houdt de inhoud op de gekozen breedte, midden in het venster. Op papier de volle breedte. */
+export function PaginaKader({ breedte = 'standaard', children }: { breedte?: Breedte; children: ReactNode }) {
+  return <div className={`mx-auto w-full ${BREEDTE[breedte]} print:max-w-none`}>{children}</div>
+}
+
 /** Kop en titel van een pagina binnen de layout. */
-export function Pagina({ titel, intro, children }: { titel: string; intro?: ReactNode; children?: ReactNode }) {
+export function Pagina({
+  titel,
+  intro,
+  breedte,
+  children,
+}: {
+  titel: string
+  intro?: ReactNode
+  breedte?: Breedte
+  children?: ReactNode
+}) {
   usePaginaTitel(titel)
   return (
-    <>
+    <PaginaKader breedte={breedte}>
       <h1 className="text-kop-medium font-extrabold">{titel}</h1>
       {intro && <p className="mt-3 max-w-prose text-intro text-neutral-700">{intro}</p>}
       {children && <div className="mt-8">{children}</div>}
-    </>
+    </PaginaKader>
   )
 }
 
@@ -32,13 +60,17 @@ export function Pagina({ titel, intro, children }: { titel: string; intro?: Reac
  */
 export function VereistRecht({ recht, children }: { recht: string; children: ReactNode }) {
   const { laden, heeftRecht } = useRechten()
-  if (laden) return <p role="status">Bezig met laden…</p>
+  if (laden) {
+    return (
+      <PaginaKader>
+        <p role="status">Bezig met laden…</p>
+      </PaginaKader>
+    )
+  }
   if (!heeftRecht(recht)) {
     return (
       <Pagina titel="Geen toegang" intro="Je hebt geen rechten voor deze pagina.">
-        <Link to="/" className="font-semibold underline underline-offset-4 hover:no-underline">
-          Naar het dashboard
-        </Link>
+        <Tekstlink to="/">Naar het dashboard</Tekstlink>
       </Pagina>
     )
   }

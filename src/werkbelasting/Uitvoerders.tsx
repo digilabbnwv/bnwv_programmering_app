@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
+import { Sectie } from '../components/Sectie'
+import { Tekstlink } from '../components/Tekstlink'
 import { verwijder, voerUit, type Medewerker } from './api'
 import { formatUren } from './berekening'
-import { FormulierDialoog, ongeldig, Sectie, VerwijderDialoog } from './onderdelen'
+import { FormulierDialoog, ongeldig, VerwijderDialoog } from './onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst, leesGetal, opNaam, vandaag } from './opmaak'
 
 /**
@@ -91,9 +92,9 @@ export function UitvoerdersSectie({
           {
             kop: 'Medewerker',
             inhoud: (u) => (
-              <Link to={`/medewerkers/${u.medewerker_id}`} className="underline underline-offset-4 hover:no-underline">
+              <Tekstlink to={`/medewerkers/${u.medewerker_id}`} licht>
                 {naamVan(u.medewerker_id)}
-              </Link>
+              </Tekstlink>
             ),
           },
           { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },

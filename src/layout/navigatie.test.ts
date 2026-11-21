@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { hoortBij, initialen, isGroep, MENU, zichtbaarMenu, zichtbareInstellingen } from './navigatie'
+import { hoortBij, initialen, INSTELLINGEN, isGroep, MENU, zichtbaarMenu, zichtbareInstellingen } from './navigatie'
+import { PAGINAS } from './paginas'
 
 // Rechten per rol, gelijk aan de seed in de migraties basis_rechten, werkbelasting en organisatie.
 const WERKBELASTING = ['werkbelasting.bekijken', 'werkbelasting.beheren']
@@ -45,6 +46,26 @@ describe('zichtbaarMenu', () => {
 
   it('laat een groep zonder zichtbare items weg', () => {
     expect(zichtbaarMenu(MENU, (r) => r === 'app.gebruiken').map((r) => r.label)).toEqual(['Start'])
+  })
+})
+
+describe('PAGINAS', () => {
+  const paginas = Object.values(PAGINAS)
+
+  it('heeft elk pad maar één keer', () => {
+    const paden = paginas.map((p) => p.pad)
+    expect(new Set(paden).size).toBe(paden.length)
+  })
+
+  it('menu en instellingen tonen alleen pagina’s uit PAGINAS, met hun naam en recht', () => {
+    const items = [...MENU.flatMap((regel) => (isGroep(regel) ? regel.items : [regel])), ...INSTELLINGEN.items]
+    for (const item of items) expect(paginas).toContain(item)
+  })
+
+  it('elke pagina met een naam staat in het menu of bij de instellingen', () => {
+    const items = [...MENU.flatMap((regel) => (isGroep(regel) ? regel.items : [regel])), ...INSTELLINGEN.items]
+    const metNaam = paginas.filter((p) => 'label' in p)
+    expect(metNaam.filter((p) => !items.includes(p)).map((p) => p.pad)).toEqual([])
   })
 })
 

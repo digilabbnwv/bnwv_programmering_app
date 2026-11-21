@@ -1,7 +1,9 @@
-import { createHashRouter, Navigate, useLocation } from 'react-router'
+import type { ReactNode } from 'react'
+import { createHashRouter, Navigate, useLocation, type RouteObject } from 'react-router'
 import { AuthGate } from './auth/AuthGate'
 import { AppLayout } from './layout/AppLayout'
 import { VereistRecht } from './layout/Pagina'
+import { PAGINAS, type PaginaDefinitie } from './layout/paginas'
 import { StartPage } from './pages/StartPage'
 import { GebruikersPage } from './pages/GebruikersPage'
 import { AuditlogPage } from './pages/AuditlogPage'
@@ -24,9 +26,14 @@ import { TaakDetailPage } from './pages/TaakDetailPage'
 import { RapportageMedewerkersPage, RapportageProgrammasPage, RapportageSignalenPage } from './pages/RapportagePage'
 import { WerkbelastingPage } from './pages/WerkbelastingPage'
 
+/** Route voor een pagina uit PAGINAS, alleen zichtbaar met het recht dat daar staat. */
+function route(pagina: PaginaDefinitie, element: ReactNode): RouteObject {
+  return { path: pagina.pad, element: <VereistRecht recht={pagina.recht}>{element}</VereistRecht> }
+}
+
 // Hash-routing: GitHub Pages kan geen server-side rewrites doen.
-// Alles onder AuthGate is pas zichtbaar na inloggen met 2FA. Het recht per
-// pagina is gelijk aan dat in layout/navigatie.ts.
+// Alles onder AuthGate is pas zichtbaar na inloggen met 2FA. Pad en recht per
+// pagina staan in layout/paginas.ts, samen met het menu.
 export const router = createHashRouter([
   {
     element: <AuthGate />,
@@ -34,178 +41,31 @@ export const router = createHashRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: '/', element: <StartPage /> },
+          // De startpagina wacht zelf op de rechten en toont per recht wat er is.
+          { path: PAGINAS.start.pad, element: <StartPage /> },
           // Oude links naar /rapportage (met ?jaar=) komen op de signalen uit.
           { path: '/rapportage', element: <NaarSignalen /> },
-          {
-            path: '/rapportage/signalen',
-            element: (
-              <VereistRecht recht="werkbelasting.bekijken">
-                <RapportageSignalenPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/rapportage/programmas',
-            element: (
-              <VereistRecht recht="werkbelasting.bekijken">
-                <RapportageProgrammasPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/rapportage/medewerkers',
-            element: (
-              <VereistRecht recht="werkbelasting.bekijken">
-                <RapportageMedewerkersPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/rapportage/projectplanner',
-            element: (
-              <VereistRecht recht="projectplan.bekijken">
-                <ProjectplannerDashboardPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            // Eigen verdeling voor iedereen; die van anderen laat RLS alleen zien met werkbelasting.bekijken.
-            path: '/werkbelasting/:id',
-            element: (
-              <VereistRecht recht="app.gebruiken">
-                <WerkbelastingPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/scholen',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <ScholenPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/scholen/:id',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <SchoolDetailPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/medewerkers',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <MedewerkersPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/medewerkers/:id',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <MedewerkerDetailPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/projectgroepen',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <ProjectgroepenPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/projectgroepen/:id',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <ProjectgroepDetailPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/taken',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <TakenPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/taken/:id',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <TaakDetailPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/programmas',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <ProgrammasPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/programmas/:id',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <ProgrammaDetailPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/staffel',
-            element: (
-              <VereistRecht recht="werkbelasting.beheren">
-                <StaffelPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/jaarplan',
-            element: (
-              <VereistRecht recht="projectplan.bekijken">
-                <JaarplanPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/projecten/:id',
-            element: (
-              <VereistRecht recht="projectplan.bekijken">
-                <ProjectPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/organisatie',
-            element: (
-              <VereistRecht recht="projectplan.beheren">
-                <OrganisatiePage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/gebruikers',
-            element: (
-              <VereistRecht recht="gebruikers.beheren">
-                <GebruikersPage />
-              </VereistRecht>
-            ),
-          },
-          {
-            path: '/auditlog',
-            element: (
-              <VereistRecht recht="auditlog.lezen">
-                <AuditlogPage />
-              </VereistRecht>
-            ),
-          },
+          route(PAGINAS.signalen, <RapportageSignalenPage />),
+          route(PAGINAS.verdelingProgrammas, <RapportageProgrammasPage />),
+          route(PAGINAS.verdelingMedewerkers, <RapportageMedewerkersPage />),
+          route(PAGINAS.projectplanner, <ProjectplannerDashboardPage />),
+          route(PAGINAS.werkbelasting, <WerkbelastingPage />),
+          route(PAGINAS.scholen, <ScholenPage />),
+          route(PAGINAS.school, <SchoolDetailPage />),
+          route(PAGINAS.medewerkers, <MedewerkersPage />),
+          route(PAGINAS.medewerker, <MedewerkerDetailPage />),
+          route(PAGINAS.projectgroepen, <ProjectgroepenPage />),
+          route(PAGINAS.projectgroep, <ProjectgroepDetailPage />),
+          route(PAGINAS.taken, <TakenPage />),
+          route(PAGINAS.taak, <TaakDetailPage />),
+          route(PAGINAS.programmas, <ProgrammasPage />),
+          route(PAGINAS.programma, <ProgrammaDetailPage />),
+          route(PAGINAS.staffel, <StaffelPage />),
+          route(PAGINAS.jaarplan, <JaarplanPage />),
+          route(PAGINAS.project, <ProjectPage />),
+          route(PAGINAS.organisatie, <OrganisatiePage />),
+          route(PAGINAS.gebruikers, <GebruikersPage />),
+          route(PAGINAS.auditlog, <AuditlogPage />),
           { path: '*', element: <NotFoundPage /> },
         ],
       },
@@ -215,5 +75,5 @@ export const router = createHashRouter([
 
 function NaarSignalen() {
   const { search } = useLocation()
-  return <Navigate to={{ pathname: '/rapportage/signalen', search }} replace />
+  return <Navigate to={{ pathname: PAGINAS.signalen.pad, search }} replace />
 }

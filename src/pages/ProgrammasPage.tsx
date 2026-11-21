@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Tabel } from '../components/Tabel'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { lees, PROGRAMMATYPES, type Programma, type ProgrammaUitvoerder, type School } from '../werkbelasting/api'
-import { Laadstatus } from '../werkbelasting/onderdelen'
 import { loopt, opNaam } from '../werkbelasting/opmaak'
 import { ProgrammaFormulier } from '../werkbelasting/ProgrammaFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
@@ -64,9 +65,9 @@ export function ProgrammasPage() {
           {
             kop: 'Programma',
             inhoud: (p) => (
-              <Link to={`/programmas/${p.id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+              <Tekstlink to={`/programmas/${p.id}`}>
                 {p.naam}
-              </Link>
+              </Tekstlink>
             ),
           },
           { kop: 'Soort', inhoud: (p) => PROGRAMMATYPES.find((t) => t.waarde === p.type)?.label ?? p.type },

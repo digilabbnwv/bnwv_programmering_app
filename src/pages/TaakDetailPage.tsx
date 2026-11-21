@@ -1,11 +1,14 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
+import { Gegevens, Sectie } from '../components/Sectie'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { lees, verwijder, type Medewerker, type Taak, type TaakUitvoerder } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { Gegevens, Laadstatus, Sectie, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatPeriode, loopt } from '../werkbelasting/opmaak'
 import { TaakFormulier } from '../werkbelasting/TaakFormulier'
 import { UitvoerdersSectie } from '../werkbelasting/Uitvoerders'
@@ -44,9 +47,9 @@ export function TaakDetailPage() {
   if (!taak) {
     return (
       <Pagina titel="Taak niet gevonden">
-        <Link to="/taken" className="font-semibold underline underline-offset-4">
+        <Tekstlink to="/taken">
           Terug naar overige taken
-        </Link>
+        </Tekstlink>
       </Pagina>
     )
   }
@@ -56,9 +59,9 @@ export function TaakDetailPage() {
   return (
     <Pagina titel={taak.naam} intro={taak.omschrijving || undefined}>
       <p className="mb-8">
-        <Link to="/taken" className="font-semibold underline underline-offset-4 hover:no-underline">
+        <Tekstlink to="/taken">
           Alle overige taken
-        </Link>
+        </Tekstlink>
       </p>
 
       <Sectie

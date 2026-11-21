@@ -1,15 +1,16 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { indeling, type Afdeling, type Functie } from '../organisatie/api'
 import { lees, type Contract, type Deelnemer, type Medewerker, type Toewijzing } from '../werkbelasting/api'
 import { contractPeriodes } from '../werkbelasting/berekening'
 import { MedewerkerFormulier } from '../werkbelasting/MedewerkerFormulier'
-import { Laadstatus } from '../werkbelasting/onderdelen'
 import { getalAlsTekst, loopt, opNaam } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
@@ -66,9 +67,9 @@ export function MedewerkersPage() {
           {
             kop: 'Naam',
             inhoud: (m) => (
-              <Link to={`/medewerkers/${m.id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+              <Tekstlink to={`/medewerkers/${m.id}`}>
                 {m.naam}
-              </Link>
+              </Tekstlink>
             ),
           },
           {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Tekstlink } from '../components/Tekstlink'
 import { functieNaam } from '../organisatie/api'
 import { formatPercentage, formatUren } from '../werkbelasting/berekening'
 import { formatDatum } from '../werkbelasting/opmaak'
@@ -28,8 +28,6 @@ const STAPPEN = [
   { klasse: 'bg-pijler-vraag', label: '75–100%' },
   { klasse: 'bg-pijler-doe', label: 'boven 100%' },
 ] as const
-
-const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 
 /** "week 40 (4 okt)" */
 export function weekLabel(jaar: number, week: number): string {
@@ -140,9 +138,9 @@ export function Drukteheatmap({ jaar, drukte }: { jaar: number; drukte: Functied
           <ul className="mt-2 space-y-1">
             {(keuze.bijdragen[gekozen.week - 1] ?? []).map((b) => (
               <li key={b.projectId} className="flex flex-wrap justify-between gap-3">
-                <Link to={`/projecten/${b.projectId}?jaar=${jaar}`} className={linkStijl}>
+                <Tekstlink to={`/projecten/${b.projectId}?jaar=${jaar}`}>
                   {b.naam}
-                </Link>
+                </Tekstlink>
                 <span className="tabular-nums">
                   {formatUren(b.uren)} uur
                   {keuze.capaciteit && ` (${formatPercentage((b.uren / keuze.capaciteit.perWeek) * 100)})`}
@@ -332,10 +330,10 @@ export function Tijdlijn({ jaar, regels, groep }: { jaar: number; regels: Tijdli
                   ].join(', ')
                   return (
                     <li key={r.regel.projectjaar.id} className="grid grid-cols-[minmax(10rem,16rem)_1fr] items-center gap-3 border-t border-neutral-100 py-1">
-                      <Link to={`/projecten/${r.regel.project.id}?jaar=${jaar}`} className={`truncate text-ui-sm ${linkStijl}`}>
+                      <Tekstlink to={`/projecten/${r.regel.project.id}?jaar=${jaar}`} className="truncate text-ui-sm">
                         {r.regel.project.naam}
                         <span className="sr-only">: {omschrijving}</span>
-                      </Link>
+                      </Tekstlink>
                       <div
                         role="presentation"
                         className="relative h-6"

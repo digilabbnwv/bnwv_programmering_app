@@ -1,10 +1,15 @@
 import { useCallback, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
+import { Filterbalk } from '../components/Filterbalk'
+import { Kengetal, Kengetallen } from '../components/Kengetal'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
+import { Laadstatus } from '../components/Melding'
+import { Sectie } from '../components/Sectie'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { functieNaam, type Afdeling, type Functie, type Tak } from '../organisatie/api'
 import { faseLabel, type Inzet, type Jaarplan, type Project, type Projectjaar } from '../projectplanner/api'
@@ -27,7 +32,6 @@ import { Drukteheatmap, Gelijktijdig, Tijdlijn, weekLabel } from '../projectplan
 import { afwijkingen } from '../projectplanner/vaststellen'
 import { lees, type Resultaat } from '../werkbelasting/api'
 import { berekenWerkbelasting, formatPercentage, formatUren } from '../werkbelasting/berekening'
-import { Laadstatus, Sectie } from '../werkbelasting/onderdelen'
 import { bouwInvoer, laadRapportage } from '../werkbelasting/rapportage'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
 
@@ -46,8 +50,6 @@ interface Capaciteitsgegevens {
   werkjaarBekend: boolean
   perFunctie: Map<string, Capaciteit>
 }
-
-const linkStijl = 'font-semibold underline underline-offset-4 hover:no-underline'
 
 /**
  * Dashboard van de projectplanner voor MT en directie (projectplan.bekijken):
@@ -102,9 +104,9 @@ export function ProjectplannerDashboardPage() {
       <Pagina titel="Projectplanner" intro="Het overzicht van het jaarplan voor MT en directie.">
         <p>
           Er is nog geen jaarplan. Maak er een aan onder{' '}
-          <Link to="/jaarplan" className={linkStijl}>
+          <Tekstlink to="/jaarplan">
             Jaarplan
-          </Link>
+          </Tekstlink>
           .
         </p>
       </Pagina>
@@ -142,7 +144,7 @@ export function ProjectplannerDashboardPage() {
       titel={`Projectplanner ${jaar}`}
       intro={`Het jaarplan ${jaar} (fase: ${faseLabel(jaarplan.fase).toLowerCase()}${jaarplan.proefjaar ? ', proefjaar naast de Excel' : ''}): budget, benodigde inzet per functie en de drukte per week. Uitgesteld en afgewezen tellen niet mee.`}
     >
-      <div className="mb-8 flex flex-wrap items-end gap-3 print:hidden">
+      <Filterbalk>
         <SelectField
           label="Jaar"
           value={String(jaar)}
@@ -170,9 +172,9 @@ export function ProjectplannerDashboardPage() {
         <Button variant="secundair" onClick={() => window.print()}>
           Afdrukken
         </Button>
-      </div>
+      </Filterbalk>
 
-      <dl className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Kengetallen className="mb-10">
         <Kengetal
           label="Projecten"
           waarde={String(regels.length)}
@@ -195,7 +197,7 @@ export function ProjectplannerDashboardPage() {
                 : 'capaciteit wordt geladen of is niet zichtbaar'
           }
         />
-      </dl>
+      </Kengetallen>
 
       {capaciteitFout && <Laadstatus fout={`De capaciteit kan niet worden geladen: ${capaciteitFout}`} />}
 
@@ -322,20 +324,10 @@ function Afwijkend({ aantal, jaar }: { aantal: number; jaar: number }) {
       <span className="font-semibold">
         {aantal} {aantal === 1 ? 'project' : 'projecten'} gewijzigd sinds het vaststellen.
       </span>{' '}
-      <Link to={`/jaarplan?jaar=${jaar}`} className={linkStijl}>
+      <Tekstlink to={`/jaarplan?jaar=${jaar}`}>
         Bekijk de afwijkingen
-      </Link>
+      </Tekstlink>
     </p>
-  )
-}
-
-function Kengetal({ label, waarde, toelichting }: { label: string; waarde: string; toelichting: string }) {
-  return (
-    <div className="rounded-card bg-neutral-0 p-5 shadow-card print:border print:border-neutral-300 print:shadow-none">
-      <dt className="text-ui-sm font-semibold text-neutral-700">{label}</dt>
-      <dd className="mt-1 text-subkop font-bold tabular-nums">{waarde}</dd>
-      <dd className="text-ui-sm text-neutral-700">{toelichting}</dd>
-    </div>
   )
 }
 
@@ -343,9 +335,9 @@ function Kengetal({ label, waarde, toelichting }: { label: string; waarde: strin
 function Signalen({ signalen, jaar }: { signalen: Plansignaal[]; jaar: number }) {
   if (signalen.length === 0) return <p>Geen signalen.</p>
   const projectlink = (s: { regel: Projectregel }) => (
-    <Link key={s.regel.projectjaar.id} to={`/projecten/${s.regel.project.id}?jaar=${jaar}`} className={linkStijl}>
+    <Tekstlink key={s.regel.projectjaar.id} to={`/projecten/${s.regel.project.id}?jaar=${jaar}`}>
       {s.regel.project.naam}
-    </Link>
+    </Tekstlink>
   )
   const lijst = <T extends { regel: Projectregel }>(items: T[]) => (
     <span className="mt-1 block text-ui-sm">
@@ -368,9 +360,9 @@ function Signalen({ signalen, jaar }: { signalen: Plansignaal[]; jaar: number })
             return (
               <li key={s.soort}>
                 <span className="font-semibold">Geen werkjaar {s.jaar}.</span> Stel {s.jaar} in onder{' '}
-                <Link to="/staffel" className={linkStijl}>
+                <Tekstlink to="/staffel">
                   Jaar en staffel
-                </Link>
+                </Tekstlink>
                 ; zonder werkjaar is de capaciteit onbekend.
               </li>
             )

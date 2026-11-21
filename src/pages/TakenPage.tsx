@@ -1,13 +1,14 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
+import { Laadstatus } from '../components/Melding'
+import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
 import { lees, type Medewerker, type Taak, type TaakUitvoerder } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
-import { Laadstatus } from '../werkbelasting/onderdelen'
 import { formatPeriode, loopt, opNaam, vandaag } from '../werkbelasting/opmaak'
 import { TaakFormulier } from '../werkbelasting/TaakFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
@@ -70,9 +71,9 @@ export function TakenPage() {
           {
             kop: 'Taak',
             inhoud: (t) => (
-              <Link to={`/taken/${t.id}`} className="font-semibold underline underline-offset-4 hover:no-underline">
+              <Tekstlink to={`/taken/${t.id}`}>
                 {t.naam}
-              </Link>
+              </Tekstlink>
             ),
           },
           { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },
