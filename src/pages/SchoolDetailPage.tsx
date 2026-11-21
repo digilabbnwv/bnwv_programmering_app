@@ -86,12 +86,6 @@ export function SchoolDetailPage() {
 
   return (
     <Pagina titel={school.naam} intro={SCHOOLSOORTEN.find((s) => s.waarde === school.soort)?.label}>
-      <p className="mb-8">
-        <Tekstlink to="/scholen">
-          Alle scholen
-        </Tekstlink>
-      </p>
-
       <Sectie
         titel="Gegevens"
         acties={

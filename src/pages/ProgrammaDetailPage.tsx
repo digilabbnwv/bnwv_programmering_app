@@ -84,12 +84,6 @@ export function ProgrammaDetailPage() {
 
   return (
     <Pagina titel={programma.naam} intro={programma.omschrijving || undefined}>
-      <p className="mb-8">
-        <Tekstlink to="/programmas">
-          Alle programma’s
-        </Tekstlink>
-      </p>
-
       <Sectie
         titel="Gegevens"
         acties={

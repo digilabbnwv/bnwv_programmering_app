@@ -5,6 +5,7 @@ import { Laadstatus, Melding } from '../components/Melding'
 import { Kengetal, Kengetallen } from '../components/Kengetal'
 import { Blok, Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
+import { useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
 import { berekenWerkbelasting, formatPercentage, formatPerWeek, formatUren, perWeek, type Regel, type Werkbelasting } from '../werkbelasting/berekening'
 import { Staafdiagram, TeamBalken, Verdelingsbalk, type Staaf } from '../werkbelasting/grafieken'
@@ -20,14 +21,14 @@ import { signaalTekst, teamsignaalTekst } from '../werkbelasting/signalen'
 import { useGegevens } from '../werkbelasting/useGegevens'
 
 /**
- * Startpagina: de eigen werkbelasting van dit jaar (als het account aan een
+ * Startpagina: de eigen werkbelasting van het gekozen jaar (als het account aan een
  * medewerker gekoppeld is) en, met werkbelasting.bekijken, een teamblok.
  * Eén keer laden: RLS geeft een medewerker alleen de eigen rijen.
  */
 export function StartPage() {
   const { client, claims } = useAuth()
   const { weergavenaam, heeftRecht, laden: rechtenLaden } = useRechten()
-  const jaar = new Date().getFullYear()
+  const { jaar } = useJaar()
   const laden = useCallback(() => laadRapportage(client, jaar), [client, jaar])
   const { data, fout } = useGegevens(laden)
   const team = heeftRecht('werkbelasting.bekijken')

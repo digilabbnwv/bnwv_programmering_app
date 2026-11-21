@@ -131,9 +131,6 @@ export function MedewerkerDetailPage() {
   return (
     <Pagina titel={medewerker.naam} intro={indeling(medewerker, functies, afdelingen) ?? 'Nog niet ingedeeld in een functie en afdeling.'}>
       <p className="mb-8 flex flex-wrap gap-x-6 gap-y-2">
-        <Tekstlink to="/medewerkers">
-          Alle medewerkers
-        </Tekstlink>
         <Tekstlink to={`/werkbelasting/${medewerker.id}`}>
           Werkurenverdeling bekijken
         </Tekstlink>

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { useParams, useSearchParams } from 'react-router'
+import { useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import { Filterbalk } from '../components/Filterbalk'
 import { Laadstatus, Melding } from '../components/Melding'
-import { SelectField } from '../components/SelectField'
-import { Tekstlink } from '../components/Tekstlink'
 import { TextArea } from '../components/TextArea'
+import { useEigenMedewerker } from '../layout/EigenMedewerker'
+import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
 import { voerUit, type Toelichting } from '../werkbelasting/api'
 import {
@@ -38,14 +38,40 @@ import { useGegevens } from '../werkbelasting/useGegevens'
 type Dialoog = 'toelichting' | 'vaststellen' | 'heropenen'
 
 /**
- * De werkurenverdeling van één medewerker in één jaar, zoals de memo.
+ * Mijn werkurenverdeling: de werkurenverdeling van de medewerker die bij het
+ * eigen account hoort, op een vast adres (voor het menu).
+ */
+export function MijnWerkurenverdelingPage() {
+  const eigen = useEigenMedewerker()
+  if (eigen === undefined) {
+    return (
+      <Pagina titel="Mijn werkurenverdeling">
+        <Laadstatus fout={null} />
+      </Pagina>
+    )
+  }
+  if (eigen === null) {
+    return (
+      <Pagina titel="Mijn werkurenverdeling">
+        <p className="max-w-prose">
+          Je account is nog niet gekoppeld aan een medewerker. Vraag de teamleider om dat te doen; daarna zie je hier je eigen
+          werkurenverdeling.
+        </p>
+      </Pagina>
+    )
+  }
+  return <WerkbelastingPage medewerkerId={eigen} />
+}
+
+/**
+ * De werkurenverdeling van één medewerker in het gekozen jaar, zoals de memo.
  * Iedereen kan de eigen pagina zien; RLS laat anderen alleen toe met
  * werkbelasting.bekijken. Toelichting en vaststellen: werkbelasting.beheren.
  */
-export function WerkbelastingPage() {
-  const { id = '' } = useParams()
-  const [zoek, setZoek] = useSearchParams()
-  const jaar = Number(zoek.get('jaar')) || new Date().getFullYear()
+export function WerkbelastingPage({ medewerkerId }: { medewerkerId?: string }) {
+  const { id: uitAdres = '' } = useParams()
+  const id = medewerkerId ?? uitAdres
+  const { jaar } = useJaar()
   const { client } = useAuth()
   const { heeftRecht } = useRechten()
   const magBeheren = heeftRecht('werkbelasting.beheren')
@@ -75,24 +101,12 @@ export function WerkbelastingPage() {
   }
 
   const werkjaar = gegevens.werkjaren.find((w) => w.jaar === jaar)
-  const jaarKeuze = (
-    <SelectField
-      label="Jaar"
-      value={String(jaar)}
-      opties={(gegevens.werkjaren.length > 0 ? gegevens.werkjaren : [{ jaar }]).map((w) => ({
-        waarde: String(w.jaar),
-        label: String(w.jaar),
-      }))}
-      onChange={(e) => setZoek({ jaar: e.target.value })}
-      className="w-40"
-    />
-  )
 
   if (!werkjaar) {
     return (
       <Pagina titel={`Werkurenverdeling ${jaar} – ${medewerker.naam}`}>
-        {jaarKeuze}
-        <p className="mt-6">Voor {jaar} zijn nog geen jaarinstellingen vastgelegd.</p>
+        <p>Voor {jaar} zijn nog geen jaarinstellingen vastgelegd.</p>
+        <AndereJaren jaren={gegevens.werkjaren.map((w) => w.jaar)} />
       </Pagina>
     )
   }
@@ -104,7 +118,6 @@ export function WerkbelastingPage() {
   return (
     <Pagina titel={`Werkurenverdeling ${jaar} – ${medewerker.naam}`}>
       <Filterbalk>
-        {jaarKeuze}
         <Button variant="secundair" onClick={() => window.print()}>
           Afdrukken
         </Button>
@@ -121,11 +134,6 @@ export function WerkbelastingPage() {
               <Button onClick={() => setDialoog('vaststellen')}>Vaststellen</Button>
             )}
           </>
-        )}
-        {heeftRecht('werkbelasting.bekijken') && (
-          <Tekstlink to={`/rapportage/medewerkers?jaar=${jaar}`} className="pb-3">
-            Teamoverzicht
-          </Tekstlink>
         )}
       </Filterbalk>
 

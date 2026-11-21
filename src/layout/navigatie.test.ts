@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { hoortBij, initialen, INSTELLINGEN, isGroep, MENU, zichtbaarMenu, zichtbareInstellingen } from './navigatie'
-import { PAGINAS } from './paginas'
+import { alleItems, hoortBij, initialen, isGroep, kruimels, MAX_ZONDER_ZIJBALK, MENU, SYSTEEM, zichtbaarMenu } from './navigatie'
+import { PAGINAS, paginaBij, padPast, type PaginaDefinitie } from './paginas'
 
 // Rechten per rol, gelijk aan de seed in de migraties basis_rechten, werkbelasting en organisatie.
 const WERKBELASTING = ['werkbelasting.bekijken', 'werkbelasting.beheren']
@@ -12,72 +12,141 @@ const ROLLEN: Record<string, string[]> = {
   medewerker: ['app.gebruiken'],
   'alleen-lezen': ['app.gebruiken'],
 }
+const rechtVan = (rol: string) => (recht: string) => ROLLEN[rol]?.includes(recht) ?? false
 
-/** Het menu als tekst: "Beheer: Scholen, ..." voor een groep. */
-const menu = (rol: string) =>
-  zichtbaarMenu(MENU, (r) => ROLLEN[rol]?.includes(r) ?? false).map((regel) =>
-    isGroep(regel) ? `${regel.label}: ${regel.items.map((i) => i.label).join(', ')}` : regel.label,
-  )
+/** Het menu als tekst: "Inzet: Scholen, ..." voor een groep. */
+const tekst = (regels: ReturnType<typeof zichtbaarMenu>) =>
+  regels.map((regel) => (isGroep(regel) ? `${regel.label}: ${regel.items.map((i) => i.label).join(', ')}` : regel.label))
+const menu = (rol: string) => tekst(zichtbaarMenu(MENU, rechtVan(rol)))
+const systeem = (rol: string) => tekst(zichtbaarMenu([SYSTEEM], rechtVan(rol)))
 
 describe('zichtbaarMenu', () => {
-  it('beheerder en teamleider zien rapportage, beheer en het jaarplan; alleen de beheerder ook de organisatie', () => {
-    const rapportage = 'Rapportage: Signalen, Verdeling per programma, Verdeling per medewerker, Projectplanner'
-    const beheer = 'Beheer: Scholen, Medewerkers, Projectgroepen, Overige taken, Programma’s, Jaar en staffel'
-    expect(menu('beheerder')).toEqual(['Start', rapportage, `${beheer}, Jaarplan, Organisatie`])
-    expect(menu('teamleider')).toEqual(['Start', rapportage, `${beheer}, Jaarplan`])
-  })
+  const werkbelasting = 'Werkbelasting: Signalen, Verdeling per medewerker, Verdeling per programma'
+  const inzet = 'Inzet: Scholen, Programma’s, Projectgroepen, Overige taken'
+  const projectplanner = 'Projectplanner: Dashboard, Jaarplan'
 
-  it('het MT ziet de rapportage en beheert het jaarplan en de organisatie', () => {
-    expect(menu('mt')).toEqual([
+  it('beheerder en teamleider zien alle onderwerpen; alleen de beheerder ook organisatie en systeem', () => {
+    expect(menu('beheerder')).toEqual([
       'Start',
-      'Rapportage: Signalen, Verdeling per programma, Verdeling per medewerker, Projectplanner',
-      'Beheer: Jaarplan, Organisatie',
+      'Mijn werkurenverdeling',
+      `${werkbelasting}, Medewerkers`,
+      inzet,
+      projectplanner,
+      'Inrichting: Jaar en staffel, Organisatie',
     ])
+    expect(systeem('beheerder')).toEqual(['Systeem: Gebruikers, Auditlog'])
+    expect(menu('teamleider')).toEqual([
+      'Start',
+      'Mijn werkurenverdeling',
+      `${werkbelasting}, Medewerkers`,
+      inzet,
+      projectplanner,
+      'Inrichting: Jaar en staffel',
+    ])
+    expect(systeem('teamleider')).toEqual([])
   })
 
-  it('medewerker en alleen-lezen zien alleen Start', () => {
-    expect(menu('medewerker')).toEqual(['Start'])
-    expect(menu('alleen-lezen')).toEqual(['Start'])
+  it('het MT ziet de werkbelasting, de projectplanner en de organisatie', () => {
+    expect(menu('mt')).toEqual(['Start', 'Mijn werkurenverdeling', werkbelasting, projectplanner, 'Inrichting: Organisatie'])
+  })
+
+  it('medewerker en alleen-lezen zien Start en hun werkurenverdeling', () => {
+    expect(menu('medewerker')).toEqual(['Start', 'Mijn werkurenverdeling'])
+    expect(menu('alleen-lezen')).toEqual(['Start', 'Mijn werkurenverdeling'])
+  })
+
+  it('laat verborgen paden weg, bijv. Mijn werkurenverdeling zonder gekoppelde medewerker', () => {
+    expect(tekst(zichtbaarMenu(MENU, rechtVan('medewerker'), [PAGINAS.mijnWerkurenverdeling.pad]))).toEqual(['Start'])
   })
 
   it('zonder rechten (nog aan het laden) niets', () => {
     expect(menu('onbekend')).toEqual([])
   })
+})
 
-  it('laat een groep zonder zichtbare items weg', () => {
-    expect(zichtbaarMenu(MENU, (r) => r === 'app.gebruiken').map((r) => r.label)).toEqual(['Start'])
+describe('zijbalk of kopbalk', () => {
+  const aantal = (rol: string) => alleItems([...zichtbaarMenu(MENU, rechtVan(rol)), ...zichtbaarMenu([SYSTEEM], rechtVan(rol))]).length
+
+  it('een medewerker heeft te weinig bestemmingen voor een zijbalk', () => {
+    expect(aantal('medewerker')).toBeLessThanOrEqual(MAX_ZONDER_ZIJBALK)
+    expect(aantal('alleen-lezen')).toBeLessThanOrEqual(MAX_ZONDER_ZIJBALK)
+  })
+
+  it('MT, teamleider en beheerder krijgen een zijbalk', () => {
+    for (const rol of ['mt', 'teamleider', 'beheerder']) expect(aantal(rol)).toBeGreaterThan(MAX_ZONDER_ZIJBALK)
   })
 })
 
 describe('PAGINAS', () => {
-  const paginas = Object.values(PAGINAS)
+  const paginas: PaginaDefinitie[] = Object.values(PAGINAS)
+  const items = alleItems([...MENU, SYSTEEM])
 
   it('heeft elk pad maar één keer', () => {
     const paden = paginas.map((p) => p.pad)
     expect(new Set(paden).size).toBe(paden.length)
   })
 
-  it('menu en instellingen tonen alleen pagina’s uit PAGINAS, met hun naam en recht', () => {
-    const items = [...MENU.flatMap((regel) => (isGroep(regel) ? regel.items : [regel])), ...INSTELLINGEN.items]
+  it('menu en systeem tonen alleen pagina’s uit PAGINAS', () => {
     for (const item of items) expect(paginas).toContain(item)
   })
 
-  it('elke pagina met een naam staat in het menu of bij de instellingen', () => {
-    const items = [...MENU.flatMap((regel) => (isGroep(regel) ? regel.items : [regel])), ...INSTELLINGEN.items]
-    const metNaam = paginas.filter((p) => 'label' in p)
-    expect(metNaam.filter((p) => !items.includes(p)).map((p) => p.pad)).toEqual([])
+  it('elke pagina met een naam staat in het menu, met een icoon', () => {
+    const metNaam = paginas.filter((p) => p.label !== undefined)
+    expect(metNaam.filter((p) => !items.some((i) => i.pad === p.pad)).map((p) => p.pad)).toEqual([])
+    expect(metNaam.filter((p) => !p.icoon).map((p) => p.pad)).toEqual([])
+  })
+
+  it('elke ouder bestaat en staat in het menu', () => {
+    for (const p of paginas.filter((p) => p.ouder)) {
+      const ouder: PaginaDefinitie | undefined = PAGINAS[p.ouder as keyof typeof PAGINAS]
+      expect(ouder?.label, p.pad).toBeDefined()
+    }
   })
 })
 
-describe('zichtbareInstellingen', () => {
-  const instellingen = (rol: string) =>
-    zichtbareInstellingen((r) => ROLLEN[rol]?.includes(r) ?? false).map((i) => i.label)
+describe('paginaBij', () => {
+  it('vindt een pagina, ook met een id in het pad', () => {
+    expect(paginaBij('/')).toBe(PAGINAS.start)
+    expect(paginaBij('/scholen')).toBe(PAGINAS.scholen)
+    expect(paginaBij('/scholen/abc-123')).toBe(PAGINAS.school)
+    expect(paginaBij('/projectplanner')).toBe(PAGINAS.projectplanner)
+  })
 
-  it('alleen de beheerder heeft instellingen', () => {
-    expect(instellingen('beheerder')).toEqual(['Gebruikers', 'Auditlog'])
-    expect(instellingen('teamleider')).toEqual([])
-    expect(instellingen('mt')).toEqual([])
-    expect(instellingen('medewerker')).toEqual([])
+  it('geeft niets voor een onbekend adres', () => {
+    expect(paginaBij('/bestaat-niet')).toBeUndefined()
+    expect(paginaBij('/scholen/1/extra')).toBeUndefined()
+  })
+
+  it('padPast vergelijkt per deel', () => {
+    expect(padPast('/taken/:id', '/taken/9')).toBe(true)
+    expect(padPast('/taken/:id', '/taken')).toBe(false)
+    expect(padPast('/', '/')).toBe(true)
+  })
+})
+
+describe('kruimels', () => {
+  it('een overzicht: alleen de groep', () => {
+    expect(kruimels('/scholen', rechtVan('beheerder'))).toEqual([{ label: 'Inzet' }])
+    expect(kruimels('/gebruikers', rechtVan('beheerder'))).toEqual([{ label: 'Systeem' }])
+  })
+
+  it('een detailpagina: de groep en het overzicht erboven als link', () => {
+    expect(kruimels('/scholen/1', rechtVan('beheerder'))).toEqual([{ label: 'Inzet' }, { label: 'Scholen', pad: '/scholen' }])
+    expect(kruimels('/projecten/1', rechtVan('mt'))).toEqual([{ label: 'Projectplanner' }, { label: 'Jaarplan', pad: '/jaarplan' }])
+    expect(kruimels('/werkbelasting/1', rechtVan('teamleider'))).toEqual([
+      { label: 'Werkbelasting' },
+      { label: 'Verdeling per medewerker', pad: '/rapportage/medewerkers' },
+    ])
+  })
+
+  it('geen kruimelpad als je het overzicht erboven niet mag zien', () => {
+    expect(kruimels('/werkbelasting/1', rechtVan('medewerker'))).toEqual([])
+  })
+
+  it('geen kruimelpad voor Start, losse items en onbekende adressen', () => {
+    expect(kruimels('/', rechtVan('beheerder'))).toEqual([])
+    expect(kruimels('/mijn-werkurenverdeling', rechtVan('medewerker'))).toEqual([])
+    expect(kruimels('/bestaat-niet', rechtVan('beheerder'))).toEqual([])
   })
 })
 

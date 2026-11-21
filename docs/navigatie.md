@@ -1,8 +1,8 @@
 # Navigatie en paginaopbouw: analyse en plan
 
 > **Status: plan vastgesteld (21-11-2026).** Alle vragen zijn beantwoord, zie
-> [besluiten](#7-besluiten). Fase 1 is gebouwd, zie [fasering](#8-fasering).
-> Volgende stap: fase 2.
+> [besluiten](#7-besluiten). Fase 1 en 2 zijn gebouwd, zie [fasering](#8-fasering).
+> Volgende stap: fase 3.
 
 De app groeit van één onderwerp (werkbelasting) naar twee (werkbelasting en
 projectplanner), met meer op komst: indienen, uitvoering, LDV en Staf (zie
@@ -127,7 +127,10 @@ bereikbaar.
 
 ### Kopbalk
 
-Over de volle breedte: logo, kruimelpad, jaarkeuze en het gebruikersmenu.
+Over de volle breedte en vast bovenaan: logo, jaarkeuze en het gebruikersmenu.
+Het kruimelpad staat niet in de kopbalk maar boven de titel van de pagina (zie
+[opbouw van een pagina](#6-opbouw-van-een-pagina)): daar kent de pagina zijn
+eigen naam.
 
 ### Jaarkeuze
 
@@ -261,7 +264,7 @@ Genomen op 21-11-2026:
 | Fase | Inhoud | Klaar als |
 | --- | --- | --- |
 | 1 | **Fundament**: bouwstenen uit [6](#bouwstenen) naar `components/`; prop `breedte`; één configuratie voor routes en menu. Weinig zichtbaar. | geen dubbele `Kengetal`/`linkStijl` meer; rechten op één plek; tests groen — **gebouwd nov 2026** |
-| 2 | **Navigatie**: nieuwe indeling, zijbalk (standaard uitgeklapt, inklappen onthouden, mobiel uitschuifmenu), kruimelpad, jaarkeuze in de kopbalk, voettekst weg | elke rol ziet het juiste menu; het jaar geldt op alle pagina's |
+| 2 | **Navigatie**: nieuwe indeling, zijbalk (standaard uitgeklapt, inklappen onthouden, mobiel uitschuifmenu), kruimelpad, jaarkeuze in de kopbalk, voettekst weg | elke rol ziet het juiste menu; het jaar geldt op alle pagina's — **gebouwd nov 2026** |
 | 3 | **Tabbladen** op Teamoverzicht, Medewerker, Projectplanner-dashboard en Jaarplan, met doorsturen vanaf de oude adressen; Medewerkers alleen-lezen met `werkbelasting.bekijken` | die pagina's passen zonder lang scrollen; oude links werken; het MT ziet medewerkers zonder wijzigknoppen |
 | 4 | **De rest**: overige pagina's naar de vaste opbouw en de juiste breedte; paginapatronen in het design system | elke pagina volgt een patroon |
 
@@ -301,3 +304,52 @@ toetsenbord en schermlezer, licht en donker, en afdrukken.
 - **Bewust uitgesteld** tot het eerste gebruik, om geen ongebruikte code te
   hebben: `Kruimelpad` (fase 2), `Tabbladen` (fase 3), en in `Pagina` de
   props voor acties en een statuslabel (fase 4).
+
+### Fase 2: wat er gebouwd is
+
+- **Indeling** zoals in [indeling](#indeling), in
+  [navigatie.ts](../src/layout/navigatie.ts): Start en Mijn werkurenverdeling
+  los bovenaan, dan Werkbelasting, Inzet, Projectplanner en Inrichting, en
+  onderaan Systeem. Gebruikers en Auditlog staan niet meer in het
+  gebruikersmenu; dat heeft nu naam, rol, weergave en uitloggen.
+  - Tot fase 3 staan onder Werkbelasting nog de drie rapportagepagina's
+    (Signalen, Verdeling per medewerker, Verdeling per programma); in fase 3
+    worden ze samen het Teamoverzicht met tabbladen.
+  - Het dashboard van de projectplanner heeft een eigen adres: `/projectplanner`.
+    `/rapportage/projectplanner` stuurt door, met `?jaar=`.
+  - **Mijn werkurenverdeling** (`/mijn-werkurenverdeling`) toont de
+    werkurenverdeling van de medewerker die aan het account gekoppeld is
+    ([EigenMedewerker.tsx](../src/layout/EigenMedewerker.tsx)). Zonder
+    gekoppelde medewerker staat het item niet in het menu.
+- **Zijbalk** ([Zijbalk.tsx](../src/layout/Zijbalk.tsx)): 18rem breed, vast
+  onder de kopbalk, met eigen lijniconen ([Icoon.tsx](../src/layout/Icoon.tsx)).
+  Ingeklapt 4rem met alleen iconen; de naam staat dan in sr-only en, bij hover
+  of focus, in een tooltip naast de balk. De keuze staat in localStorage
+  (`bnwv.zijbalk`). Met twee of minder bestemmingen (een medewerker) is er geen
+  zijbalk en staan de links in de kopbalk.
+- **Kopbalk**: 64 px, vast bovenaan, over de volle breedte; de voettekst is weg.
+- **Jaarkeuze** ([jaarkeuze.ts](../src/layout/jaarkeuze.ts) en
+  [JaarProvider.tsx](../src/layout/JaarProvider.tsx)): één keuzelijst in de
+  kopbalk, alleen op pagina's met `metJaar` in PAGINAS. Het jaar komt uit de URL
+  (`?jaar=`), anders uit localStorage (`bnwv.jaar`), anders het huidige jaar. De
+  lijst bevat de jaren met een werkjaar of jaarplan, plus het huidige en het
+  gekozen jaar. De eigen jaarkeuzes op Signalen, Verdelingen,
+  Werkurenverdeling, Projectplanner, Jaarplan, Scholen en Jaar en staffel zijn
+  weg; de startpagina volgt nu ook de keuze in plaats van altijd het huidige
+  jaar.
+  - Heeft een jaar geen werkjaar of jaarplan, dan zegt de pagina dat en toont
+    knoppen naar de jaren die er wel zijn (`AndereJaren`). Jaarplan en Jaar en
+    staffel bieden dan ook aan om dat jaar toe te voegen.
+  - Gevolg van één jaar: de projectplanner opende eerst vanzelf het jaarplan van
+    volgend jaar. Nu begint iedereen op het huidige jaar en kiest het MT één keer
+    2027; dat wordt onthouden, ook voor de werkbelasting.
+- **Kruimelpad** in `Pagina`, boven de titel: de menugroep en, bij een
+  detailpagina, het overzicht erboven als link (`ouder` in PAGINAS). Mag je het
+  overzicht niet zien, dan is er geen kruimelpad. De losse links "Alle scholen",
+  "Alle medewerkers", "Terug naar het jaarplan" en dergelijke zijn weg, net als
+  de link "Teamoverzicht" op de werkurenverdeling.
+- **Tests**: menu per rol, zijbalk of kopbalk per rol, `paginaBij`, het
+  kruimelpad en de jaarkeuze.
+- **Bekeken** in de browser met een nep-Supabase-client (licht en donker,
+  groot scherm, ingeklapt, medewerker zonder zijbalk, telefoon). Niet met
+  echte gegevens of echte login.

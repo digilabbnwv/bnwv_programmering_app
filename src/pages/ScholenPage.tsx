@@ -9,7 +9,9 @@ import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { Tekstlink } from '../components/Tekstlink'
 import { TextField } from '../components/TextField'
+import { useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
+import { PAGINAS } from '../layout/paginas'
 import {
   lees,
   SCHOOLSOORTEN,
@@ -52,13 +54,14 @@ export function ScholenPage() {
     [client],
   )
   const { data, fout, herlaad } = useGegevens(laden)
-  const [gekozenJaar, setGekozenJaar] = useState<number | null>(null)
+  const { jaar } = useJaar()
   const [zoek, setZoek] = useState('')
   const [soort, setSoort] = useState('')
   const [ookInactief, setOokInactief] = useState(false)
   const [nieuw, setNieuw] = useState(false)
   const [overnemen, setOvernemen] = useState(false)
-  const [resultaat, setResultaat] = useState<string | null>(null)
+  // Het bericht na overnemen hoort bij het jaar waarin het gebeurde.
+  const [resultaat, setResultaat] = useState<{ jaar: number; tekst: string } | null>(null)
 
   if (!data) {
     return (
@@ -69,8 +72,7 @@ export function ScholenPage() {
   }
 
   const [scholen, toewijzingen, medewerkers, alleJaargegevens, alleStaffel, programmas, werkjaren] = data
-  const ditJaar = new Date().getFullYear()
-  const jaar = gekozenJaar ?? (werkjaren.some((w) => w.jaar === ditJaar) ? ditJaar : (werkjaren.at(-1)?.jaar ?? ditJaar))
+  const werkjaarBestaat = werkjaren.some((w) => w.jaar === jaar)
   const jaargegevens = alleJaargegevens.filter((g) => g.jaar === jaar)
   const staffel = alleStaffel.filter((s) => s.jaar === jaar)
   // Actieve scholen die dit jaar nog geen aantal hebben, maar vorig jaar wel.
@@ -109,28 +111,24 @@ export function ScholenPage() {
     <Pagina titel="Scholen" intro={`Scholen met hun medewerker en de uren voor ${jaar} volgens de staffel.`}>
       <Filterbalk>
         <Button onClick={() => setNieuw(true)}>Nieuwe school</Button>
-        {werkjaren.length > 0 && (
-          <SelectField
-            label="Jaar"
-            value={String(jaar)}
-            opties={werkjaren.map((w) => ({ waarde: String(w.jaar), label: String(w.jaar) }))}
-            onChange={(e) => {
-              setGekozenJaar(Number(e.target.value))
-              setResultaat(null)
-            }}
-            className="w-40"
-          />
-        )}
-        {teOvernemen.length > 0 && werkjaren.some((w) => w.jaar === jaar) && (
+        {teOvernemen.length > 0 && werkjaarBestaat && (
           <Button variant="secundair" onClick={() => setOvernemen(true)}>
             Leerlingaantallen van {jaar - 1} overnemen
           </Button>
         )}
       </Filterbalk>
 
-      {resultaat && (
+      {resultaat?.jaar === jaar && (
         <div className="mb-6">
-          <Melding soort="info">{resultaat}</Melding>
+          <Melding soort="info">{resultaat.tekst}</Melding>
+        </div>
+      )}
+      {!werkjaarBestaat && (
+        <div className="mb-6">
+          <Melding soort="info">
+            Voor {jaar} zijn nog geen jaarinstellingen, dus de uren zijn onbekend. Voeg het jaar toe bij{' '}
+            <Tekstlink to={PAGINAS.staffel.pad}>Jaar en staffel</Tekstlink> of kies bovenaan een ander jaar.
+          </Melding>
         </div>
       )}
       {laatsteJaar === jaar && (
@@ -212,9 +210,10 @@ export function ScholenPage() {
           alIngevuld={alIngevuld}
           onSluiten={() => setOvernemen(false)}
           onGelukt={(n) => {
-            setResultaat(
-              `${n === 1 ? '1 school heeft' : `${n} scholen hebben`} het leerlingaantal van ${jaar - 1} gekregen. Werk de aantallen bij zodra de echte aantallen bekend zijn.`,
-            )
+            setResultaat({
+              jaar,
+              tekst: `${n === 1 ? '1 school heeft' : `${n} scholen hebben`} het leerlingaantal van ${jaar - 1} gekregen. Werk de aantallen bij zodra de echte aantallen bekend zijn.`,
+            })
             herlaad()
           }}
         />

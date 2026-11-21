@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
@@ -10,6 +10,7 @@ import { Tabel } from '../components/Tabel'
 import { Laadstatus } from '../components/Melding'
 import { Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
+import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
 import { functieOpties, type Afdeling, type Functie, type Tak } from '../organisatie/api'
 import { faseLabel, STATUSSEN, statusLabel, type Inzet, type Jaarplan, type Project, type Projectjaar, type ProjectStatus } from '../projectplanner/api'
@@ -32,16 +33,22 @@ type Dialoog =
 const datumTijd = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
 
 /**
- * Het jaarplan van één jaar (projectplan.bekijken): kengetallen en de
+ * Het jaarplan van het gekozen jaar (projectplan.bekijken): kengetallen en de
  * projecten met status, budget en uren. Wijzigen met projectplan.beheren.
- * Het jaar staat in de URL (?jaar=).
+ * Het jaar komt uit de jaarkeuze in de kopbalk; bij een ander jaar begint de
+ * pagina opnieuw, zonder filters of berichten van het vorige jaar.
  */
 export function JaarplanPage() {
+  const { jaar } = useJaar()
+  return <Jaarplanpagina key={jaar} gekozenJaar={jaar} />
+}
+
+function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
   const { client } = useAuth()
   const { heeftRecht } = useRechten()
   const magBeheren = heeftRecht('projectplan.beheren')
   const navigate = useNavigate()
-  const [zoek, setZoek] = useSearchParams()
+  const { zetJaar, herlaadJaren } = useJaar()
   const laden = useCallback(
     async () =>
       alles<[Jaarplan[], Project[], Projectjaar[], Inzet[], Afdeling[], Tak[], Functie[], Medewerker[], Programma[], Projectgroep[]]>(
@@ -76,30 +83,20 @@ export function JaarplanPage() {
   }
 
   const [jaarplannen, projecten, projectjaren, inzet, afdelingen, takken, functies, medewerkers, programmas, projectgroepen] = data
-  const gevraagd = Number(zoek.get('jaar'))
-  const volgendJaar = new Date().getFullYear() + 1
-  const jaarplan =
-    jaarplannen.find((j) => j.jaar === gevraagd) ??
-    jaarplannen.find((j) => j.jaar === volgendJaar) ??
-    jaarplannen.at(-1) ??
-    null
-  const kiesJaar = (jaar: number) => {
-    setZoek({ jaar: String(jaar) })
-    setFilter(GEEN_FILTER)
-    setVaststellen(false)
-    setBericht(null)
-  }
+  const jaarplan = jaarplannen.find((j) => j.jaar === gekozenJaar) ?? null
 
   const dialogen = (
     <>
       {(dialoog?.soort === 'jaarplan-nieuw' || dialoog?.soort === 'jaarplan-wijzigen') && (
         <JaarplanFormulier
           jaarplan={dialoog.soort === 'jaarplan-wijzigen' ? dialoog.jaarplan : null}
+          voorstelJaar={jaarplannen.some((j) => j.jaar === gekozenJaar) ? undefined : gekozenJaar}
           bestaand={jaarplannen.map((j) => j.jaar)}
           onSluiten={sluit}
           onGelukt={(jaar) => {
-            kiesJaar(jaar)
-            herlaad()
+            herlaadJaren()
+            if (jaar === gekozenJaar) herlaad()
+            else zetJaar(jaar)
           }}
         />
       )}
@@ -135,8 +132,9 @@ export function JaarplanPage() {
   if (!jaarplan) {
     return (
       <Pagina titel="Jaarplan" intro="Per jaar de projecten met hun budget en de benodigde inzet per functie.">
-        <p className="mb-6">Er is nog geen jaarplan.</p>
-        {magBeheren && <Button onClick={() => setDialoog({ soort: 'jaarplan-nieuw' })}>Jaarplan toevoegen</Button>}
+        <p className="mb-6">Er is nog geen jaarplan voor {gekozenJaar}.</p>
+        {magBeheren && <Button onClick={() => setDialoog({ soort: 'jaarplan-nieuw' })}>Jaarplan {gekozenJaar} toevoegen</Button>}
+        <AndereJaren jaren={jaarplannen.map((j) => j.jaar)} />
         {dialogen}
       </Pagina>
     )
@@ -160,20 +158,13 @@ export function JaarplanPage() {
       titel={`Jaarplan ${jaarplan.jaar}`}
       intro="De projecten van dit jaar met hun status, budget en de benodigde inzet per functie."
     >
-      <Filterbalk>
-        <SelectField
-          label="Jaar"
-          value={String(jaarplan.jaar)}
-          opties={jaarplannen.map((j) => ({ waarde: String(j.jaar), label: String(j.jaar) }))}
-          onChange={(e) => kiesJaar(Number(e.target.value))}
-          className="w-40"
-        />
-        {magBeheren && (
+      {magBeheren && (
+        <Filterbalk>
           <Button variant="secundair" onClick={() => setDialoog({ soort: 'jaarplan-nieuw' })}>
             Jaarplan toevoegen
           </Button>
-        )}
-      </Filterbalk>
+        </Filterbalk>
+      )}
 
       <p className="mb-6">
         <span className="font-semibold">Fase: {faseLabel(jaarplan.fase)}.</span>

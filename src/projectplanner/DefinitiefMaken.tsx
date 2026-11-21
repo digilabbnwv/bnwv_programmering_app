@@ -118,7 +118,7 @@ export function DefinitiefMaken({
         )}
         <li>
           Bekijk de drukte per functie in het{' '}
-          <Tekstlink to={`/rapportage/projectplanner?jaar=${jaar}`}>
+          <Tekstlink to={`/projectplanner?jaar=${jaar}`}>
             dashboard
           </Tekstlink>
           .

@@ -69,12 +69,6 @@ export function ProjectgroepDetailPage() {
 
   return (
     <Pagina titel={projectgroep.naam} intro={projectgroep.omschrijving || undefined}>
-      <p className="mb-8">
-        <Tekstlink to="/projectgroepen">
-          Alle projectgroepen
-        </Tekstlink>
-      </p>
-
       <Sectie
         titel="Gegevens"
         acties={

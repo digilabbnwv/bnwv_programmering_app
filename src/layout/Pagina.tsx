@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from 'react'
+import { useLocation } from 'react-router'
 import { useRechten } from '../auth/RechtenProvider'
 import { Tekstlink } from '../components/Tekstlink'
+import { kruimels } from './navigatie'
 
 const APP_NAAM = 'BNWV Team Programmering'
 
@@ -32,7 +34,35 @@ export function PaginaKader({ breedte = 'standaard', children }: { breedte?: Bre
   return <div className={`mx-auto w-full ${BREEDTE[breedte]} print:max-w-none`}>{children}</div>
 }
 
-/** Kop en titel van een pagina binnen de layout. */
+/**
+ * Waar de pagina staat: de menugroep en, bij een detailpagina, het overzicht
+ * erboven als link (layout/navigatie.ts). Vervangt losse terug-links.
+ */
+function Kruimelpad({ titel }: { titel: string }) {
+  const { pathname } = useLocation()
+  const { heeftRecht } = useRechten()
+  const pad = kruimels(pathname, heeftRecht)
+  if (pad.length === 0) return null
+  return (
+    <nav aria-label="Kruimelpad" className="mb-3 print:hidden">
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ui-sm text-neutral-700">
+        {pad.map((k) => (
+          <li key={k.label} className="flex items-center gap-2">
+            {k.pad ? <Tekstlink licht to={k.pad}>{k.label}</Tekstlink> : <span>{k.label}</span>}
+            <span aria-hidden="true">›</span>
+          </li>
+        ))}
+        <li>
+          <span aria-current="page" className="font-semibold text-anthracite">
+            {titel}
+          </span>
+        </li>
+      </ol>
+    </nav>
+  )
+}
+
+/** Kruimelpad, kop en titel van een pagina binnen de layout. */
 export function Pagina({
   titel,
   intro,
@@ -47,6 +77,7 @@ export function Pagina({
   usePaginaTitel(titel)
   return (
     <PaginaKader breedte={breedte}>
+      <Kruimelpad titel={titel} />
       <h1 className="text-kop-medium font-extrabold">{titel}</h1>
       {intro && <p className="mt-3 max-w-prose text-intro text-neutral-700">{intro}</p>}
       {children && <div className="mt-8">{children}</div>}

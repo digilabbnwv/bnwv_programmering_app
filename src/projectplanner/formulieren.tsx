@@ -24,17 +24,20 @@ import { binnen, deelInJaar, jaarPeriode, leesBedrag, urenPerPersoon, urenPerWee
 
 export function JaarplanFormulier({
   jaarplan,
+  voorstelJaar,
   bestaand,
   onSluiten,
   onGelukt,
 }: {
   jaarplan: Jaarplan | null
+  /** Ingevuld jaar bij een nieuw jaarplan; standaard volgend jaar. */
+  voorstelJaar?: number
   bestaand: number[]
   onSluiten: () => void
   onGelukt: (jaar: number) => void
 }) {
   const { client } = useAuth()
-  const [jaar, setJaar] = useState(String(jaarplan?.jaar ?? new Date().getFullYear() + 1))
+  const [jaar, setJaar] = useState(String(jaarplan?.jaar ?? voorstelJaar ?? new Date().getFullYear() + 1))
   const [fase, setFase] = useState<JaarplanFase>(jaarplan?.fase ?? 'concept')
   const [proefjaar, setProefjaar] = useState(jaarplan?.proefjaar ?? false)
 

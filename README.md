@@ -36,7 +36,7 @@ src/
   auth/        inlogflow, sessie, 2FA, inactiviteit, rechten van de gebruiker
   beheer/      gebruikersbeheer en auditlog (API-laag en dialogen)
   components/  knoppen, velden, meldingen, dialoog, kengetallen, secties, tekstlinks, filterbalk
-  layout/      header, navigatie per recht, paginakader; paginas.ts: pad en recht van elke pagina
+  layout/      kopbalk, zijbalk, kruimelpad, jaarkeuze en paginakader; paginas.ts: pad en recht van elke pagina
   lib/         configuratie en de Supabase-client (alleen de publishable key)
   pages/       één bestand per pagina
 supabase/

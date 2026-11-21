@@ -2,11 +2,11 @@ import { useCallback, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Filterbalk } from '../components/Filterbalk'
-import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
 import { Gegevens, Sectie } from '../components/Sectie'
 import { Laadstatus } from '../components/Melding'
+import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
 import {
   lees,
@@ -43,7 +43,7 @@ export function StaffelPage() {
     [client],
   )
   const { data, fout, herlaad } = useGegevens(laden)
-  const [gekozenJaar, setGekozenJaar] = useState<number | null>(null)
+  const { jaar, zetJaar, herlaadJaren } = useJaar()
   const [dialoog, setDialoog] = useState<Dialoog | null>(null)
   const [kopieerFout, setKopieerFout] = useState<string | null>(null)
   const sluit = () => setDialoog(null)
@@ -57,11 +57,8 @@ export function StaffelPage() {
   }
 
   const [werkjaren, staffel] = data
-  const ditJaar = new Date().getFullYear()
-  const jaar =
-    gekozenJaar ?? (werkjaren.some((w) => w.jaar === ditJaar) ? ditJaar : (werkjaren.at(-1)?.jaar ?? null))
   const werkjaar = werkjaren.find((w) => w.jaar === jaar) ?? null
-  const vorigJaar = jaar === null ? [] : staffel.filter((s) => s.jaar === jaar - 1)
+  const vorigJaar = staffel.filter((s) => s.jaar === jaar - 1)
   const ditJaarStaffel = staffel.filter((s) => s.jaar === jaar)
 
   async function kopieerVorigJaar(): Promise<Resultaat<unknown>> {
@@ -87,15 +84,6 @@ export function StaffelPage() {
       {fout && <Laadstatus fout={fout} />}
 
       <Filterbalk>
-        {werkjaren.length > 0 && jaar !== null && (
-          <SelectField
-            label="Jaar"
-            value={String(jaar)}
-            opties={werkjaren.map((w) => ({ waarde: String(w.jaar), label: String(w.jaar) }))}
-            onChange={(e) => setGekozenJaar(Number(e.target.value))}
-            className="w-40"
-          />
-        )}
         <Button variant="secundair" onClick={() => setDialoog({ soort: 'jaar-nieuw' })}>
           Jaar toevoegen
         </Button>
@@ -174,22 +162,28 @@ export function StaffelPage() {
           ))}
         </>
       ) : (
-        <p>Voeg eerst een jaar toe.</p>
+        <>
+          <p className="mb-6">Voor {jaar} zijn nog geen jaarinstellingen vastgelegd.</p>
+          <Button onClick={() => setDialoog({ soort: 'jaar-nieuw' })}>Jaar {jaar} toevoegen</Button>
+          <AndereJaren jaren={werkjaren.map((w) => w.jaar)} />
+        </>
       )}
 
       {(dialoog?.soort === 'jaar-nieuw' || dialoog?.soort === 'jaar-wijzigen') && (
         <WerkjaarFormulier
           werkjaar={dialoog.soort === 'jaar-wijzigen' ? dialoog.werkjaar : null}
           voorstel={werkjaren.at(-1) ?? null}
+          voorstelJaar={werkjaar ? undefined : jaar}
           bestaand={werkjaren.map((w) => w.jaar)}
           onSluiten={sluit}
           onGelukt={(nieuwJaar) => {
-            setGekozenJaar(nieuwJaar)
+            herlaadJaren()
             herlaad()
+            if (nieuwJaar !== jaar) zetJaar(nieuwJaar)
           }}
         />
       )}
-      {dialoog?.soort === 'schijf' && jaar !== null && (
+      {dialoog?.soort === 'schijf' && (
         <SchijfFormulier jaar={jaar} schijf={dialoog.schijf} schoolsoort={dialoog.schoolsoort} onSluiten={sluit} onGelukt={herlaad} />
       )}
       {dialoog?.soort === 'schijf-verwijderen' && (
@@ -207,19 +201,24 @@ export function StaffelPage() {
 function WerkjaarFormulier({
   werkjaar,
   voorstel,
+  voorstelJaar,
   bestaand,
   onSluiten,
   onGelukt,
 }: {
   werkjaar: Werkjaar | null
   voorstel: Werkjaar | null
+  /** Ingevuld jaar bij een nieuw jaar; standaard het jaar na het voorstel. */
+  voorstelJaar?: number
   bestaand: number[]
   onSluiten: () => void
   onGelukt: (jaar: number) => void
 }) {
   const { client } = useAuth()
   const basis = werkjaar ?? voorstel
-  const [jaar, setJaar] = useState(String(werkjaar?.jaar ?? (voorstel ? voorstel.jaar + 1 : new Date().getFullYear())))
+  const [jaar, setJaar] = useState(
+    String(werkjaar?.jaar ?? voorstelJaar ?? (voorstel ? voorstel.jaar + 1 : new Date().getFullYear())),
+  )
   const [werkweken, setWerkweken] = useState(getalAlsTekst(basis?.werkweken ?? 47))
   const [mijmer, setMijmer] = useState(getalAlsTekst(basis?.mijmer_percentage ?? 20))
 

@@ -24,7 +24,7 @@ import { ProgrammaDetailPage } from './pages/ProgrammaDetailPage'
 import { TakenPage } from './pages/TakenPage'
 import { TaakDetailPage } from './pages/TaakDetailPage'
 import { RapportageMedewerkersPage, RapportageProgrammasPage, RapportageSignalenPage } from './pages/RapportagePage'
-import { WerkbelastingPage } from './pages/WerkbelastingPage'
+import { MijnWerkurenverdelingPage, WerkbelastingPage } from './pages/WerkbelastingPage'
 
 /** Route voor een pagina uit PAGINAS, alleen zichtbaar met het recht dat daar staat. */
 function route(pagina: PaginaDefinitie, element: ReactNode): RouteObject {
@@ -44,7 +44,10 @@ export const router = createHashRouter([
           // De startpagina wacht zelf op de rechten en toont per recht wat er is.
           { path: PAGINAS.start.pad, element: <StartPage /> },
           // Oude links naar /rapportage (met ?jaar=) komen op de signalen uit.
-          { path: '/rapportage', element: <NaarSignalen /> },
+          { path: '/rapportage', element: <Doorsturen naar={PAGINAS.signalen.pad} /> },
+          // Het dashboard van de projectplanner stond tot fase 2 van de navigatie onder Rapportage.
+          { path: '/rapportage/projectplanner', element: <Doorsturen naar={PAGINAS.projectplanner.pad} /> },
+          route(PAGINAS.mijnWerkurenverdeling, <MijnWerkurenverdelingPage />),
           route(PAGINAS.signalen, <RapportageSignalenPage />),
           route(PAGINAS.verdelingProgrammas, <RapportageProgrammasPage />),
           route(PAGINAS.verdelingMedewerkers, <RapportageMedewerkersPage />),
@@ -73,7 +76,8 @@ export const router = createHashRouter([
   },
 ])
 
-function NaarSignalen() {
+/** Stuurt een oud adres door naar het nieuwe, met dezelfde zoekparameters (bijv. ?jaar=). */
+function Doorsturen({ naar }: { naar: string }) {
   const { search } = useLocation()
-  return <Navigate to={{ pathname: PAGINAS.signalen.pad, search }} replace />
+  return <Navigate to={{ pathname: naar, search }} replace />
 }

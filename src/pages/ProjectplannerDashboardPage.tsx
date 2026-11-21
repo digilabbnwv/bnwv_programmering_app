@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react'
-import { useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
@@ -10,7 +9,9 @@ import { Tabel } from '../components/Tabel'
 import { Laadstatus } from '../components/Melding'
 import { Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
+import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
+import { PAGINAS } from '../layout/paginas'
 import { functieNaam, type Afdeling, type Functie, type Tak } from '../organisatie/api'
 import { faseLabel, type Inzet, type Jaarplan, type Project, type Projectjaar } from '../projectplanner/api'
 import { formatEuro, projectregels, totaalUren, type Projectregel } from '../projectplanner/berekening'
@@ -54,14 +55,14 @@ interface Capaciteitsgegevens {
 /**
  * Dashboard van de projectplanner voor MT en directie (projectplan.bekijken):
  * kengetallen, signalen, drukte per functie per week, gelijktijdige projecten,
- * inzet per functie, budget per afdeling en tak, en de tijdlijn. Het jaar staat
- * in de URL (?jaar=). Zie docs/projectplanner.md, hoofdstuk 7 en 8.
+ * inzet per functie, budget per afdeling en tak, en de tijdlijn. Het jaar komt
+ * uit de jaarkeuze in de kopbalk. Zie docs/projectplanner.md, hoofdstuk 7 en 8.
  */
 export function ProjectplannerDashboardPage() {
   const { client } = useAuth()
   const { heeftRecht } = useRechten()
   const magWerkbelasting = heeftRecht('werkbelasting.bekijken')
-  const [zoek, setZoek] = useSearchParams()
+  const { jaar: gekozenJaar } = useJaar()
   const [afdelingId, setAfdelingId] = useState('')
   const [keuze, setKeuze] = useState<Statuskeuze>('actief')
 
@@ -84,10 +85,7 @@ export function ProjectplannerDashboardPage() {
   const { data, fout } = useGegevens(laden)
 
   const jaarplannen = data?.jaarplannen ?? []
-  const gevraagd = Number(zoek.get('jaar'))
-  const volgendJaar = new Date().getFullYear() + 1
-  const jaarplan =
-    jaarplannen.find((j) => j.jaar === gevraagd) ?? jaarplannen.find((j) => j.jaar === volgendJaar) ?? jaarplannen.at(-1) ?? null
+  const jaarplan = jaarplannen.find((j) => j.jaar === gekozenJaar) ?? null
   const jaar = jaarplan?.jaar ?? null
 
   const { capaciteit, fout: capaciteitFout } = useCapaciteit(jaar, magWerkbelasting)
@@ -103,12 +101,9 @@ export function ProjectplannerDashboardPage() {
     return (
       <Pagina titel="Projectplanner" intro="Het overzicht van het jaarplan voor MT en directie.">
         <p>
-          Er is nog geen jaarplan. Maak er een aan onder{' '}
-          <Tekstlink to="/jaarplan">
-            Jaarplan
-          </Tekstlink>
-          .
+          Er is nog geen jaarplan voor {gekozenJaar}. Maak er een aan onder <Tekstlink to={PAGINAS.jaarplan.pad}>Jaarplan</Tekstlink>.
         </p>
+        <AndereJaren jaren={jaarplannen.map((j) => j.jaar)} />
       </Pagina>
     )
   }
@@ -145,13 +140,6 @@ export function ProjectplannerDashboardPage() {
       intro={`Het jaarplan ${jaar} (fase: ${faseLabel(jaarplan.fase).toLowerCase()}${jaarplan.proefjaar ? ', proefjaar naast de Excel' : ''}): budget, benodigde inzet per functie en de drukte per week. Uitgesteld en afgewezen tellen niet mee.`}
     >
       <Filterbalk>
-        <SelectField
-          label="Jaar"
-          value={String(jaar)}
-          opties={jaarplannen.map((j) => ({ waarde: String(j.jaar), label: String(j.jaar) }))}
-          onChange={(e) => setZoek({ jaar: e.target.value })}
-          className="w-32"
-        />
         <SelectField
           label="Afdeling"
           value={afdelingId}

@@ -1,5 +1,4 @@
 import { useCallback, useId, useState, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
 import { Filterbalk } from '../components/Filterbalk'
@@ -10,6 +9,7 @@ import { Tabel, type Kolom } from '../components/Tabel'
 import { TextField } from '../components/TextField'
 import { Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
+import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
 import type { Werkjaar } from '../werkbelasting/api'
 import { formatPercentage, formatPerWeek, formatUren, perWeek, type ProgrammaRef, type Werkbelasting } from '../werkbelasting/berekening'
@@ -29,8 +29,7 @@ import { useGegevens } from '../werkbelasting/useGegevens'
 /**
  * De rapportage van het hele team in één jaar (werkbelasting.bekijken), in
  * drie pagina's: signalen, verdeling per programma en verdeling per
- * medewerker. Het jaar staat in de URL (?jaar=), zodat het bij wisselen van
- * pagina blijft staan.
+ * medewerker. Het jaar komt uit de jaarkeuze in de kopbalk (layout/JaarProvider.tsx).
  */
 
 interface Inhoud {
@@ -40,10 +39,9 @@ interface Inhoud {
   rijen: Rij[]
 }
 
-/** Laadt de gegevens van het jaar en toont titel, jaarkeuze en afdrukknop. */
+/** Laadt de gegevens van het gekozen jaar en toont titel en afdrukknop. */
 function Rapportage({ titel, intro, children }: { titel: string; intro: string; children: (inhoud: Inhoud) => ReactNode }) {
-  const [zoek, setZoek] = useSearchParams()
-  const jaar = Number(zoek.get('jaar')) || new Date().getFullYear()
+  const { jaar } = useJaar()
   const { client } = useAuth()
   const laden = useCallback(async () => {
     const res = await laadRapportage(client, jaar)
@@ -61,24 +59,12 @@ function Rapportage({ titel, intro, children }: { titel: string; intro: string; 
   }
 
   const werkjaar = gegevens.werkjaren.find((w) => w.jaar === jaar)
-  const jaarKeuze = (
-    <SelectField
-      label="Jaar"
-      value={String(jaar)}
-      opties={(gegevens.werkjaren.length > 0 ? gegevens.werkjaren : [{ jaar }]).map((w) => ({
-        waarde: String(w.jaar),
-        label: String(w.jaar),
-      }))}
-      onChange={(e) => setZoek({ jaar: e.target.value })}
-      className="w-40"
-    />
-  )
 
   if (!werkjaar) {
     return (
       <Pagina titel={titel}>
-        {jaarKeuze}
-        <p className="mt-6">Voor {jaar} zijn nog geen jaarinstellingen vastgelegd.</p>
+        <p>Voor {jaar} zijn nog geen jaarinstellingen vastgelegd.</p>
+        <AndereJaren jaren={gegevens.werkjaren.map((w) => w.jaar)} />
       </Pagina>
     )
   }
@@ -86,7 +72,6 @@ function Rapportage({ titel, intro, children }: { titel: string; intro: string; 
   return (
     <Pagina titel={titel} intro={`${intro} Jaar ${jaar}.`}>
       <Filterbalk>
-        {jaarKeuze}
         <Button variant="secundair" onClick={() => window.print()}>
           Afdrukken
         </Button>

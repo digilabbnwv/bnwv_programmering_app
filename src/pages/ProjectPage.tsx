@@ -105,12 +105,6 @@ export function ProjectPage() {
 
   return (
     <Pagina titel={project.naam} intro={project.omschrijving ? <span className="whitespace-pre-line">{project.omschrijving}</span> : undefined}>
-      <p className="mb-8">
-        <Tekstlink to={terug}>
-          Terug naar het jaarplan
-        </Tekstlink>
-      </p>
-
       <Sectie
         titel="Gegevens"
         acties={

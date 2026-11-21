@@ -58,12 +58,6 @@ export function TaakDetailPage() {
 
   return (
     <Pagina titel={taak.naam} intro={taak.omschrijving || undefined}>
-      <p className="mb-8">
-        <Tekstlink to="/taken">
-          Alle overige taken
-        </Tekstlink>
-      </p>
-
       <Sectie
         titel="Gegevens"
         acties={
