@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
-import { Gegevens, Sectie } from '../components/Sectie'
+import { Gegevens, Kolommen, Sectie } from '../components/Sectie'
 import { Laadstatus } from '../components/Melding'
 import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
@@ -57,34 +57,37 @@ export function TaakDetailPage() {
   const urenNu = uitvoerders.filter((u) => loopt(u)).reduce((som, u) => som + u.uren_per_jaar, 0)
 
   return (
-    <Pagina titel={taak.naam} intro={taak.omschrijving || undefined}>
-      <Sectie
-        titel="Gegevens"
-        acties={
-          <>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
-              Wijzigen
-            </Button>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
-              Verwijderen
-            </Button>
-          </>
-        }
-      >
-        <Gegevens
-          regels={[
-            ['Periode', formatPeriode(taak.startdatum, taak.einddatum)],
-            ['Uren per jaar nu', `${formatUren(urenNu)} (alle huidige uitvoerders samen)`],
-          ]}
-        />
-      </Sectie>
+    <Pagina
+      titel={taak.naam}
+      intro={taak.omschrijving || undefined}
+      acties={
+        <>
+          <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
+            Wijzigen
+          </Button>
+          <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
+            Verwijderen
+          </Button>
+        </>
+      }
+    >
+      <Kolommen>
+        <Sectie titel="Gegevens">
+          <Gegevens
+            regels={[
+              ['Periode', formatPeriode(taak.startdatum, taak.einddatum)],
+              ['Uren per jaar nu', `${formatUren(urenNu)} (alle huidige uitvoerders samen)`],
+            ]}
+          />
+        </Sectie>
 
-      <UitvoerdersSectie
-        ouder={{ soort: 'taak', id: taak.id, startdatum: taak.startdatum, einddatum: taak.einddatum }}
-        uitvoerders={uitvoerders}
-        medewerkers={medewerkers}
-        onGewijzigd={herlaad}
-      />
+        <UitvoerdersSectie
+          ouder={{ soort: 'taak', id: taak.id, startdatum: taak.startdatum, einddatum: taak.einddatum }}
+          uitvoerders={uitvoerders}
+          medewerkers={medewerkers}
+          onGewijzigd={herlaad}
+        />
+      </Kolommen>
 
       {dialoog?.soort === 'wijzigen' && <TaakFormulier taak={taak} onSluiten={sluit} onGelukt={herlaad} />}
       {dialoog?.soort === 'verwijderen' && (

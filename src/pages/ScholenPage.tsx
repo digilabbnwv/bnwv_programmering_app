@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
-import { Filterbalk } from '../components/Filterbalk'
 import { Laadstatus, Melding } from '../components/Melding'
 import { Selectievakje } from '../components/Selectievakje'
 import { SelectField } from '../components/SelectField'
@@ -65,7 +64,7 @@ export function ScholenPage() {
 
   if (!data) {
     return (
-      <Pagina titel="Scholen">
+      <Pagina titel="Scholen" breedte="breed">
         <Laadstatus fout={fout} />
       </Pagina>
     )
@@ -108,15 +107,21 @@ export function ScholenPage() {
   const zonderMedewerker = scholen.filter((s) => s.actief && !medewerkerVan(s.id)).length
 
   return (
-    <Pagina titel="Scholen" intro={`Scholen met hun medewerker en de uren voor ${jaar} volgens de staffel.`}>
-      <Filterbalk>
-        <Button onClick={() => setNieuw(true)}>Nieuwe school</Button>
-        {teOvernemen.length > 0 && werkjaarBestaat && (
-          <Button variant="secundair" onClick={() => setOvernemen(true)}>
-            Leerlingaantallen van {jaar - 1} overnemen
-          </Button>
-        )}
-      </Filterbalk>
+    <Pagina
+      titel="Scholen"
+      intro={`Scholen met hun medewerker en de uren voor ${jaar} volgens de staffel.`}
+      breedte="breed"
+      acties={
+        <>
+          {teOvernemen.length > 0 && werkjaarBestaat && (
+            <Button variant="secundair" onClick={() => setOvernemen(true)}>
+              Leerlingaantallen van {jaar - 1} overnemen
+            </Button>
+          )}
+          <Button onClick={() => setNieuw(true)}>Nieuwe school</Button>
+        </>
+      }
+    >
 
       {resultaat?.jaar === jaar && (
         <div className="mb-6">
@@ -141,7 +146,7 @@ export function ScholenPage() {
         </p>
       )}
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-[1fr_16rem] md:grid-cols-[1fr_16rem_auto] md:items-end">
+      <div className="mb-6 grid gap-4 sm:grid-cols-[1fr_16rem] md:grid-cols-[minmax(0,32rem)_16rem_auto] md:items-end print:hidden">
         <TextField label="Zoeken" type="search" value={zoek} onChange={(e) => setZoek(e.target.value)} hint="Op naam of plaats." />
         <SelectField
           label="Soort"

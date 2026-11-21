@@ -54,14 +54,14 @@ export function GebruikersPage() {
     <Pagina
       titel="Gebruikers"
       intro={magBeheren ? 'Maak accounts aan en beheer rollen, wachtwoorden en tweestapsverificatie.' : 'Overzicht van alle accounts.'}
-    >
-      {magBeheren && (
-        <div className="mb-6">
+      acties={
+        magBeheren && (
           <Button onClick={() => setAanmaken(true)} disabled={rollen.length === 0}>
             Nieuwe gebruiker
           </Button>
-        </div>
-      )}
+        )
+      }
+    >
 
       {fout && <Melding soort="fout">{fout}</Melding>}
       {!gebruikers && !fout && <p role="status">Bezig met laden…</p>}

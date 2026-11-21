@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
+import { Filterbalk } from '../components/Filterbalk'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
 import { Laadstatus } from '../components/Melding'
@@ -50,11 +51,11 @@ export function TakenPage() {
     <Pagina
       titel="Overige taken"
       intro="Taken naast scholen en projectgroepen, met wie ze uitvoert en een inschatting van de uren per jaar."
+      acties={<Button onClick={() => setNieuw(true)}>Nieuwe taak</Button>}
     >
-      <div className="mb-6 flex flex-wrap items-center gap-6">
-        <Button onClick={() => setNieuw(true)}>Nieuwe taak</Button>
+      <Filterbalk>
         <Selectievakje label="Ook afgelopen taken" checked={ookAfgelopen} onChange={(e) => setOokAfgelopen(e.target.checked)} />
-      </div>
+      </Filterbalk>
 
       {zonder > 0 && (
         <p role="status" className="mb-4 text-ui-sm text-neutral-700">

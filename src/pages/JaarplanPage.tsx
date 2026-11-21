@@ -3,7 +3,6 @@ import { Navigate, useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
-import { Filterbalk } from '../components/Filterbalk'
 import { Kengetal, Kengetallen } from '../components/Kengetal'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
@@ -12,10 +11,11 @@ import { Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
 import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
+import { JaarplanStatus } from '../projectplanner/JaarplanStatus'
 import { PAGINAS } from '../layout/paginas'
 import { Tabbladen, useTabblad } from '../layout/Tabbladen'
 import { functieOpties, type Afdeling, type Functie, type Tak } from '../organisatie/api'
-import { faseLabel, STATUSSEN, statusLabel, type Inzet, type Jaarplan, type Project, type Projectjaar, type ProjectStatus } from '../projectplanner/api'
+import { STATUSSEN, statusLabel, type Inzet, type Jaarplan, type Project, type Projectjaar, type ProjectStatus } from '../projectplanner/api'
 import { filterRegels, formatEuro, GEEN_FILTER, kengetallen, projectregels, totaalUren, type Filter } from '../projectplanner/berekening'
 import { JaarplanFormulier, ProjectFormulier } from '../projectplanner/formulieren'
 import { ExcelImport } from '../projectplanner/ExcelImport'
@@ -82,7 +82,7 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
   if (tab === null) return <Navigate to=".." relative="path" replace />
   if (!data) {
     return (
-      <Pagina titel="Jaarplan">
+      <Pagina breedte="breed" titel="Jaarplan">
         <Laadstatus fout={fout} />
       </Pagina>
     )
@@ -137,7 +137,7 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
 
   if (!jaarplan) {
     return (
-      <Pagina titel="Jaarplan" intro="Per jaar de projecten met hun budget en de benodigde inzet per functie.">
+      <Pagina breedte="breed" titel="Jaarplan" intro="Per jaar de projecten met hun budget en de benodigde inzet per functie.">
         <p className="mb-6">Er is nog geen jaarplan voor {gekozenJaar}.</p>
         {magBeheren && <Button onClick={() => setDialoog({ soort: 'jaarplan-nieuw' })}>Jaarplan {gekozenJaar} toevoegen</Button>}
         <AndereJaren jaren={jaarplannen.map((j) => j.jaar)} />
@@ -170,39 +170,38 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
 
   return (
     <Pagina
+      breedte="breed"
       titel={`Jaarplan ${jaarplan.jaar}`}
       intro="De projecten van dit jaar met hun status, budget en de benodigde inzet per functie."
+      status={<JaarplanStatus jaarplan={jaarplan} />}
+      acties={
+        magBeheren && (
+          <>
+            <Button variant="secundair" onClick={() => setDialoog({ soort: 'jaarplan-nieuw' })}>
+              Jaarplan toevoegen
+            </Button>
+            {inConcept && (
+              <Button variant="secundair" onClick={() => setDialoog({ soort: 'jaarplan-wijzigen', jaarplan })}>
+                Fase wijzigen
+              </Button>
+            )}
+            {jaarplan.fase === 'definitief' && (
+              <Button variant="secundair" onClick={() => setDialoog({ soort: 'heropenen', jaarplan })}>
+                Terug naar concept
+              </Button>
+            )}
+            {inConcept && alleRegels.length > 0 && !vaststellen && <Button onClick={() => setVaststellen(true)}>Definitief maken</Button>}
+          </>
+        )
+      }
     >
-      {magBeheren && (
-        <Filterbalk>
-          <Button variant="secundair" onClick={() => setDialoog({ soort: 'jaarplan-nieuw' })}>
-            Jaarplan toevoegen
-          </Button>
-        </Filterbalk>
+      {(jaarplan.vastgesteld_op || jaarplan.proefjaar) && (
+        <p className="mb-6">
+          {jaarplan.vastgesteld_op &&
+            `Vastgesteld op ${datumTijd.format(new Date(jaarplan.vastgesteld_op))}${jaarplan.vastgesteld_door_naam ? ` door ${jaarplan.vastgesteld_door_naam}` : ''}. `}
+          {jaarplan.proefjaar && 'Proefjaar: de Excel blijft leidend, de app draait mee.'}
+        </p>
       )}
-
-      <p className="mb-6">
-        <span className="font-semibold">Fase: {faseLabel(jaarplan.fase)}.</span>
-        {jaarplan.vastgesteld_op &&
-          ` Vastgesteld op ${datumTijd.format(new Date(jaarplan.vastgesteld_op))}${jaarplan.vastgesteld_door_naam ? ` door ${jaarplan.vastgesteld_door_naam}` : ''}.`}
-        {jaarplan.proefjaar && ' Proefjaar: de Excel blijft leidend, de app draait mee.'}
-        {magBeheren && inConcept && (
-          <>
-            {' '}
-            <Button variant="link" onClick={() => setDialoog({ soort: 'jaarplan-wijzigen', jaarplan })}>
-              Fase wijzigen
-            </Button>
-          </>
-        )}
-        {magBeheren && jaarplan.fase === 'definitief' && (
-          <>
-            {' '}
-            <Button variant="link" onClick={() => setDialoog({ soort: 'heropenen', jaarplan })}>
-              Terug naar concept
-            </Button>
-          </>
-        )}
-      </p>
 
       {bericht && (
         <div className="mb-6">
@@ -212,11 +211,6 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
         </div>
       )}
 
-      {magBeheren && inConcept && alleRegels.length > 0 && !vaststellen && (
-        <p className="mb-8">
-          <Button onClick={() => setVaststellen(true)}>Definitief maken</Button>
-        </p>
-      )}
       {vaststellen && inConcept && (
         <DefinitiefMaken
           jaar={jaarplan.jaar}

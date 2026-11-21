@@ -42,7 +42,7 @@ export function OrganisatiePage() {
 
   if (!data) {
     return (
-      <Pagina titel="Organisatie">
+      <Pagina breedte="breed" titel="Organisatie">
         <Laadstatus fout={fout} />
       </Pagina>
     )
@@ -54,6 +54,7 @@ export function OrganisatiePage() {
 
   return (
     <Pagina
+      breedte="breed"
       titel="Organisatie"
       intro="Afdelingen met hun functies en takken. De projectplanner plant de inzet per functie en deelt projecten in per tak. Wat in gebruik is, kun je niet verwijderen; zet het dan op inactief."
     >
@@ -67,68 +68,71 @@ export function OrganisatiePage() {
             </Button>
           }
         >
-          <Deel
-            titel="Functies"
-            actie={
-              <Button variant="link" onClick={() => setDialoog({ soort: 'functie', functie: null, afdelingId: afdeling.id })}>
-                Functie toevoegen<span className="sr-only"> bij {afdeling.naam}</span>
-              </Button>
-            }
-          >
-            <Tabel
-              bijschrift={`Functies ${afdeling.naam}`}
-              rijen={functies.filter((f) => f.afdeling_id === afdeling.id).sort(opNaam)}
-              sleutel={(f) => f.id}
-              leeg="Nog geen functies."
-              kolommen={[
-                { kop: 'Functie', inhoud: (f) => <span className="font-semibold">{f.naam}</span> },
-                { kop: 'Afkorting', inhoud: (f) => f.afkorting },
-                { kop: 'Soort', inhoud: (f) => (f.extern ? 'Extern of vrijwilliger' : 'Eigen personeel') },
-                { kop: 'Medewerkers', inhoud: (f) => aantalMedewerkers(f.id), getal: true },
-                { kop: 'Status', inhoud: (f) => status(f.actief) },
-              ]}
-              acties={(f) => (
-                <>
-                  <Button variant="link" onClick={() => setDialoog({ soort: 'functie', functie: f, afdelingId: f.afdeling_id })}>
-                    Wijzigen<span className="sr-only"> {f.naam}</span>
-                  </Button>
-                  <Button variant="link" onClick={() => setDialoog({ soort: 'functie-verwijderen', functie: f })}>
-                    Verwijderen<span className="sr-only"> {f.naam}</span>
-                  </Button>
-                </>
-              )}
-            />
-          </Deel>
+          {/* Op een breed scherm functies en takken naast elkaar. */}
+          <div className="grid gap-x-10 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:[&>*]:mt-0">
+            <Deel
+              titel="Functies"
+              actie={
+                <Button variant="link" onClick={() => setDialoog({ soort: 'functie', functie: null, afdelingId: afdeling.id })}>
+                  Functie toevoegen<span className="sr-only"> bij {afdeling.naam}</span>
+                </Button>
+              }
+            >
+              <Tabel
+                bijschrift={`Functies ${afdeling.naam}`}
+                rijen={functies.filter((f) => f.afdeling_id === afdeling.id).sort(opNaam)}
+                sleutel={(f) => f.id}
+                leeg="Nog geen functies."
+                kolommen={[
+                  { kop: 'Functie', inhoud: (f) => <span className="font-semibold">{f.naam}</span> },
+                  { kop: 'Afkorting', inhoud: (f) => f.afkorting },
+                  { kop: 'Soort', inhoud: (f) => (f.extern ? 'Extern of vrijwilliger' : 'Eigen personeel') },
+                  { kop: 'Medewerkers', inhoud: (f) => aantalMedewerkers(f.id), getal: true },
+                  { kop: 'Status', inhoud: (f) => status(f.actief) },
+                ]}
+                acties={(f) => (
+                  <>
+                    <Button variant="link" onClick={() => setDialoog({ soort: 'functie', functie: f, afdelingId: f.afdeling_id })}>
+                      Wijzigen<span className="sr-only"> {f.naam}</span>
+                    </Button>
+                    <Button variant="link" onClick={() => setDialoog({ soort: 'functie-verwijderen', functie: f })}>
+                      Verwijderen<span className="sr-only"> {f.naam}</span>
+                    </Button>
+                  </>
+                )}
+              />
+            </Deel>
 
-          <Deel
-            titel="Takken"
-            actie={
-              <Button variant="link" onClick={() => setDialoog({ soort: 'tak', tak: null, afdelingId: afdeling.id })}>
-                Tak toevoegen<span className="sr-only"> bij {afdeling.naam}</span>
-              </Button>
-            }
-          >
-            <Tabel
-              bijschrift={`Takken ${afdeling.naam}`}
-              rijen={takken.filter((t) => t.afdeling_id === afdeling.id).sort(opNaam)}
-              sleutel={(t) => t.id}
-              leeg="Nog geen takken."
-              kolommen={[
-                { kop: 'Tak', inhoud: (t) => <span className="font-semibold">{t.naam}</span> },
-                { kop: 'Status', inhoud: (t) => status(t.actief) },
-              ]}
-              acties={(t) => (
-                <>
-                  <Button variant="link" onClick={() => setDialoog({ soort: 'tak', tak: t, afdelingId: t.afdeling_id })}>
-                    Wijzigen<span className="sr-only"> {t.naam}</span>
-                  </Button>
-                  <Button variant="link" onClick={() => setDialoog({ soort: 'tak-verwijderen', tak: t })}>
-                    Verwijderen<span className="sr-only"> {t.naam}</span>
-                  </Button>
-                </>
-              )}
-            />
-          </Deel>
+            <Deel
+              titel="Takken"
+              actie={
+                <Button variant="link" onClick={() => setDialoog({ soort: 'tak', tak: null, afdelingId: afdeling.id })}>
+                  Tak toevoegen<span className="sr-only"> bij {afdeling.naam}</span>
+                </Button>
+              }
+            >
+              <Tabel
+                bijschrift={`Takken ${afdeling.naam}`}
+                rijen={takken.filter((t) => t.afdeling_id === afdeling.id).sort(opNaam)}
+                sleutel={(t) => t.id}
+                leeg="Nog geen takken."
+                kolommen={[
+                  { kop: 'Tak', inhoud: (t) => <span className="font-semibold">{t.naam}</span> },
+                  { kop: 'Status', inhoud: (t) => status(t.actief) },
+                ]}
+                acties={(t) => (
+                  <>
+                    <Button variant="link" onClick={() => setDialoog({ soort: 'tak', tak: t, afdelingId: t.afdeling_id })}>
+                      Wijzigen<span className="sr-only"> {t.naam}</span>
+                    </Button>
+                    <Button variant="link" onClick={() => setDialoog({ soort: 'tak-verwijderen', tak: t })}>
+                      Verwijderen<span className="sr-only"> {t.naam}</span>
+                    </Button>
+                  </>
+                )}
+              />
+            </Deel>
+          </div>
         </Sectie>
       ))}
 

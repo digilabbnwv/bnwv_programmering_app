@@ -37,7 +37,7 @@ export function StartPage() {
   const werkjaar = data?.werkjaren.find((w) => w.jaar === jaar) ?? null
 
   return (
-    <Pagina titel={weergavenaam ? `Welkom, ${weergavenaam}` : 'Welkom'}>
+    <Pagina breedte="breed" titel={weergavenaam ? `Welkom, ${weergavenaam}` : 'Welkom'}>
       {!data || rechtenLaden ? (
         <Laadstatus fout={fout} />
       ) : !werkjaar ? (

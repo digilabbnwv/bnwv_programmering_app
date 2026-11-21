@@ -83,20 +83,21 @@ export function ProgrammaDetailPage() {
   const urenNu = uitvoerders.filter((u) => loopt(u)).reduce((som, u) => som + u.uren_per_jaar, 0)
 
   return (
-    <Pagina titel={programma.naam} intro={programma.omschrijving || undefined}>
-      <Sectie
-        titel="Gegevens"
-        acties={
-          <>
-            <Button variant="secundair" onClick={() => setDialoog('wijzigen')}>
-              Wijzigen
-            </Button>
-            <Button variant="secundair" onClick={() => setDialoog('verwijderen')}>
-              Verwijderen
-            </Button>
-          </>
-        }
-      >
+    <Pagina
+      titel={programma.naam}
+      intro={programma.omschrijving || undefined}
+      acties={
+        <>
+          <Button variant="secundair" onClick={() => setDialoog('wijzigen')}>
+            Wijzigen
+          </Button>
+          <Button variant="secundair" onClick={() => setDialoog('verwijderen')}>
+            Verwijderen
+          </Button>
+        </>
+      }
+    >
+      <Sectie titel="Gegevens">
         <Gegevens
           regels={[
             ['Naam', programma.naam],

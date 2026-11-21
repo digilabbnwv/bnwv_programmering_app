@@ -6,7 +6,8 @@ import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
-import { Gegevens, Sectie } from '../components/Sectie'
+import { Gegevens, Kolommen, Sectie } from '../components/Sectie'
+import { StatusLabel } from '../components/StatusLabel'
 import { Laadstatus } from '../components/Melding'
 import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
@@ -153,77 +154,81 @@ export function MedewerkerDetailPage() {
     )
 
   return (
-    <Pagina titel={medewerker.naam} intro={indeling(medewerker, functies, afdelingen) ?? 'Nog niet ingedeeld in een functie en afdeling.'}>
+    <Pagina
+      titel={medewerker.naam}
+      intro={indeling(medewerker, functies, afdelingen) ?? 'Nog niet ingedeeld in een functie en afdeling.'}
+      status={!medewerker.actief && <StatusLabel>Inactief</StatusLabel>}
+      acties={
+        magBeheren && (
+          <>
+            <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
+              Wijzigen
+            </Button>
+            <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
+              Verwijderen
+            </Button>
+          </>
+        )
+      }
+    >
       <Tabbladen tabbladen={tabbladen} actief={tab} />
 
       {tab === '' && (
         <>
-          <Sectie
-            titel="Gegevens"
-            acties={
-              magBeheren && (
-                <>
-                  <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
-                    Wijzigen
-                  </Button>
-                  <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
-                    Verwijderen
-                  </Button>
-                </>
-              )
-            }
-          >
-            <Gegevens
-              regels={[
-                ['Status', medewerker.actief ? 'Actief' : 'Inactief'],
-                ['E-mailadres', medewerker.email],
-                ['Inlogaccount', medewerker.user_id ? 'Gekoppeld' : 'Geen'],
-                ['Opmerking', medewerker.opmerking ? <span className="whitespace-pre-line">{medewerker.opmerking}</span> : ''],
-              ]}
-            />
-          </Sectie>
+          <Kolommen>
+            <Sectie titel="Gegevens">
+              <Gegevens
+                regels={[
+                  ['Status', medewerker.actief ? 'Actief' : 'Inactief'],
+                  ['E-mailadres', medewerker.email],
+                  ['Inlogaccount', medewerker.user_id ? 'Gekoppeld' : 'Geen'],
+                  ['Opmerking', medewerker.opmerking ? <span className="whitespace-pre-line">{medewerker.opmerking}</span> : ''],
+                ]}
+              />
+            </Sectie>
 
-          <Sectie
-            titel="Contract"
-            acties={
-              magBeheren && (
-                <Button variant="secundair" onClick={() => setDialoog({ soort: 'contract', contract: null })}>
-                  Contractwijziging toevoegen
-                </Button>
-              )
-            }
-          >
-            <p className="mb-4 max-w-prose text-neutral-700">
-              Een contract geldt vanaf de ingangsdatum tot de volgende wijziging. Leeg bij werkweken of mijmertijd betekent: de
-              waarde van het jaar.
-            </p>
-            <Tabel
-              bijschrift="Contracthistorie"
-              rijen={periodes}
-              sleutel={(c) => c.id}
-              leeg="Nog geen contract. Zonder contract kan de werkbelasting niet berekend worden."
-              kolommen={[
-                { kop: 'Periode', inhoud: (c) => formatPeriode(c.startdatum, c.einddatum) },
-                { kop: 'Uren per week', inhoud: (c) => getalAlsTekst(c.uren_per_week), getal: true },
-                { kop: 'Werkweken', inhoud: (c) => (c.werkweken === null ? 'Van het jaar' : getalAlsTekst(c.werkweken)), getal: true },
-                {
-                  kop: 'Mijmertijd',
-                  inhoud: (c) => (c.mijmer_percentage === null ? 'Van het jaar' : `${getalAlsTekst(c.mijmer_percentage)}%`),
-                  getal: true,
-                },
-              ]}
-              acties={magBeheren ? (c) => (
-                <>
-                  <Button variant="link" onClick={() => setDialoog({ soort: 'contract', contract: c })}>
-                    Wijzigen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
+            <Sectie
+              titel="Contract"
+              acties={
+                magBeheren && (
+                  <Button variant="secundair" onClick={() => setDialoog({ soort: 'contract', contract: null })}>
+                    Contractwijziging toevoegen
                   </Button>
-                  <Button variant="link" onClick={() => setDialoog({ soort: 'contract-verwijderen', contract: c })}>
-                    Verwijderen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
-                  </Button>
-                </>
-              ) : undefined}
-            />
-          </Sectie>
+                )
+              }
+            >
+              <p className="mb-4 max-w-prose text-neutral-700">
+                Een contract geldt vanaf de ingangsdatum tot de volgende wijziging. Leeg bij werkweken of mijmertijd betekent: de
+                waarde van het jaar.
+              </p>
+              <Tabel
+                bijschrift="Contracthistorie"
+                rijen={periodes}
+                sleutel={(c) => c.id}
+                leeg="Nog geen contract. Zonder contract kan de werkbelasting niet berekend worden."
+                kolommen={[
+                  { kop: 'Periode', inhoud: (c) => formatPeriode(c.startdatum, c.einddatum) },
+                  { kop: 'Uren per week', inhoud: (c) => getalAlsTekst(c.uren_per_week), getal: true },
+                  { kop: 'Werkweken', inhoud: (c) => (c.werkweken === null ? 'Van het jaar' : getalAlsTekst(c.werkweken)), getal: true },
+                  {
+                    kop: 'Mijmertijd',
+                    inhoud: (c) => (c.mijmer_percentage === null ? 'Van het jaar' : `${getalAlsTekst(c.mijmer_percentage)}%`),
+                    getal: true,
+                  },
+                ]}
+                acties={magBeheren ? (c) => (
+                  <>
+                    <Button variant="link" onClick={() => setDialoog({ soort: 'contract', contract: c })}>
+                      Wijzigen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
+                    </Button>
+                    <Button variant="link" onClick={() => setDialoog({ soort: 'contract-verwijderen', contract: c })}>
+                      Verwijderen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
+                    </Button>
+                  </>
+                ) : undefined}
+              />
+            </Sectie>
+          </Kolommen>
         </>
       )}
 

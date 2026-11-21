@@ -6,7 +6,7 @@ import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
-import { Gegevens, Sectie } from '../components/Sectie'
+import { Gegevens, Kolommen, Sectie } from '../components/Sectie'
 import { Laadstatus } from '../components/Melding'
 import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
@@ -68,73 +68,76 @@ export function ProjectgroepDetailPage() {
   const urenNu = deelnemers.filter((d) => loopt(d)).reduce((som, d) => som + d.uren_per_jaar, 0)
 
   return (
-    <Pagina titel={projectgroep.naam} intro={projectgroep.omschrijving || undefined}>
-      <Sectie
-        titel="Gegevens"
-        acties={
-          <>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
-              Wijzigen
-            </Button>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
-              Verwijderen
-            </Button>
-          </>
-        }
-      >
-        <Gegevens
-          regels={[
-            ['Periode', formatPeriode(projectgroep.startdatum, projectgroep.einddatum)],
-            ['Trekker', naamVan(projectgroep.trekker_id) || 'Geen'],
-            ['MATT projectnummer', projectgroep.matt_projectnummer || '–'],
-            [
-              'Uit de projectplanner',
-              projectgroep.project_id && heeftRecht('projectplan.bekijken') ? (
-                <Tekstlink to={`/projecten/${projectgroep.project_id}`}>
-                  Project bekijken
-                </Tekstlink>
-              ) : (
-                ''
-              ),
-            ],
-            ['Uren per jaar nu', `${formatUren(urenNu)} (alle huidige deelnemers samen)`],
-          ]}
-        />
-      </Sectie>
+    <Pagina
+      titel={projectgroep.naam}
+      intro={projectgroep.omschrijving || undefined}
+      acties={
+        <>
+          <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
+            Wijzigen
+          </Button>
+          <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
+            Verwijderen
+          </Button>
+        </>
+      }
+    >
+      <Kolommen>
+        <Sectie titel="Gegevens">
+          <Gegevens
+            regels={[
+              ['Periode', formatPeriode(projectgroep.startdatum, projectgroep.einddatum)],
+              ['Trekker', naamVan(projectgroep.trekker_id) || 'Geen'],
+              ['MATT projectnummer', projectgroep.matt_projectnummer || '–'],
+              [
+                'Uit de projectplanner',
+                projectgroep.project_id && heeftRecht('projectplan.bekijken') ? (
+                  <Tekstlink to={`/projecten/${projectgroep.project_id}`}>
+                    Project bekijken
+                  </Tekstlink>
+                ) : (
+                  ''
+                ),
+              ],
+              ['Uren per jaar nu', `${formatUren(urenNu)} (alle huidige deelnemers samen)`],
+            ]}
+          />
+        </Sectie>
 
-      <Sectie
-        titel="Deelnemers"
-        acties={<Button onClick={() => setDialoog({ soort: 'deelnemer', deelnemer: null })}>Deelnemer toevoegen</Button>}
-      >
-        <Tabel
-          bijschrift="Deelnemers"
-          rijen={gesorteerd}
-          sleutel={(d) => d.id}
-          leeg="Nog geen deelnemers."
-          kolommen={[
-            {
-              kop: 'Medewerker',
-              inhoud: (d) => (
-                <Tekstlink to={`/medewerkers/${d.medewerker_id}`} licht>
-                  {naamVan(d.medewerker_id)}
-                </Tekstlink>
-              ),
-            },
-            { kop: 'Uren per jaar', inhoud: (d) => formatUren(d.uren_per_jaar), getal: true },
-            { kop: 'Periode', inhoud: (d) => formatPeriode(d.startdatum, d.einddatum) },
-          ]}
-          acties={(d) => (
-            <>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'deelnemer', deelnemer: d })}>
-                Wijzigen<span className="sr-only"> {naamVan(d.medewerker_id)}</span>
-              </Button>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'deelnemer-verwijderen', deelnemer: d })}>
-                Verwijderen<span className="sr-only"> {naamVan(d.medewerker_id)}</span>
-              </Button>
-            </>
-          )}
-        />
-      </Sectie>
+        <Sectie
+          titel="Deelnemers"
+          acties={<Button onClick={() => setDialoog({ soort: 'deelnemer', deelnemer: null })}>Deelnemer toevoegen</Button>}
+        >
+          <Tabel
+            bijschrift="Deelnemers"
+            rijen={gesorteerd}
+            sleutel={(d) => d.id}
+            leeg="Nog geen deelnemers."
+            kolommen={[
+              {
+                kop: 'Medewerker',
+                inhoud: (d) => (
+                  <Tekstlink to={`/medewerkers/${d.medewerker_id}`} licht>
+                    {naamVan(d.medewerker_id)}
+                  </Tekstlink>
+                ),
+              },
+              { kop: 'Uren per jaar', inhoud: (d) => formatUren(d.uren_per_jaar), getal: true },
+              { kop: 'Periode', inhoud: (d) => formatPeriode(d.startdatum, d.einddatum) },
+            ]}
+            acties={(d) => (
+              <>
+                <Button variant="link" onClick={() => setDialoog({ soort: 'deelnemer', deelnemer: d })}>
+                  Wijzigen<span className="sr-only"> {naamVan(d.medewerker_id)}</span>
+                </Button>
+                <Button variant="link" onClick={() => setDialoog({ soort: 'deelnemer-verwijderen', deelnemer: d })}>
+                  Verwijderen<span className="sr-only"> {naamVan(d.medewerker_id)}</span>
+                </Button>
+              </>
+            )}
+          />
+        </Sectie>
+      </Kolommen>
 
       {dialoog?.soort === 'wijzigen' && (
         <ProjectgroepFormulier projectgroep={projectgroep} medewerkers={opNaamGesorteerd} onSluiten={sluit} onGelukt={herlaad} />

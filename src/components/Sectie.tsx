@@ -21,6 +21,14 @@ export function Sectie({
   )
 }
 
+/**
+ * Twee secties naast elkaar op een breed scherm (vanaf xl), onder elkaar op een
+ * kleiner scherm. Voor detailpagina's: links de gegevens, rechts wat erbij hoort.
+ */
+export function Kolommen({ children }: { children: ReactNode }) {
+  return <div className="mt-10 grid gap-x-10 first:mt-0 xl:grid-cols-2 xl:items-start xl:[&>*]:mt-0">{children}</div>
+}
+
 /** Kaart met een kleine kop (h3) binnen een sectie, bijvoorbeeld om een grafiek. */
 export function Blok({ titel, children }: { titel: string; children: ReactNode }) {
   return (

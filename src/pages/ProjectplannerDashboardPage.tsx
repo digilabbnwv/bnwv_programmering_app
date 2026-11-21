@@ -12,10 +12,11 @@ import { Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
 import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
+import { JaarplanStatus } from '../projectplanner/JaarplanStatus'
 import { PAGINAS } from '../layout/paginas'
 import { Tabbladen, useTabblad } from '../layout/Tabbladen'
 import { functieNaam, type Afdeling, type Functie, type Tak } from '../organisatie/api'
-import { faseLabel, type Inzet, type Jaarplan, type Project, type Projectjaar } from '../projectplanner/api'
+import type { Inzet, Jaarplan, Project, Projectjaar } from '../projectplanner/api'
 import { formatEuro, projectregels, totaalUren, type Projectregel } from '../projectplanner/berekening'
 import {
   budgetPerTak,
@@ -99,14 +100,14 @@ export function ProjectplannerDashboardPage() {
   if (tab === null) return <Navigate to=".." relative="path" replace />
   if (!data) {
     return (
-      <Pagina titel="Projectplanner">
+      <Pagina breedte="breed" titel="Projectplanner">
         <Laadstatus fout={fout} />
       </Pagina>
     )
   }
   if (!jaarplan || jaar === null) {
     return (
-      <Pagina titel="Projectplanner" intro="Het overzicht van het jaarplan voor MT en directie.">
+      <Pagina breedte="breed" titel="Projectplanner" intro="Het overzicht van het jaarplan voor MT en directie.">
         <p>
           Er is nog geen jaarplan voor {gekozenJaar}. Maak er een aan onder <Tekstlink to={PAGINAS.jaarplan.pad}>Jaarplan</Tekstlink>.
         </p>
@@ -146,8 +147,15 @@ export function ProjectplannerDashboardPage() {
 
   return (
     <Pagina
+      breedte="breed"
       titel={`Projectplanner ${jaar}`}
-      intro={`Het jaarplan ${jaar} (fase: ${faseLabel(jaarplan.fase).toLowerCase()}${jaarplan.proefjaar ? ', proefjaar naast de Excel' : ''}): budget, benodigde inzet per functie en de drukte per week. Uitgesteld en afgewezen tellen niet mee.`}
+      intro={`Het jaarplan ${jaar}: budget, benodigde inzet per functie en de drukte per week. Uitgesteld en afgewezen tellen niet mee.`}
+      status={<JaarplanStatus jaarplan={jaarplan} />}
+      acties={
+        <Button variant="secundair" onClick={() => window.print()}>
+          Afdrukken
+        </Button>
+      }
     >
       <Filterbalk>
         <SelectField
@@ -167,9 +175,6 @@ export function ProjectplannerDashboardPage() {
           onChange={(e) => setKeuze(e.target.value as Statuskeuze)}
           className="w-56"
         />
-        <Button variant="secundair" onClick={() => window.print()}>
-          Afdrukken
-        </Button>
       </Filterbalk>
 
       <Kengetallen className="mb-10">

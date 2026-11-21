@@ -1,8 +1,9 @@
 # Navigatie en paginaopbouw: analyse en plan
 
-> **Status: plan vastgesteld (21-11-2026).** Alle vragen zijn beantwoord, zie
-> [besluiten](#7-besluiten). Fase 1 tot en met 3 zijn gebouwd, zie [fasering](#8-fasering).
-> Volgende stap: fase 4.
+> **Status: gebouwd (21-11-2026).** Alle vragen zijn beantwoord, zie
+> [besluiten](#7-besluiten), en fase 1 tot en met 4 zijn gebouwd, zie
+> [fasering](#8-fasering). De paginapatronen staan in
+> [designsystem/paginapatronen.md](designsystem/paginapatronen.md).
 
 De app groeit van één onderwerp (werkbelasting) naar twee (werkbelasting en
 projectplanner), met meer op komst: indienen, uitvoering, LDV en Staf (zie
@@ -266,7 +267,7 @@ Genomen op 21-11-2026:
 | 1 | **Fundament**: bouwstenen uit [6](#bouwstenen) naar `components/`; prop `breedte`; één configuratie voor routes en menu. Weinig zichtbaar. | geen dubbele `Kengetal`/`linkStijl` meer; rechten op één plek; tests groen — **gebouwd nov 2026** |
 | 2 | **Navigatie**: nieuwe indeling, zijbalk (standaard uitgeklapt, inklappen onthouden, mobiel uitschuifmenu), kruimelpad, jaarkeuze in de kopbalk, voettekst weg | elke rol ziet het juiste menu; het jaar geldt op alle pagina's — **gebouwd nov 2026** |
 | 3 | **Tabbladen** op Teamoverzicht, Medewerker, Projectplanner-dashboard en Jaarplan, met doorsturen vanaf de oude adressen; Medewerkers alleen-lezen met `werkbelasting.bekijken` | die pagina's passen zonder lang scrollen; oude links werken; het MT ziet medewerkers zonder wijzigknoppen — **gebouwd nov 2026** |
-| 4 | **De rest**: overige pagina's naar de vaste opbouw en de juiste breedte; paginapatronen in het design system | elke pagina volgt een patroon |
+| 4 | **De rest**: overige pagina's naar de vaste opbouw en de juiste breedte; paginapatronen in het design system | elke pagina volgt een patroon — **gebouwd nov 2026** |
 
 Fase 1 is ook los waardevol: de volgende modules van de projectplanner
 (uitvoering, indienen, LDV en Staf) worden dan met dezelfde bouwstenen gebouwd.
@@ -393,3 +394,41 @@ toetsenbord en schermlezer, licht en donker, en afdrukken.
   op een tabblad en het menu van het MT met Medewerkers.
 - **Bekeken** met een nep-Supabase-client (MT en beheerder, doorsturen van oude
   adressen, onbekend tabblad, focus). Niet met echte gegevens of echte login.
+
+### Fase 4: wat er gebouwd is
+
+- **Kop van de pagina**: `Pagina` heeft nu `status` (een of meer
+  [StatusLabel](../src/components/StatusLabel.tsx)s naast de titel) en `acties`
+  (rechts naast de titel, niet op papier).
+  - Lijsten: "Nieuwe …" in de kop; "ook inactieve/afgelopen" in de filterbalk.
+    Bij Scholen ook "Leerlingaantallen overnemen" in de kop.
+  - Detailpagina's: Wijzigen en Verwijderen in de kop in plaats van bij de
+    sectie Gegevens; "Inactief" als statuslabel bij een school of medewerker.
+  - Teamoverzicht en Projectplanner: Afdrukken in de kop.
+  - Jaarplan: Jaarplan toevoegen, Fase wijzigen, Terug naar concept en
+    Definitief maken in de kop; de fase en "Proefjaar" als statuslabels
+    ([JaarplanStatus.tsx](../src/projectplanner/JaarplanStatus.tsx)), ook op het
+    dashboard.
+  - Jaar en staffel: Jaar toevoegen in de kop.
+- **Breedte**: `standaard` is 1280 px (was 1180). `breed` voor Start,
+  Teamoverzicht, Projectplanner, Jaarplan, Scholen en Organisatie; `smal` voor
+  Pagina niet gevonden.
+- **Twee kolommen** vanaf xl met `Kolommen`: School (gegevens en medewerker),
+  Projectgroep (gegevens en deelnemers), Taak (gegevens en uitvoerders) en
+  Medewerker, tabblad Gegevens en contract. Programma en Project blijven één
+  kolom: de scholentabel en de inzettabellen zijn te breed voor een halve
+  pagina.
+- **Organisatie**: per afdeling functies en takken naast elkaar, op brede
+  inhoud. Afwijkend van [tabbladen per pagina](#per-pagina): geen tabblad per
+  afdeling. Afdelingen zijn gegevens, geen vaste lijst in PAGINAS, en met drie
+  afdelingen past alles op één pagina.
+- **Project** heeft geen tabbladen gekregen: de pagina is kort (gegevens en één
+  of twee jaren). Tabbladen worden pas zinvol als er meer bij komt, zoals de
+  uitvoering in fase 5 van de projectplanner.
+- **Paginapatronen** in [paginapatronen.md](designsystem/paginapatronen.md):
+  vaste opbouw, bouwstenen, breedtes, de vier patronen en de regels. Niet in
+  `bnwv-designsystem.html` zelf: dat is een gebundelde export van 6 MB die niet
+  met de hand te bewerken is.
+- **Bekeken** met een nep-Supabase-client (schooldetail in twee kolommen,
+  jaarplan met statuslabels en kopacties, organisatie). Niet met echte gegevens
+  of echte login.

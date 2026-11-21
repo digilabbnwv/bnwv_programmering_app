@@ -62,15 +62,26 @@ function Kruimelpad({ titel }: { titel: string }) {
   )
 }
 
-/** Kruimelpad, kop en titel van een pagina binnen de layout. */
+/**
+ * De vaste opbouw van een pagina (docs/navigatie.md, hoofdstuk 6): kruimelpad,
+ * titel met een statuslabel, rechts de acties voor de hele pagina (hoogstens
+ * één primaire knop), de intro, en daaronder de inhoud. Tabbladen, filterbalk
+ * en kengetallen horen bovenaan de inhoud, in die volgorde.
+ */
 export function Pagina({
   titel,
   intro,
+  status,
+  acties,
   breedte,
   children,
 }: {
   titel: string
   intro?: ReactNode
+  /** Kort label naast de titel, bijv. "Definitief" of "Inactief". */
+  status?: ReactNode
+  /** Knoppen voor de pagina als geheel, rechts naast de titel; niet op papier. */
+  acties?: ReactNode
   breedte?: Breedte
   children?: ReactNode
 }) {
@@ -78,7 +89,13 @@ export function Pagina({
   return (
     <PaginaKader breedte={breedte}>
       <Kruimelpad titel={titel} />
-      <h1 className="text-kop-medium font-extrabold">{titel}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="text-kop-medium font-extrabold">{titel}</h1>
+          {status}
+        </div>
+        {acties && <div className="flex flex-wrap gap-3 md:pt-1.5 print:hidden">{acties}</div>}
+      </div>
       {intro && <p className="mt-3 max-w-prose text-intro text-neutral-700">{intro}</p>}
       {children && <div className="mt-8">{children}</div>}
     </PaginaKader>

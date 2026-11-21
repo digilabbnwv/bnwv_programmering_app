@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
+import { Filterbalk } from '../components/Filterbalk'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
 import { Laadstatus } from '../components/Melding'
@@ -55,11 +56,14 @@ export function MedewerkersPage() {
   const zichtbaar = medewerkers.filter((m) => ookInactief || m.actief).sort(opNaam)
 
   return (
-    <Pagina titel="Medewerkers" intro="Medewerkers met hun contract, scholen en projectgroepen.">
-      <div className="mb-6 flex flex-wrap items-center gap-6">
-        {magBeheren && <Button onClick={() => setNieuw(true)}>Nieuwe medewerker</Button>}
+    <Pagina
+      titel="Medewerkers"
+      intro="Medewerkers met hun contract, scholen en projectgroepen."
+      acties={magBeheren && <Button onClick={() => setNieuw(true)}>Nieuwe medewerker</Button>}
+    >
+      <Filterbalk>
         <Selectievakje label="Ook inactieve medewerkers" checked={ookInactief} onChange={(e) => setOokInactief(e.target.checked)} />
-      </div>
+      </Filterbalk>
 
       <Tabel
         bijschrift="Medewerkers"

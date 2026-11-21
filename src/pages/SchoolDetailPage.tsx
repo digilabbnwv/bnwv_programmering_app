@@ -5,7 +5,8 @@ import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
 import { TextField } from '../components/TextField'
-import { Gegevens, Sectie } from '../components/Sectie'
+import { Gegevens, Kolommen, Sectie } from '../components/Sectie'
+import { StatusLabel } from '../components/StatusLabel'
 import { Laadstatus } from '../components/Melding'
 import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
@@ -85,76 +86,80 @@ export function SchoolDetailPage() {
   const adres = [school.adres, [school.postcode, school.plaats].filter(Boolean).join('  ')].filter(Boolean).join(', ')
 
   return (
-    <Pagina titel={school.naam} intro={SCHOOLSOORTEN.find((s) => s.waarde === school.soort)?.label}>
-      <Sectie
-        titel="Gegevens"
-        acties={
-          <>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
-              Wijzigen
-            </Button>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
-              Verwijderen
-            </Button>
-          </>
-        }
-      >
-        <Gegevens
-          regels={[
-            ['Status', school.actief ? 'Actief' : 'Inactief'],
-            ['Programma', programma?.naam ?? 'Geen'],
-            ['BRIN-nummer', school.brin ?? ''],
-            ['MATT projectnummer', school.matt_projectnummer],
-            ['Adres', adres],
-            ['Contactpersoon', school.contactpersoon],
-            ['E-mailadres', school.email],
-            ['Telefoon', school.telefoon],
-            ['Opmerking', school.opmerking ? <span className="whitespace-pre-line">{school.opmerking}</span> : ''],
-          ]}
-        />
-      </Sectie>
+    <Pagina
+      titel={school.naam}
+      intro={SCHOOLSOORTEN.find((s) => s.waarde === school.soort)?.label}
+      status={!school.actief && <StatusLabel>Inactief</StatusLabel>}
+      acties={
+        <>
+          <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
+            Wijzigen
+          </Button>
+          <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
+            Verwijderen
+          </Button>
+        </>
+      }
+    >
+      <Kolommen>
+        <Sectie titel="Gegevens">
+          <Gegevens
+            regels={[
+              ['Status', school.actief ? 'Actief' : 'Inactief'],
+              ['Programma', programma?.naam ?? 'Geen'],
+              ['BRIN-nummer', school.brin ?? ''],
+              ['MATT projectnummer', school.matt_projectnummer],
+              ['Adres', adres],
+              ['Contactpersoon', school.contactpersoon],
+              ['E-mailadres', school.email],
+              ['Telefoon', school.telefoon],
+              ['Opmerking', school.opmerking ? <span className="whitespace-pre-line">{school.opmerking}</span> : ''],
+            ]}
+          />
+        </Sectie>
 
-      <Sectie
-        titel="Medewerker"
-        acties={<Button onClick={() => setDialoog({ soort: 'toewijzen' })}>{huidig ? 'Verplaatsen' : 'Toewijzen'}</Button>}
-      >
-        <p className="mb-4">
-          {huidig ? (
-            <>
-              Nu: <strong>{naamVan(huidig.medewerker_id)}</strong>, sinds {formatDatum(huidig.startdatum)}
-            </>
-          ) : (
-            <strong>Deze school heeft nu geen medewerker.</strong>
-          )}
-        </p>
-        <Tabel
-          bijschrift="Historie van medewerkers"
-          rijen={historie}
-          sleutel={(t) => t.id}
-          leeg="Nog nooit toegewezen."
-          kolommen={[
-            {
-              kop: 'Medewerker',
-              inhoud: (t) => (
-                <Tekstlink to={`/medewerkers/${t.medewerker_id}`} licht>
-                  {naamVan(t.medewerker_id)}
-                </Tekstlink>
-              ),
-            },
-            { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },
-          ]}
-          acties={(t) => (
-            <>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'periode', toewijzing: t })}>
-                Periode wijzigen
-              </Button>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'toewijzing-verwijderen', toewijzing: t })}>
-                Verwijderen
-              </Button>
-            </>
-          )}
-        />
-      </Sectie>
+        <Sectie
+          titel="Medewerker"
+          acties={<Button onClick={() => setDialoog({ soort: 'toewijzen' })}>{huidig ? 'Verplaatsen' : 'Toewijzen'}</Button>}
+        >
+          <p className="mb-4">
+            {huidig ? (
+              <>
+                Nu: <strong>{naamVan(huidig.medewerker_id)}</strong>, sinds {formatDatum(huidig.startdatum)}
+              </>
+            ) : (
+              <strong>Deze school heeft nu geen medewerker.</strong>
+            )}
+          </p>
+          <Tabel
+            bijschrift="Historie van medewerkers"
+            rijen={historie}
+            sleutel={(t) => t.id}
+            leeg="Nog nooit toegewezen."
+            kolommen={[
+              {
+                kop: 'Medewerker',
+                inhoud: (t) => (
+                  <Tekstlink to={`/medewerkers/${t.medewerker_id}`} licht>
+                    {naamVan(t.medewerker_id)}
+                  </Tekstlink>
+                ),
+              },
+              { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },
+            ]}
+            acties={(t) => (
+              <>
+                <Button variant="link" onClick={() => setDialoog({ soort: 'periode', toewijzing: t })}>
+                  Periode wijzigen
+                </Button>
+                <Button variant="link" onClick={() => setDialoog({ soort: 'toewijzing-verwijderen', toewijzing: t })}>
+                  Verwijderen
+                </Button>
+              </>
+            )}
+          />
+        </Sectie>
+      </Kolommen>
 
       <Sectie
         titel="Leerlingen en uren per jaar"

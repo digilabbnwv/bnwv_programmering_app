@@ -50,11 +50,9 @@ export function ProgrammasPage() {
   return (
     <Pagina
       titel="Programma’s"
-      intro="Een programma werkt met scholen, zoals dBos of BoekStart, of met vaste uitvoerders, zoals Digilabs. De rapportage verdeelt de uren per programma."
+      intro="Een programma werkt met scholen, zoals dBos of BoekStart, of met vaste uitvoerders, zoals Digilabs. Het teamoverzicht verdeelt de uren per programma."
+      acties={<Button onClick={() => setNieuw(true)}>Nieuw programma</Button>}
     >
-      <div className="mb-6">
-        <Button onClick={() => setNieuw(true)}>Nieuw programma</Button>
-      </div>
 
       <Tabel
         bijschrift="Programma’s"

@@ -2,7 +2,6 @@ import { useCallback, useId, useState } from 'react'
 import { Navigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
-import { Filterbalk } from '../components/Filterbalk'
 import { Kengetal, Kengetallen } from '../components/Kengetal'
 import { Laadstatus, Melding } from '../components/Melding'
 import { SelectField } from '../components/SelectField'
@@ -48,7 +47,7 @@ export function TeamoverzichtPage() {
   if (tab === null) return <Navigate to=".." relative="path" replace />
   if (!gegevens) {
     return (
-      <Pagina titel="Teamoverzicht">
+      <Pagina breedte="breed" titel="Teamoverzicht">
         <Laadstatus fout={fout} />
       </Pagina>
     )
@@ -57,7 +56,7 @@ export function TeamoverzichtPage() {
   const werkjaar = gegevens.werkjaren.find((w) => w.jaar === jaar)
   if (!werkjaar) {
     return (
-      <Pagina titel="Teamoverzicht">
+      <Pagina breedte="breed" titel="Teamoverzicht">
         <p>Voor {jaar} zijn nog geen jaarinstellingen vastgelegd.</p>
         <AndereJaren jaren={gegevens.werkjaren.map((w) => w.jaar)} />
       </Pagina>
@@ -69,12 +68,16 @@ export function TeamoverzichtPage() {
   const aantalSignalen = team.length + rijen.reduce((s, r) => s + r.werkbelasting.signalen.length + (r.gewijzigdNaVaststellen ? 1 : 0), 0)
 
   return (
-    <Pagina titel="Teamoverzicht" intro={`De werkbelasting van het hele team in ${jaar}. Percentages zijn ten opzichte van de contracturen.`}>
-      <Filterbalk>
+    <Pagina
+      breedte="breed"
+      titel="Teamoverzicht"
+      intro={`De werkbelasting van het hele team in ${jaar}. Percentages zijn ten opzichte van de contracturen.`}
+      acties={
         <Button variant="secundair" onClick={() => window.print()}>
           Afdrukken
         </Button>
-      </Filterbalk>
+      }
+    >
       <Teamkengetallen rijen={rijen} />
       <Tabbladen tabbladen={tabbladen} actief={tab} tellers={{ '': aantalSignalen }} />
       {tab === '' && <Aandachtspunten team={team} rijen={rijen} jaar={jaar} />}

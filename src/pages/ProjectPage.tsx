@@ -104,22 +104,23 @@ export function ProjectPage() {
   const naam = (lijst: { id: string; naam: string }[], zoekId: string | null) => lijst.find((x) => x.id === zoekId)?.naam ?? ''
 
   return (
-    <Pagina titel={project.naam} intro={project.omschrijving ? <span className="whitespace-pre-line">{project.omschrijving}</span> : undefined}>
-      <Sectie
-        titel="Gegevens"
-        acties={
-          magBeheren && (
-            <>
-              <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
-                Wijzigen
-              </Button>
-              <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
-                Verwijderen
-              </Button>
-            </>
-          )
-        }
-      >
+    <Pagina
+      titel={project.naam}
+      intro={project.omschrijving ? <span className="whitespace-pre-line">{project.omschrijving}</span> : undefined}
+      acties={
+        magBeheren && (
+          <>
+            <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
+              Wijzigen
+            </Button>
+            <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
+              Verwijderen
+            </Button>
+          </>
+        )
+      }
+    >
+      <Sectie titel="Gegevens">
         <Gegevens
           regels={[
             ['Afdeling', naam(afdelingen, project.afdeling_id)],

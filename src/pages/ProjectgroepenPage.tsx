@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { Button } from '../components/Button'
+import { Filterbalk } from '../components/Filterbalk'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
 import { Laadstatus } from '../components/Melding'
@@ -46,11 +47,14 @@ export function ProjectgroepenPage() {
   const zichtbaar = projectgroepen.filter((p) => ookAfgelopen || p.einddatum === null || p.einddatum >= vandaag()).sort(opNaam)
 
   return (
-    <Pagina titel="Projectgroepen" intro="Projectgroepen met hun deelnemers en de uren die ze per jaar vragen.">
-      <div className="mb-6 flex flex-wrap items-center gap-6">
-        <Button onClick={() => setNieuw(true)}>Nieuwe projectgroep</Button>
+    <Pagina
+      titel="Projectgroepen"
+      intro="Projectgroepen met hun deelnemers en de uren die ze per jaar vragen."
+      acties={<Button onClick={() => setNieuw(true)}>Nieuwe projectgroep</Button>}
+    >
+      <Filterbalk>
         <Selectievakje label="Ook afgelopen projectgroepen" checked={ookAfgelopen} onChange={(e) => setOokAfgelopen(e.target.checked)} />
-      </div>
+      </Filterbalk>
 
       <Tabel
         bijschrift="Projectgroepen"
