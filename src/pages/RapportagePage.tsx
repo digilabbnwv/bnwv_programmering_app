@@ -7,7 +7,7 @@ import { Laadstatus, Melding } from '../components/Melding'
 import { SelectField } from '../components/SelectField'
 import { Tabel, type Kolom } from '../components/Tabel'
 import { TextField } from '../components/TextField'
-import { Sectie } from '../components/Sectie'
+import { Blok, Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
 import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
@@ -23,6 +23,8 @@ import {
   type Rij,
   type Rijfilter,
 } from '../werkbelasting/rapportage'
+import { TeamBalken } from '../werkbelasting/grafieken'
+import { opNaam } from '../werkbelasting/opmaak'
 import { signaalTekst, teamsignaalTekst } from '../werkbelasting/signalen'
 import { useGegevens } from '../werkbelasting/useGegevens'
 
@@ -285,6 +287,19 @@ function PerMedewerker({
         aantal={gefilterd.length}
         totaal={rijen.length}
       />
+
+      {/* De grafiek volgt dezelfde filters als de tabel eronder. */}
+      {gefilterd.length > 0 && (
+        <div className="mb-8">
+          <Blok titel="Verdeling van de contracturen">
+            <TeamBalken
+              rijen={gefilterd
+                .map((r) => ({ id: r.medewerker.id, naam: r.medewerker.naam, link: verdelingVan(r.medewerker.id, jaar), w: r.werkbelasting }))
+                .sort(opNaam)}
+            />
+          </Blok>
+        </div>
+      )}
 
       <Tabel
         bijschrift={`Werkurenverdeling per medewerker ${jaar}`}

@@ -9,8 +9,8 @@ import { useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
 import { PAGINAS } from '../layout/paginas'
 import { berekenWerkbelasting, formatPercentage, formatPerWeek, formatUren, perWeek, type Regel, type Werkbelasting } from '../werkbelasting/berekening'
-import { Staafdiagram, TeamBalken, Verdelingsbalk, type Staaf } from '../werkbelasting/grafieken'
-import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
+import { Staafdiagram, Verdelingsbalk, type Staaf } from '../werkbelasting/grafieken'
+import { formatPeriode } from '../werkbelasting/opmaak'
 import {
   bouwInvoer,
   laadRapportage,
@@ -198,15 +198,15 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
     <Sectie
       titel="Team"
       acties={
-        <Tekstlink to={`${PAGINAS.teamoverzicht.pad}?jaar=${jaar}`}>
-          Naar de rapportage
+        <Tekstlink to={`${PAGINAS.teamoverzicht.pad}/medewerkers?jaar=${jaar}`}>
+          Naar het teamoverzicht
         </Tekstlink>
       }
     >
       <div className="space-y-8">
         <Kengetallen>
           <Kengetal label="Medewerkers" waarde={String(rijen.length)} toelichting={`${vastgesteld} verdelingen vastgesteld`} />
-          <Kengetal label="Overbelast" waarde={String(overbelast)} toelichting={overbelast === 0 ? 'Niemand' : 'Zie hieronder'} />
+          <Kengetal label="Overbelast" waarde={String(overbelast)} toelichting={overbelast === 0 ? 'Niemand' : 'Zie het teamoverzicht'} />
           <Kengetal
             label="Signalen"
             waarde={String(signalen.length + persoonlijkeSignalen)}
@@ -231,23 +231,6 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
             )}
           </Blok>
         )}
-
-        <Blok titel="Belasting per medewerker">
-          {rijen.length === 0 ? (
-            <p>Nog geen medewerkers.</p>
-          ) : (
-            <TeamBalken
-              rijen={rijen
-                .map((r) => ({
-                  id: r.medewerker.id,
-                  naam: r.medewerker.naam,
-                  link: `${PAGINAS.medewerkers.pad}/${r.medewerker.id}/werkurenverdeling?jaar=${jaar}`,
-                  w: r.werkbelasting,
-                }))
-                .sort(opNaam)}
-            />
-          )}
-        </Blok>
       </div>
     </Sectie>
   )
