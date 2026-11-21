@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { useParams } from 'react-router'
+import { Navigate, useLocation, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
@@ -9,6 +9,7 @@ import { TextArea } from '../components/TextArea'
 import { useEigenMedewerker } from '../layout/EigenMedewerker'
 import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
+import { PAGINAS } from '../layout/paginas'
 import { voerUit, type Toelichting } from '../werkbelasting/api'
 import {
   aandeelInJaar,
@@ -43,34 +44,50 @@ type Dialoog = 'toelichting' | 'vaststellen' | 'heropenen'
  */
 export function MijnWerkurenverdelingPage() {
   const eigen = useEigenMedewerker()
-  if (eigen === undefined) {
-    return (
-      <Pagina titel="Mijn werkurenverdeling">
+  return (
+    <Pagina titel="Mijn werkurenverdeling">
+      {eigen === undefined ? (
         <Laadstatus fout={null} />
-      </Pagina>
-    )
-  }
-  if (eigen === null) {
-    return (
-      <Pagina titel="Mijn werkurenverdeling">
+      ) : eigen === null ? (
         <p className="max-w-prose">
           Je account is nog niet gekoppeld aan een medewerker. Vraag de teamleider om dat te doen; daarna zie je hier je eigen
           werkurenverdeling.
         </p>
-      </Pagina>
-    )
-  }
-  return <WerkbelastingPage medewerkerId={eigen} />
+      ) : (
+        <Werkurenverdeling medewerkerId={eigen} />
+      )}
+    </Pagina>
+  )
 }
 
 /**
- * De werkurenverdeling van één medewerker in het gekozen jaar, zoals de memo.
- * Iedereen kan de eigen pagina zien; RLS laat anderen alleen toe met
- * werkbelasting.bekijken. Toelichting en vaststellen: werkbelasting.beheren.
+ * Oude links naar /werkbelasting/:id. Wie andere medewerkers mag zien, komt op
+ * het tabblad Werkurenverdeling van de medewerker; de medewerker zelf op Mijn
+ * werkurenverdeling. ?jaar= blijft staan.
  */
-export function WerkbelastingPage({ medewerkerId }: { medewerkerId?: string }) {
-  const { id: uitAdres = '' } = useParams()
-  const id = medewerkerId ?? uitAdres
+export function NaarWerkurenverdeling() {
+  const { id = '' } = useParams()
+  const { search } = useLocation()
+  const { laden, heeftRecht } = useRechten()
+  const eigen = useEigenMedewerker()
+  if (laden || (eigen === undefined && !heeftRecht('werkbelasting.bekijken'))) {
+    return <Laadstatus fout={null} />
+  }
+  const naar =
+    heeftRecht('werkbelasting.bekijken') || eigen !== id
+      ? `${PAGINAS.medewerkers.pad}/${id}/werkurenverdeling`
+      : PAGINAS.mijnWerkurenverdeling.pad
+  return <Navigate to={{ pathname: naar, search }} replace />
+}
+
+/**
+ * De werkurenverdeling van één medewerker in het gekozen jaar, zoals de memo,
+ * zonder paginakop: voor Mijn werkurenverdeling en het tabblad op de
+ * medewerkerpagina. Iedereen kan de eigen verdeling zien; RLS laat anderen
+ * alleen toe met werkbelasting.bekijken. Toelichting en vaststellen:
+ * werkbelasting.beheren.
+ */
+export function Werkurenverdeling({ medewerkerId: id }: { medewerkerId: string }) {
   const { jaar } = useJaar()
   const { client } = useAuth()
   const { heeftRecht } = useRechten()
@@ -89,25 +106,17 @@ export function WerkbelastingPage({ medewerkerId }: { medewerkerId?: string }) {
   const toelichting = gegevens?.toelichtingen.find((t) => t.medewerker_id === id) ?? null
   const vaststeller = useNaam(toelichting?.vastgesteld_door ?? null)
 
-  if (!gegevens) {
-    return (
-      <Pagina titel="Werkurenverdeling">
-        <Laadstatus fout={fout} />
-      </Pagina>
-    )
-  }
-  if (!medewerker) {
-    return <Pagina titel="Niet gevonden" intro="Deze medewerker bestaat niet, of je hebt geen toegang tot deze gegevens." />
-  }
+  if (!gegevens) return <Laadstatus fout={fout} />
+  if (!medewerker) return <p>Deze medewerker bestaat niet, of je hebt geen toegang tot deze gegevens.</p>
 
   const werkjaar = gegevens.werkjaren.find((w) => w.jaar === jaar)
 
   if (!werkjaar) {
     return (
-      <Pagina titel={`Werkurenverdeling ${jaar} – ${medewerker.naam}`}>
+      <>
         <p>Voor {jaar} zijn nog geen jaarinstellingen vastgelegd.</p>
         <AndereJaren jaren={gegevens.werkjaren.map((w) => w.jaar)} />
-      </Pagina>
+      </>
     )
   }
 
@@ -116,7 +125,11 @@ export function WerkbelastingPage({ medewerkerId }: { medewerkerId?: string }) {
   const gewijzigd = isGewijzigd(toelichting, w)
 
   return (
-    <Pagina titel={`Werkurenverdeling ${jaar} – ${medewerker.naam}`}>
+    <>
+      {/* Op papier staat bovenaan welk jaar en wie het is; op het scherm zeggen kop en tabblad dat al. */}
+      <h2 className="sr-only print:not-sr-only print:mb-4 print:text-subkop print:font-bold">
+        Werkurenverdeling {jaar} – {medewerker.naam}
+      </h2>
       <Filterbalk>
         <Button variant="secundair" onClick={() => window.print()}>
           Afdrukken
@@ -184,7 +197,7 @@ export function WerkbelastingPage({ medewerkerId }: { medewerkerId?: string }) {
           <p>De vaststelling vervalt. De toelichting blijft staan.</p>
         </FormulierDialoog>
       )}
-    </Pagina>
+    </>
   )
 }
 

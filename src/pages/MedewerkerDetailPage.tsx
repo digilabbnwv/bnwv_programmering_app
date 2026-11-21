@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
+import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import { SelectField } from '../components/SelectField'
 import { Tabel } from '../components/Tabel'
@@ -9,6 +10,8 @@ import { Gegevens, Sectie } from '../components/Sectie'
 import { Laadstatus } from '../components/Melding'
 import { Tekstlink } from '../components/Tekstlink'
 import { Pagina } from '../layout/Pagina'
+import { PAGINAS } from '../layout/paginas'
+import { Tabbladen, useTabblad } from '../layout/Tabbladen'
 import { indeling, type Afdeling, type Functie } from '../organisatie/api'
 import {
   lees,
@@ -32,6 +35,7 @@ import { MedewerkerFormulier } from '../werkbelasting/MedewerkerFormulier'
 import { FormulierDialoog, ongeldig, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst, leesGetal, loopt, opNaam } from '../werkbelasting/opmaak'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
+import { Werkurenverdeling } from './WerkbelastingPage'
 
 type Dialoog =
   | { soort: 'wijzigen' }
@@ -41,8 +45,18 @@ type Dialoog =
   | { soort: 'extra'; extra: ExtraUren | null }
   | { soort: 'extra-verwijderen'; extra: ExtraUren }
 
+/**
+ * Eén medewerker in vier tabbladen: gegevens en contract, werk (scholen,
+ * programma-uitvoering, projectgroepen, overige taken), extra uren en de
+ * werkurenverdeling. Met werkbelasting.bekijken alleen-lezen (MT); wijzigen
+ * met werkbelasting.beheren.
+ */
 export function MedewerkerDetailPage() {
   const { id = '' } = useParams()
+  const tabbladen = PAGINAS.medewerker.tabbladen
+  const tab = useTabblad(tabbladen)
+  const { heeftRecht } = useRechten()
+  const magBeheren = heeftRecht('werkbelasting.beheren')
   const { client } = useAuth()
   const navigate = useNavigate()
   const laden = useCallback(
@@ -88,6 +102,7 @@ export function MedewerkerDetailPage() {
   const [dialoog, setDialoog] = useState<Dialoog | null>(null)
   const sluit = () => setDialoog(null)
 
+  if (tab === null) return <Navigate to=".." relative="path" replace />
   if (!data) {
     return (
       <Pagina titel="Medewerker">
@@ -127,197 +142,205 @@ export function MedewerkerDetailPage() {
   const schoolNaam = (schoolId: string | null) => scholen.find((s) => s.id === schoolId)?.naam ?? ''
   const nieuwsteEerst = <T extends { startdatum: string }>(rijen: T[]) =>
     [...rijen].sort((a, b) => b.startdatum.localeCompare(a.startdatum))
+  // Scholen, programma's, projectgroepen en taken zijn alleen te openen met werkbelasting.beheren.
+  const naar = (pad: string, tekst: string) =>
+    magBeheren ? (
+      <Tekstlink to={pad} licht>
+        {tekst}
+      </Tekstlink>
+    ) : (
+      tekst
+    )
 
   return (
     <Pagina titel={medewerker.naam} intro={indeling(medewerker, functies, afdelingen) ?? 'Nog niet ingedeeld in een functie en afdeling.'}>
-      <p className="mb-8 flex flex-wrap gap-x-6 gap-y-2">
-        <Tekstlink to={`/werkbelasting/${medewerker.id}`}>
-          Werkurenverdeling bekijken
-        </Tekstlink>
-      </p>
+      <Tabbladen tabbladen={tabbladen} actief={tab} />
 
-      <Sectie
-        titel="Gegevens"
-        acties={
-          <>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
-              Wijzigen
-            </Button>
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
-              Verwijderen
-            </Button>
-          </>
-        }
-      >
-        <Gegevens
-          regels={[
-            ['Status', medewerker.actief ? 'Actief' : 'Inactief'],
-            ['E-mailadres', medewerker.email],
-            ['Inlogaccount', medewerker.user_id ? 'Gekoppeld' : 'Geen'],
-            ['Opmerking', medewerker.opmerking ? <span className="whitespace-pre-line">{medewerker.opmerking}</span> : ''],
-          ]}
-        />
-      </Sectie>
+      {tab === '' && (
+        <>
+          <Sectie
+            titel="Gegevens"
+            acties={
+              magBeheren && (
+                <>
+                  <Button variant="secundair" onClick={() => setDialoog({ soort: 'wijzigen' })}>
+                    Wijzigen
+                  </Button>
+                  <Button variant="secundair" onClick={() => setDialoog({ soort: 'verwijderen' })}>
+                    Verwijderen
+                  </Button>
+                </>
+              )
+            }
+          >
+            <Gegevens
+              regels={[
+                ['Status', medewerker.actief ? 'Actief' : 'Inactief'],
+                ['E-mailadres', medewerker.email],
+                ['Inlogaccount', medewerker.user_id ? 'Gekoppeld' : 'Geen'],
+                ['Opmerking', medewerker.opmerking ? <span className="whitespace-pre-line">{medewerker.opmerking}</span> : ''],
+              ]}
+            />
+          </Sectie>
 
-      <Sectie
-        titel="Contract"
-        acties={
-          <Button variant="secundair" onClick={() => setDialoog({ soort: 'contract', contract: null })}>
-            Contractwijziging toevoegen
-          </Button>
-        }
-      >
-        <p className="mb-4 max-w-prose text-neutral-700">
-          Een contract geldt vanaf de ingangsdatum tot de volgende wijziging. Leeg bij werkweken of mijmertijd betekent: de
-          waarde van het jaar.
-        </p>
-        <Tabel
-          bijschrift="Contracthistorie"
-          rijen={periodes}
-          sleutel={(c) => c.id}
-          leeg="Nog geen contract. Zonder contract kan de werkbelasting niet berekend worden."
-          kolommen={[
-            { kop: 'Periode', inhoud: (c) => formatPeriode(c.startdatum, c.einddatum) },
-            { kop: 'Uren per week', inhoud: (c) => getalAlsTekst(c.uren_per_week), getal: true },
-            { kop: 'Werkweken', inhoud: (c) => (c.werkweken === null ? 'Van het jaar' : getalAlsTekst(c.werkweken)), getal: true },
-            {
-              kop: 'Mijmertijd',
-              inhoud: (c) => (c.mijmer_percentage === null ? 'Van het jaar' : `${getalAlsTekst(c.mijmer_percentage)}%`),
-              getal: true,
-            },
-          ]}
-          acties={(c) => (
-            <>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'contract', contract: c })}>
-                Wijzigen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
+          <Sectie
+            titel="Contract"
+            acties={
+              magBeheren && (
+                <Button variant="secundair" onClick={() => setDialoog({ soort: 'contract', contract: null })}>
+                  Contractwijziging toevoegen
+                </Button>
+              )
+            }
+          >
+            <p className="mb-4 max-w-prose text-neutral-700">
+              Een contract geldt vanaf de ingangsdatum tot de volgende wijziging. Leeg bij werkweken of mijmertijd betekent: de
+              waarde van het jaar.
+            </p>
+            <Tabel
+              bijschrift="Contracthistorie"
+              rijen={periodes}
+              sleutel={(c) => c.id}
+              leeg="Nog geen contract. Zonder contract kan de werkbelasting niet berekend worden."
+              kolommen={[
+                { kop: 'Periode', inhoud: (c) => formatPeriode(c.startdatum, c.einddatum) },
+                { kop: 'Uren per week', inhoud: (c) => getalAlsTekst(c.uren_per_week), getal: true },
+                { kop: 'Werkweken', inhoud: (c) => (c.werkweken === null ? 'Van het jaar' : getalAlsTekst(c.werkweken)), getal: true },
+                {
+                  kop: 'Mijmertijd',
+                  inhoud: (c) => (c.mijmer_percentage === null ? 'Van het jaar' : `${getalAlsTekst(c.mijmer_percentage)}%`),
+                  getal: true,
+                },
+              ]}
+              acties={magBeheren ? (c) => (
+                <>
+                  <Button variant="link" onClick={() => setDialoog({ soort: 'contract', contract: c })}>
+                    Wijzigen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
+                  </Button>
+                  <Button variant="link" onClick={() => setDialoog({ soort: 'contract-verwijderen', contract: c })}>
+                    Verwijderen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
+                  </Button>
+                </>
+              ) : undefined}
+            />
+          </Sectie>
+        </>
+      )}
+
+      {tab === 'werk' && (
+        <>
+          <Sectie titel="Scholen">
+            <Tabel
+              bijschrift="Scholen van deze medewerker"
+              rijen={nieuwsteEerst(toewijzingen)}
+              sleutel={(t) => t.id}
+              leeg="Geen scholen. Wijs scholen toe vanaf de pagina van de school."
+              kolommen={[
+                {
+                  kop: 'School',
+                  inhoud: (t) => naar(`/scholen/${t.school_id}`, schoolNaam(t.school_id)),
+                },
+                { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },
+                { kop: 'Nu', inhoud: (t) => (loopt(t) ? 'Ja' : 'Nee') },
+              ]}
+            />
+          </Sectie>
+
+          <Sectie titel="Programma-uitvoering">
+            <Tabel
+              bijschrift="Programma's waarvan deze medewerker vaste uitvoerder is"
+              rijen={nieuwsteEerst(programmaUitvoeringen)}
+              sleutel={(u) => u.id}
+              leeg="Geen programma-uitvoering. Voeg uitvoerders toe vanaf de pagina van het programma."
+              kolommen={[
+                {
+                  kop: 'Programma',
+                  inhoud: (u) => naar(`/programmas/${u.programma_id}`, programmas.find((p) => p.id === u.programma_id)?.naam ?? 'Onbekend'),
+                },
+                { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },
+                { kop: 'Periode', inhoud: (u) => formatPeriode(u.startdatum, u.einddatum) },
+              ]}
+            />
+          </Sectie>
+
+          <Sectie titel="Projectgroepen">
+            <Tabel
+              bijschrift="Projectgroepen van deze medewerker"
+              rijen={nieuwsteEerst(deelnames)}
+              sleutel={(d) => d.id}
+              leeg="Geen projectgroepen. Voeg deelnemers toe vanaf de pagina van de projectgroep."
+              kolommen={[
+                {
+                  kop: 'Projectgroep',
+                  inhoud: (d) =>
+                    naar(`/projectgroepen/${d.projectgroep_id}`, projectgroepen.find((p) => p.id === d.projectgroep_id)?.naam ?? 'Onbekend'),
+                },
+                { kop: 'Uren per jaar', inhoud: (d) => formatUren(d.uren_per_jaar), getal: true },
+                { kop: 'Periode', inhoud: (d) => formatPeriode(d.startdatum, d.einddatum) },
+              ]}
+            />
+          </Sectie>
+
+          <Sectie titel="Overige taken">
+            <Tabel
+              bijschrift="Overige taken van deze medewerker"
+              rijen={nieuwsteEerst(uitvoeringen)}
+              sleutel={(u) => u.id}
+              leeg="Geen overige taken. Voeg uitvoerders toe vanaf de pagina van de taak."
+              kolommen={[
+                {
+                  kop: 'Taak',
+                  inhoud: (u) => naar(`/taken/${u.taak_id}`, taken.find((t) => t.id === u.taak_id)?.naam ?? 'Onbekend'),
+                },
+                { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },
+                { kop: 'Periode', inhoud: (u) => formatPeriode(u.startdatum, u.einddatum) },
+              ]}
+            />
+          </Sectie>
+        </>
+      )}
+
+      {tab === 'extra-uren' && (
+        <Sectie
+          titel="Extra uren buiten het contract"
+          acties={
+            magBeheren && (
+              <Button variant="secundair" onClick={() => setDialoog({ soort: 'extra', extra: null })} disabled={werkjaren.length === 0}>
+                Extra uren toevoegen
               </Button>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'contract-verwijderen', contract: c })}>
-                Verwijderen<span className="sr-only"> contract vanaf {formatDatum(c.ingangsdatum)}</span>
-              </Button>
-            </>
-          )}
-        />
-      </Sectie>
+            )
+          }
+        >
+          <p className="mb-4 max-w-prose text-neutral-700">
+            Bijvoorbeeld uren uit NPO-gelden die apart gefactureerd worden. Ze tellen niet mee in de verdeling van de contracturen.
+          </p>
+          <Tabel
+            bijschrift="Extra uren"
+            rijen={[...extraUren].sort((a, b) => b.jaar - a.jaar)}
+            sleutel={(e) => e.id}
+            leeg="Geen extra uren."
+            kolommen={[
+              { kop: 'Omschrijving', inhoud: (e) => e.omschrijving },
+              { kop: 'Jaar', inhoud: (e) => e.jaar },
+              { kop: 'Uren', inhoud: (e) => formatUren(e.uren), getal: true },
+              { kop: 'Financier', inhoud: (e) => e.financier },
+              { kop: 'School', inhoud: (e) => schoolNaam(e.school_id) },
+            ]}
+            acties={magBeheren ? (e) => (
+              <>
+                <Button variant="link" onClick={() => setDialoog({ soort: 'extra', extra: e })}>
+                  Wijzigen<span className="sr-only"> {e.omschrijving}</span>
+                </Button>
+                <Button variant="link" onClick={() => setDialoog({ soort: 'extra-verwijderen', extra: e })}>
+                  Verwijderen<span className="sr-only"> {e.omschrijving}</span>
+                </Button>
+              </>
+            ) : undefined}
+          />
+        </Sectie>
+      )}
 
-      <Sectie titel="Scholen">
-        <Tabel
-          bijschrift="Scholen van deze medewerker"
-          rijen={nieuwsteEerst(toewijzingen)}
-          sleutel={(t) => t.id}
-          leeg="Geen scholen. Wijs scholen toe vanaf de pagina van de school."
-          kolommen={[
-            {
-              kop: 'School',
-              inhoud: (t) => (
-                <Tekstlink to={`/scholen/${t.school_id}`} licht>
-                  {schoolNaam(t.school_id)}
-                </Tekstlink>
-              ),
-            },
-            { kop: 'Periode', inhoud: (t) => formatPeriode(t.startdatum, t.einddatum) },
-            { kop: 'Nu', inhoud: (t) => (loopt(t) ? 'Ja' : 'Nee') },
-          ]}
-        />
-      </Sectie>
-
-      <Sectie titel="Programma-uitvoering">
-        <Tabel
-          bijschrift="Programma's waarvan deze medewerker vaste uitvoerder is"
-          rijen={nieuwsteEerst(programmaUitvoeringen)}
-          sleutel={(u) => u.id}
-          leeg="Geen programma-uitvoering. Voeg uitvoerders toe vanaf de pagina van het programma."
-          kolommen={[
-            {
-              kop: 'Programma',
-              inhoud: (u) => (
-                <Tekstlink to={`/programmas/${u.programma_id}`} licht>
-                  {programmas.find((p) => p.id === u.programma_id)?.naam ?? 'Onbekend'}
-                </Tekstlink>
-              ),
-            },
-            { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },
-            { kop: 'Periode', inhoud: (u) => formatPeriode(u.startdatum, u.einddatum) },
-          ]}
-        />
-      </Sectie>
-
-      <Sectie titel="Projectgroepen">
-        <Tabel
-          bijschrift="Projectgroepen van deze medewerker"
-          rijen={nieuwsteEerst(deelnames)}
-          sleutel={(d) => d.id}
-          leeg="Geen projectgroepen. Voeg deelnemers toe vanaf de pagina van de projectgroep."
-          kolommen={[
-            {
-              kop: 'Projectgroep',
-              inhoud: (d) => (
-                <Tekstlink to={`/projectgroepen/${d.projectgroep_id}`} licht>
-                  {projectgroepen.find((p) => p.id === d.projectgroep_id)?.naam ?? 'Onbekend'}
-                </Tekstlink>
-              ),
-            },
-            { kop: 'Uren per jaar', inhoud: (d) => formatUren(d.uren_per_jaar), getal: true },
-            { kop: 'Periode', inhoud: (d) => formatPeriode(d.startdatum, d.einddatum) },
-          ]}
-        />
-      </Sectie>
-
-      <Sectie titel="Overige taken">
-        <Tabel
-          bijschrift="Overige taken van deze medewerker"
-          rijen={nieuwsteEerst(uitvoeringen)}
-          sleutel={(u) => u.id}
-          leeg="Geen overige taken. Voeg uitvoerders toe vanaf de pagina van de taak."
-          kolommen={[
-            {
-              kop: 'Taak',
-              inhoud: (u) => (
-                <Tekstlink to={`/taken/${u.taak_id}`} licht>
-                  {taken.find((t) => t.id === u.taak_id)?.naam ?? 'Onbekend'}
-                </Tekstlink>
-              ),
-            },
-            { kop: 'Uren per jaar', inhoud: (u) => formatUren(u.uren_per_jaar), getal: true },
-            { kop: 'Periode', inhoud: (u) => formatPeriode(u.startdatum, u.einddatum) },
-          ]}
-        />
-      </Sectie>
-
-      <Sectie
-        titel="Extra uren buiten het contract"
-        acties={
-          <Button variant="secundair" onClick={() => setDialoog({ soort: 'extra', extra: null })} disabled={werkjaren.length === 0}>
-            Extra uren toevoegen
-          </Button>
-        }
-      >
-        <p className="mb-4 max-w-prose text-neutral-700">
-          Bijvoorbeeld uren uit NPO-gelden die apart gefactureerd worden. Ze tellen niet mee in de verdeling van de contracturen.
-        </p>
-        <Tabel
-          bijschrift="Extra uren"
-          rijen={[...extraUren].sort((a, b) => b.jaar - a.jaar)}
-          sleutel={(e) => e.id}
-          leeg="Geen extra uren."
-          kolommen={[
-            { kop: 'Omschrijving', inhoud: (e) => e.omschrijving },
-            { kop: 'Jaar', inhoud: (e) => e.jaar },
-            { kop: 'Uren', inhoud: (e) => formatUren(e.uren), getal: true },
-            { kop: 'Financier', inhoud: (e) => e.financier },
-            { kop: 'School', inhoud: (e) => schoolNaam(e.school_id) },
-          ]}
-          acties={(e) => (
-            <>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'extra', extra: e })}>
-                Wijzigen<span className="sr-only"> {e.omschrijving}</span>
-              </Button>
-              <Button variant="link" onClick={() => setDialoog({ soort: 'extra-verwijderen', extra: e })}>
-                Verwijderen<span className="sr-only"> {e.omschrijving}</span>
-              </Button>
-            </>
-          )}
-        />
-      </Sectie>
+      {tab === 'werkurenverdeling' && <Werkurenverdeling medewerkerId={medewerker.id} />}
 
       {dialoog?.soort === 'wijzigen' && (
         <MedewerkerFormulier

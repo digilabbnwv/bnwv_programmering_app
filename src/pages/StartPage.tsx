@@ -7,6 +7,7 @@ import { Blok, Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
 import { useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
+import { PAGINAS } from '../layout/paginas'
 import { berekenWerkbelasting, formatPercentage, formatPerWeek, formatUren, perWeek, type Regel, type Werkbelasting } from '../werkbelasting/berekening'
 import { Staafdiagram, TeamBalken, Verdelingsbalk, type Staaf } from '../werkbelasting/grafieken'
 import { formatPeriode, opNaam } from '../werkbelasting/opmaak'
@@ -72,7 +73,7 @@ function MijnWerkbelasting({ w, medewerkerId, gegevens }: { w: Werkbelasting; me
     <Sectie
       titel="Mijn werkbelasting"
       acties={
-        <Tekstlink to={`/werkbelasting/${medewerkerId}`}>
+        <Tekstlink to={PAGINAS.mijnWerkurenverdeling.pad}>
           Volledige werkurenverdeling
         </Tekstlink>
       }
@@ -197,7 +198,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
     <Sectie
       titel="Team"
       acties={
-        <Tekstlink to={`/rapportage/signalen?jaar=${jaar}`}>
+        <Tekstlink to={`${PAGINAS.teamoverzicht.pad}?jaar=${jaar}`}>
           Naar de rapportage
         </Tekstlink>
       }
@@ -223,7 +224,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
             {signalen.length > 5 && (
               <p className="mt-2 text-ui-sm">
                 En nog {signalen.length - 5}.{' '}
-                <Tekstlink to={`/rapportage/signalen?jaar=${jaar}`}>
+                <Tekstlink to={`${PAGINAS.teamoverzicht.pad}?jaar=${jaar}`}>
                   Alle signalen
                 </Tekstlink>
               </p>
@@ -240,7 +241,7 @@ function Teamblok({ gegevens, jaar }: { gegevens: Rapportagegegevens; jaar: numb
                 .map((r) => ({
                   id: r.medewerker.id,
                   naam: r.medewerker.naam,
-                  link: `/werkbelasting/${r.medewerker.id}?jaar=${jaar}`,
+                  link: `${PAGINAS.medewerkers.pad}/${r.medewerker.id}/werkurenverdeling?jaar=${jaar}`,
                   w: r.werkbelasting,
                 }))
                 .sort(opNaam)}

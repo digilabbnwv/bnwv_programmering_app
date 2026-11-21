@@ -26,7 +26,7 @@ export const MENU: readonly NavRegel[] = [
   PAGINAS.mijnWerkurenverdeling,
   {
     label: 'Werkbelasting',
-    items: [PAGINAS.signalen, PAGINAS.verdelingMedewerkers, PAGINAS.verdelingProgrammas, PAGINAS.medewerkers],
+    items: [PAGINAS.teamoverzicht, PAGINAS.medewerkers],
   },
   {
     label: 'Inzet',

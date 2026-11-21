@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { alleItems, hoortBij, initialen, isGroep, kruimels, MAX_ZONDER_ZIJBALK, MENU, SYSTEEM, zichtbaarMenu } from './navigatie'
-import { PAGINAS, paginaBij, padPast, type PaginaDefinitie } from './paginas'
+import { metJaar, PAGINAS, paginaBij, padPast, plekBij, type PaginaDefinitie } from './paginas'
 
 // Rechten per rol, gelijk aan de seed in de migraties basis_rechten, werkbelasting en organisatie.
 const WERKBELASTING = ['werkbelasting.bekijken', 'werkbelasting.beheren']
@@ -21,7 +21,7 @@ const menu = (rol: string) => tekst(zichtbaarMenu(MENU, rechtVan(rol)))
 const systeem = (rol: string) => tekst(zichtbaarMenu([SYSTEEM], rechtVan(rol)))
 
 describe('zichtbaarMenu', () => {
-  const werkbelasting = 'Werkbelasting: Signalen, Verdeling per medewerker, Verdeling per programma'
+  const werkbelasting = 'Werkbelasting: Teamoverzicht, Medewerkers'
   const inzet = 'Inzet: Scholen, Programma’s, Projectgroepen, Overige taken'
   const projectplanner = 'Projectplanner: Dashboard, Jaarplan'
 
@@ -29,7 +29,7 @@ describe('zichtbaarMenu', () => {
     expect(menu('beheerder')).toEqual([
       'Start',
       'Mijn werkurenverdeling',
-      `${werkbelasting}, Medewerkers`,
+      werkbelasting,
       inzet,
       projectplanner,
       'Inrichting: Jaar en staffel, Organisatie',
@@ -38,7 +38,7 @@ describe('zichtbaarMenu', () => {
     expect(menu('teamleider')).toEqual([
       'Start',
       'Mijn werkurenverdeling',
-      `${werkbelasting}, Medewerkers`,
+      werkbelasting,
       inzet,
       projectplanner,
       'Inrichting: Jaar en staffel',
@@ -46,7 +46,7 @@ describe('zichtbaarMenu', () => {
     expect(systeem('teamleider')).toEqual([])
   })
 
-  it('het MT ziet de werkbelasting, de projectplanner en de organisatie', () => {
+  it('het MT ziet de werkbelasting (ook de medewerkers, alleen-lezen), de projectplanner en de organisatie', () => {
     expect(menu('mt')).toEqual(['Start', 'Mijn werkurenverdeling', werkbelasting, projectplanner, 'Inrichting: Organisatie'])
   })
 
@@ -124,6 +124,43 @@ describe('paginaBij', () => {
   })
 })
 
+describe('plekBij en tabbladen', () => {
+  it('vindt het tabblad en het adres van de pagina zonder tabblad', () => {
+    const plek = plekBij('/medewerkers/12/werk')
+    expect(plek?.pagina).toBe(PAGINAS.medewerker)
+    expect(plek?.tab?.label).toBe('Werk')
+    expect(plek?.basis).toBe('/medewerkers/12')
+  })
+
+  it('zonder tabblad in het adres: het eerste tabblad', () => {
+    const plek = plekBij('/teamoverzicht')
+    expect(plek?.pagina).toBe(PAGINAS.teamoverzicht)
+    expect(plek?.tab?.label).toBe('Signalen')
+    expect(plek?.basis).toBe('/teamoverzicht')
+  })
+
+  it('een onbekend tabblad hoort bij geen pagina', () => {
+    expect(plekBij('/medewerkers/12/bestaat-niet')).toBeUndefined()
+    expect(plekBij('/scholen/12/werk')).toBeUndefined()
+  })
+
+  it('de jaarkeuze per pagina of per tabblad', () => {
+    expect(metJaar(plekBij('/teamoverzicht/medewerkers'))).toBe(true)
+    expect(metJaar(plekBij('/medewerkers/12'))).toBe(false)
+    expect(metJaar(plekBij('/medewerkers/12/werkurenverdeling'))).toBe(true)
+    expect(metJaar(plekBij('/organisatie'))).toBe(false)
+    expect(metJaar(undefined)).toBe(false)
+  })
+
+  it('elk tabblad heeft een uniek pad en het eerste een leeg pad', () => {
+    for (const p of Object.values(PAGINAS) as PaginaDefinitie[]) {
+      if (!p.tabbladen) continue
+      expect(p.tabbladen[0]?.pad, p.pad).toBe('')
+      expect(new Set(p.tabbladen.map((t) => t.pad)).size, p.pad).toBe(p.tabbladen.length)
+    }
+  })
+})
+
 describe('kruimels', () => {
   it('een overzicht: alleen de groep', () => {
     expect(kruimels('/scholen', rechtVan('beheerder'))).toEqual([{ label: 'Inzet' }])
@@ -133,14 +170,15 @@ describe('kruimels', () => {
   it('een detailpagina: de groep en het overzicht erboven als link', () => {
     expect(kruimels('/scholen/1', rechtVan('beheerder'))).toEqual([{ label: 'Inzet' }, { label: 'Scholen', pad: '/scholen' }])
     expect(kruimels('/projecten/1', rechtVan('mt'))).toEqual([{ label: 'Projectplanner' }, { label: 'Jaarplan', pad: '/jaarplan' }])
-    expect(kruimels('/werkbelasting/1', rechtVan('teamleider'))).toEqual([
+    expect(kruimels('/medewerkers/1/werkurenverdeling', rechtVan('mt'))).toEqual([
       { label: 'Werkbelasting' },
-      { label: 'Verdeling per medewerker', pad: '/rapportage/medewerkers' },
+      { label: 'Medewerkers', pad: '/medewerkers' },
     ])
+    expect(kruimels('/teamoverzicht/programmas', rechtVan('mt'))).toEqual([{ label: 'Werkbelasting' }])
   })
 
   it('geen kruimelpad als je het overzicht erboven niet mag zien', () => {
-    expect(kruimels('/werkbelasting/1', rechtVan('medewerker'))).toEqual([])
+    expect(kruimels('/medewerkers/1', rechtVan('medewerker'))).toEqual([])
   })
 
   it('geen kruimelpad voor Start, losse items en onbekende adressen', () => {

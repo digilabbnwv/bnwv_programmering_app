@@ -9,7 +9,7 @@ import logoDonker from '../assets/logo-bnwv-donker.webp'
 import { EigenMedewerkerProvider, useEigenMedewerker } from './EigenMedewerker'
 import { JaarProvider, useJaar } from './JaarProvider'
 import { alleItems, hoortBij, initialen, isGroep, MAX_ZONDER_ZIJBALK, MENU, SYSTEEM, zichtbaarMenu, type NavItem, type NavRegel } from './navigatie'
-import { PAGINAS, paginaBij } from './paginas'
+import { metJaar, PAGINAS, plekBij } from './paginas'
 import { Zijbalk } from './Zijbalk'
 
 /** Layout voor alle pagina's na het inloggen: kopbalk, zijbalk en inhoud (docs/navigatie.md). */
@@ -40,6 +40,8 @@ function Kader() {
   const main = useRef<HTMLElement>(null)
   const eersteRender = useRef(true)
   const { menu, systeem, metZijbalk } = useMenu()
+  // Een ander tabblad is dezelfde pagina: dan blijft de focus op het tabblad.
+  const paginaAdres = plekBij(pathname)?.basis ?? pathname
 
   // Bij een andere pagina de focus naar de inhoud, zodat toetsenbord- en
   // schermlezergebruikers niet bovenaan het menu blijven hangen.
@@ -49,7 +51,7 @@ function Kader() {
       return
     }
     main.current?.focus()
-  }, [pathname])
+  }, [paginaAdres])
 
   return (
     <div className="flex min-h-dvh flex-col bg-neutral-50 print:bg-white">
@@ -92,7 +94,7 @@ function Kop({ menu, systeem, metZijbalk }: { menu: NavRegel[]; systeem: NavRege
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
   const knop = useRef<HTMLButtonElement>(null)
-  const metJaar = paginaBij(pathname)?.metJaar ?? false
+  const toonJaar = metJaar(plekBij(pathname))
 
   // Escape sluit het mobiele menu en zet de focus terug op de knop.
   useEffect(() => {
@@ -163,7 +165,7 @@ function Kop({ menu, systeem, metZijbalk }: { menu: NavRegel[]; systeem: NavRege
         )}
 
         <div className="ml-auto flex items-center gap-4 md:gap-6">
-          {metJaar && <JaarKeuze />}
+          {toonJaar && <JaarKeuze />}
           <span aria-hidden="true" className="hidden h-8 w-px bg-neutral-200 md:block" />
           <Gebruikersmenu naam={weergavenaam} rol={rolNaam} onUitloggen={uitloggenNaarStart} />
 

@@ -10,14 +10,7 @@ const PADEN: Record<IcoonNaam, ReactNode> = {
       <path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" />
     </>
   ),
-  signaal: <path d="M12 3l9.5 17h-19zM12 10v4.5M12 17.5v.5" />,
   balken: <path d="M4 5v15h16M8 9h9M8 13h5M8 17h11" />,
-  taart: (
-    <>
-      <path d="M21 12a9 9 0 1 1-9-9" />
-      <path d="M12 3a9 9 0 0 1 9 9h-9z" />
-    </>
-  ),
   personen: (
     <>
       <circle cx="9" cy="8" r="3.5" />

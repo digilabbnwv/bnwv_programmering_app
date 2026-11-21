@@ -23,12 +23,17 @@ import { ProgrammasPage } from './pages/ProgrammasPage'
 import { ProgrammaDetailPage } from './pages/ProgrammaDetailPage'
 import { TakenPage } from './pages/TakenPage'
 import { TaakDetailPage } from './pages/TaakDetailPage'
-import { RapportageMedewerkersPage, RapportageProgrammasPage, RapportageSignalenPage } from './pages/RapportagePage'
-import { MijnWerkurenverdelingPage, WerkbelastingPage } from './pages/WerkbelastingPage'
+import { TeamoverzichtPage } from './pages/RapportagePage'
+import { MijnWerkurenverdelingPage, NaarWerkurenverdeling } from './pages/WerkbelastingPage'
 
-/** Route voor een pagina uit PAGINAS, alleen zichtbaar met het recht dat daar staat. */
+/**
+ * Route voor een pagina uit PAGINAS, alleen zichtbaar met het recht dat daar
+ * staat. Met tabbladen één route met een optioneel tabblad (/medewerkers/:id/:tab?),
+ * zodat de pagina bij een ander tabblad blijft staan en niet opnieuw laadt.
+ */
 function route(pagina: PaginaDefinitie, element: ReactNode): RouteObject {
-  return { path: pagina.pad, element: <VereistRecht recht={pagina.recht}>{element}</VereistRecht> }
+  const path = pagina.tabbladen ? `${pagina.pad}/:tab?` : pagina.pad
+  return { path, element: <VereistRecht recht={pagina.recht}>{element}</VereistRecht> }
 }
 
 // Hash-routing: GitHub Pages kan geen server-side rewrites doen.
@@ -43,16 +48,16 @@ export const router = createHashRouter([
         children: [
           // De startpagina wacht zelf op de rechten en toont per recht wat er is.
           { path: PAGINAS.start.pad, element: <StartPage /> },
-          // Oude links naar /rapportage (met ?jaar=) komen op de signalen uit.
-          { path: '/rapportage', element: <Doorsturen naar={PAGINAS.signalen.pad} /> },
-          // Het dashboard van de projectplanner stond tot fase 2 van de navigatie onder Rapportage.
+          // Oude adressen (van voor fase 2 en 3 van de navigatie) sturen door, met ?jaar=.
+          { path: '/rapportage', element: <Doorsturen naar={PAGINAS.teamoverzicht.pad} /> },
+          { path: '/rapportage/signalen', element: <Doorsturen naar={PAGINAS.teamoverzicht.pad} /> },
+          { path: '/rapportage/medewerkers', element: <Doorsturen naar={`${PAGINAS.teamoverzicht.pad}/medewerkers`} /> },
+          { path: '/rapportage/programmas', element: <Doorsturen naar={`${PAGINAS.teamoverzicht.pad}/programmas`} /> },
           { path: '/rapportage/projectplanner', element: <Doorsturen naar={PAGINAS.projectplanner.pad} /> },
+          { path: '/werkbelasting/:id', element: <NaarWerkurenverdeling /> },
           route(PAGINAS.mijnWerkurenverdeling, <MijnWerkurenverdelingPage />),
-          route(PAGINAS.signalen, <RapportageSignalenPage />),
-          route(PAGINAS.verdelingProgrammas, <RapportageProgrammasPage />),
-          route(PAGINAS.verdelingMedewerkers, <RapportageMedewerkersPage />),
+          route(PAGINAS.teamoverzicht, <TeamoverzichtPage />),
           route(PAGINAS.projectplanner, <ProjectplannerDashboardPage />),
-          route(PAGINAS.werkbelasting, <WerkbelastingPage />),
           route(PAGINAS.scholen, <ScholenPage />),
           route(PAGINAS.school, <SchoolDetailPage />),
           route(PAGINAS.medewerkers, <MedewerkersPage />),

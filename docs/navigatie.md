@@ -1,8 +1,8 @@
 # Navigatie en paginaopbouw: analyse en plan
 
 > **Status: plan vastgesteld (21-11-2026).** Alle vragen zijn beantwoord, zie
-> [besluiten](#7-besluiten). Fase 1 en 2 zijn gebouwd, zie [fasering](#8-fasering).
-> Volgende stap: fase 3.
+> [besluiten](#7-besluiten). Fase 1 tot en met 3 zijn gebouwd, zie [fasering](#8-fasering).
+> Volgende stap: fase 4.
 
 De app groeit van één onderwerp (werkbelasting) naar twee (werkbelasting en
 projectplanner), met meer op komst: indienen, uitvoering, LDV en Staf (zie
@@ -265,7 +265,7 @@ Genomen op 21-11-2026:
 | --- | --- | --- |
 | 1 | **Fundament**: bouwstenen uit [6](#bouwstenen) naar `components/`; prop `breedte`; één configuratie voor routes en menu. Weinig zichtbaar. | geen dubbele `Kengetal`/`linkStijl` meer; rechten op één plek; tests groen — **gebouwd nov 2026** |
 | 2 | **Navigatie**: nieuwe indeling, zijbalk (standaard uitgeklapt, inklappen onthouden, mobiel uitschuifmenu), kruimelpad, jaarkeuze in de kopbalk, voettekst weg | elke rol ziet het juiste menu; het jaar geldt op alle pagina's — **gebouwd nov 2026** |
-| 3 | **Tabbladen** op Teamoverzicht, Medewerker, Projectplanner-dashboard en Jaarplan, met doorsturen vanaf de oude adressen; Medewerkers alleen-lezen met `werkbelasting.bekijken` | die pagina's passen zonder lang scrollen; oude links werken; het MT ziet medewerkers zonder wijzigknoppen |
+| 3 | **Tabbladen** op Teamoverzicht, Medewerker, Projectplanner-dashboard en Jaarplan, met doorsturen vanaf de oude adressen; Medewerkers alleen-lezen met `werkbelasting.bekijken` | die pagina's passen zonder lang scrollen; oude links werken; het MT ziet medewerkers zonder wijzigknoppen — **gebouwd nov 2026** |
 | 4 | **De rest**: overige pagina's naar de vaste opbouw en de juiste breedte; paginapatronen in het design system | elke pagina volgt een patroon |
 
 Fase 1 is ook los waardevol: de volgende modules van de projectplanner
@@ -353,3 +353,43 @@ toetsenbord en schermlezer, licht en donker, en afdrukken.
 - **Bekeken** in de browser met een nep-Supabase-client (licht en donker,
   groot scherm, ingeklapt, medewerker zonder zijbalk, telefoon). Niet met
   echte gegevens of echte login.
+
+### Fase 3: wat er gebouwd is
+
+- **Tabbladen** ([Tabbladen.tsx](../src/layout/Tabbladen.tsx)): per pagina in
+  PAGINAS (`tabbladen`), met een leeg pad voor het eerste tabblad. De route
+  krijgt een optioneel segment (`/medewerkers/:id/:tab?`), zodat de pagina bij
+  een ander tabblad blijft staan en niet opnieuw laadt. Links met
+  `aria-current`, `?jaar=` blijft staan, een teller per tabblad, en geen balk
+  bij minder dan twee zichtbare tabbladen. Een onbekend tabblad stuurt terug
+  naar het eerste. Bij een ander tabblad blijft de focus op het tabblad; bij een
+  andere pagina gaat hij naar de inhoud. Een tabblad kan zelf `metJaar` hebben:
+  de jaarkeuze staat dan alleen bij dat tabblad (de werkurenverdeling).
+- **Teamoverzicht** (`/teamoverzicht`): de drie rapportagepagina's zijn één
+  pagina. De kengetallen van het team staan boven de tabbladen Signalen (met
+  teller), Per medewerker en Per programma. `/rapportage`,
+  `/rapportage/signalen`, `/rapportage/medewerkers` en `/rapportage/programmas`
+  sturen door.
+- **Medewerker**: tabbladen Gegevens en contract, Werk, Extra uren en
+  Werkurenverdeling. De werkurenverdeling is nu de component
+  `Werkurenverdeling` (in WerkbelastingPage.tsx), ook gebruikt door Mijn
+  werkurenverdeling; op papier staat "Werkurenverdeling 2026 – naam" bovenaan.
+  `/werkbelasting/:id` stuurt door naar het tabblad, of voor de medewerker zelf
+  naar Mijn werkurenverdeling.
+- **Medewerkers alleen-lezen** met `werkbelasting.bekijken` (besluit 6): het
+  MT ziet de lijst en alle tabbladen, zonder knoppen. Scholen, programma's,
+  projectgroepen en taken zijn voor het MT tekst in plaats van een link, omdat
+  die pagina's `werkbelasting.beheren` vragen.
+- **Projectplanner-dashboard**: filters en kengetallen boven de tabbladen
+  Signalen (met teller), Drukte (heatmap, gelijktijdig, inzet per functie),
+  Budget en Tijdlijn. Afwijkend van het plan staan de kengetallen niet in een
+  tabblad Samenvatting maar erboven: ze gelden voor alle tabbladen, en zo
+  verstopt het tabblad Signalen niets.
+- **Jaarplan**: fase, definitief maken, de Excel-import en de kengetallen boven
+  de tabbladen Projecten, Afwijkingen (alleen na definitief maken, met teller)
+  en Vergelijken met de Excel (alleen in een proefjaar met projecten). De link
+  "Bekijk de afwijkingen" op het dashboard gaat naar dat tabblad.
+- **Tests**: tabbladen en `plekBij`, de jaarkeuze per tabblad, het kruimelpad
+  op een tabblad en het menu van het MT met Medewerkers.
+- **Bekeken** met een nep-Supabase-client (MT en beheerder, doorsturen van oude
+  adressen, onbekend tabblad, focus). Niet met echte gegevens of echte login.

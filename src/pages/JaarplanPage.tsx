@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Navigate, useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
@@ -12,12 +12,15 @@ import { Sectie } from '../components/Sectie'
 import { Tekstlink } from '../components/Tekstlink'
 import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
+import { PAGINAS } from '../layout/paginas'
+import { Tabbladen, useTabblad } from '../layout/Tabbladen'
 import { functieOpties, type Afdeling, type Functie, type Tak } from '../organisatie/api'
 import { faseLabel, STATUSSEN, statusLabel, type Inzet, type Jaarplan, type Project, type Projectjaar, type ProjectStatus } from '../projectplanner/api'
 import { filterRegels, formatEuro, GEEN_FILTER, kengetallen, projectregels, totaalUren, type Filter } from '../projectplanner/berekening'
 import { JaarplanFormulier, ProjectFormulier } from '../projectplanner/formulieren'
 import { ExcelImport } from '../projectplanner/ExcelImport'
 import { Afwijkingen, DefinitiefMaken, ExcelVergelijking } from '../projectplanner/DefinitiefMaken'
+import { afwijkingen } from '../projectplanner/vaststellen'
 import { lees, voerUit, type Medewerker, type Programma, type Projectgroep } from '../werkbelasting/api'
 import { formatUren } from '../werkbelasting/berekening'
 import { FormulierDialoog } from '../werkbelasting/onderdelen'
@@ -49,6 +52,8 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
   const magBeheren = heeftRecht('projectplan.beheren')
   const navigate = useNavigate()
   const { zetJaar, herlaadJaren } = useJaar()
+  const tabbladen = PAGINAS.jaarplan.tabbladen
+  const tab = useTabblad(tabbladen)
   const laden = useCallback(
     async () =>
       alles<[Jaarplan[], Project[], Projectjaar[], Inzet[], Afdeling[], Tak[], Functie[], Medewerker[], Programma[], Projectgroep[]]>(
@@ -74,6 +79,7 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
   const [bericht, setBericht] = useState<string | null>(null)
   const sluit = () => setDialoog(null)
 
+  if (tab === null) return <Navigate to=".." relative="path" replace />
   if (!data) {
     return (
       <Pagina titel="Jaarplan">
@@ -152,6 +158,15 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
   const zet = <K extends keyof Filter>(veld: K, waarde: Filter[K]) =>
     setFilter((oud) => ({ ...oud, [veld]: waarde, ...(veld === 'afdelingId' ? { takId: '' } : {}) }))
   const kanImporteren = magBeheren && inConcept && alleRegels.length === 0
+  // Afwijkingen alleen na definitief maken; de vergelijking alleen in een proefjaar met projecten.
+  const verborgen = [
+    ...(jaarplan.fase === 'definitief' && jaarplan.momentopname ? [] : ['afwijkingen']),
+    ...(jaarplan.proefjaar && alleRegels.length > 0 ? [] : ['excel']),
+  ]
+  if (verborgen.includes(tab)) return <Navigate to=".." relative="path" replace />
+  const aantalAfwijkend = jaarplan.momentopname
+    ? new Set(afwijkingen(jaarplan.momentopname, alleRegels).map((a) => a.projectId)).size
+    : 0
 
   return (
     <Pagina
@@ -217,8 +232,6 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
           }}
         />
       )}
-      {jaarplan.fase === 'definitief' && <Afwijkingen jaarplan={jaarplan} regels={alleRegels} projectgroepen={projectgroepen} />}
-
       {kanImporteren && (
         <ExcelImport jaar={jaarplan.jaar} afdelingen={afdelingen} takken={takken} programmas={programmas} onGelukt={herlaad} />
       )}
@@ -244,92 +257,94 @@ function Jaarplanpagina({ gekozenJaar }: { gekozenJaar: number }) {
         <Kengetal label="Afdelingen" waarde={String(new Set(regels.map((r) => r.project.afdeling_id)).size)} toelichting="met projecten in deze selectie" />
       </Kengetallen>
 
-      <Sectie
-        titel="Projecten"
-        acties={
-          bewerkbaar && (
-            <Button variant="secundair" onClick={() => setDialoog({ soort: 'project' })}>
-              Project toevoegen
-            </Button>
-          )
-        }
-      >
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <SelectField
-            label="Afdeling"
-            value={filter.afdelingId}
-            opties={[{ waarde: '', label: 'Alle afdelingen' }, ...afdelingen.map((a) => ({ waarde: a.id, label: a.naam }))]}
-            onChange={(e) => zet('afdelingId', e.target.value)}
-          />
-          <SelectField
-            label="Tak"
-            value={filter.takId}
-            opties={[
-              { waarde: '', label: 'Alle takken' },
-              ...takken
-                .filter((t) => !filter.afdelingId || t.afdeling_id === filter.afdelingId)
-                .sort(opNaam)
-                .map((t) => ({ waarde: t.id, label: filter.afdelingId ? t.naam : `${t.naam} (${afdeling(t.afdeling_id)?.afkorting ?? ''})` })),
+      <Tabbladen tabbladen={tabbladen} actief={tab} verborgen={verborgen} tellers={{ afwijkingen: aantalAfwijkend }} />
+
+      {tab === '' && (
+        <Sectie
+          titel="Projecten"
+          acties={
+            bewerkbaar && (
+              <Button variant="secundair" onClick={() => setDialoog({ soort: 'project' })}>
+                Project toevoegen
+              </Button>
+            )
+          }
+        >
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SelectField
+              label="Afdeling"
+              value={filter.afdelingId}
+              opties={[{ waarde: '', label: 'Alle afdelingen' }, ...afdelingen.map((a) => ({ waarde: a.id, label: a.naam }))]}
+              onChange={(e) => zet('afdelingId', e.target.value)}
+            />
+            <SelectField
+              label="Tak"
+              value={filter.takId}
+              opties={[
+                { waarde: '', label: 'Alle takken' },
+                ...takken
+                  .filter((t) => !filter.afdelingId || t.afdeling_id === filter.afdelingId)
+                  .sort(opNaam)
+                  .map((t) => ({ waarde: t.id, label: filter.afdelingId ? t.naam : `${t.naam} (${afdeling(t.afdeling_id)?.afkorting ?? ''})` })),
+              ]}
+              onChange={(e) => zet('takId', e.target.value)}
+            />
+            <SelectField
+              label="Status"
+              value={filter.status}
+              opties={[{ waarde: '', label: 'Alle statussen' }, ...STATUSSEN.map((s) => ({ waarde: s.waarde, label: s.label }))]}
+              onChange={(e) => zet('status', e.target.value as ProjectStatus | '')}
+            />
+            <SelectField
+              label="Met inzet van"
+              value={filter.functieId}
+              opties={[{ waarde: '', label: 'Alle functies' }, ...functieOpties(functies, afdelingen, filter.functieId || null)]}
+              onChange={(e) => zet('functieId', e.target.value)}
+            />
+          </div>
+
+          <Tabel
+            bijschrift={`Projecten in het jaarplan ${jaarplan.jaar}`}
+            rijen={regels}
+            sleutel={(r) => r.projectjaar.id}
+            leeg={alleRegels.length === 0 ? 'Er staan nog geen projecten in dit jaarplan.' : 'Geen projecten met deze filters.'}
+            kolommen={[
+              {
+                kop: 'Project',
+                inhoud: (r) => (
+                  <Tekstlink to={`/projecten/${r.project.id}?jaar=${jaarplan.jaar}`}>
+                    {r.project.naam}
+                  </Tekstlink>
+                ),
+                sorteer: (r) => r.project.naam,
+              },
+              { kop: 'Afdeling', inhoud: (r) => afdeling(r.project.afdeling_id)?.afkorting ?? '', sorteer: (r) => afdeling(r.project.afdeling_id)?.volgorde ?? 0 },
+              { kop: 'Tak', inhoud: (r) => tak(r.project.tak_id)?.naam ?? '', sorteer: (r) => tak(r.project.tak_id)?.naam ?? '' },
+              { kop: 'Status', inhoud: (r) => statusLabel(r.projectjaar.status), sorteer: (r) => r.projectjaar.status },
+              {
+                kop: 'Budget',
+                inhoud: (r) => formatEuro(r.projectjaar.budget),
+                getal: true,
+                sorteer: (r) => r.projectjaar.budget ?? -1,
+              },
+              {
+                kop: 'Uren',
+                inhoud: (r) => (r.inzet.length === 0 ? 'geen inzet' : formatUren(totaalUren(r.inzet))),
+                getal: true,
+                sorteer: (r) => totaalUren(r.inzet),
+              },
+              { kop: 'Looptijd', inhoud: (r) => formatPeriode(r.project.startdatum, r.project.einddatum), sorteer: (r) => r.project.startdatum },
+              ...(jaarplan.fase === 'wensen' || jaarplan.fase === 'concept'
+                ? []
+                : [{ kop: 'Projectgroep', inhoud: (r: (typeof regels)[number]) => (projectgroepVan(r.project.id) ? 'ja' : '–') }]),
             ]}
-            onChange={(e) => zet('takId', e.target.value)}
           />
-          <SelectField
-            label="Status"
-            value={filter.status}
-            opties={[{ waarde: '', label: 'Alle statussen' }, ...STATUSSEN.map((s) => ({ waarde: s.waarde, label: s.label }))]}
-            onChange={(e) => zet('status', e.target.value as ProjectStatus | '')}
-          />
-          <SelectField
-            label="Met inzet van"
-            value={filter.functieId}
-            opties={[{ waarde: '', label: 'Alle functies' }, ...functieOpties(functies, afdelingen, filter.functieId || null)]}
-            onChange={(e) => zet('functieId', e.target.value)}
-          />
-        </div>
-
-        <Tabel
-          bijschrift={`Projecten in het jaarplan ${jaarplan.jaar}`}
-          rijen={regels}
-          sleutel={(r) => r.projectjaar.id}
-          leeg={alleRegels.length === 0 ? 'Er staan nog geen projecten in dit jaarplan.' : 'Geen projecten met deze filters.'}
-          kolommen={[
-            {
-              kop: 'Project',
-              inhoud: (r) => (
-                <Tekstlink to={`/projecten/${r.project.id}?jaar=${jaarplan.jaar}`}>
-                  {r.project.naam}
-                </Tekstlink>
-              ),
-              sorteer: (r) => r.project.naam,
-            },
-            { kop: 'Afdeling', inhoud: (r) => afdeling(r.project.afdeling_id)?.afkorting ?? '', sorteer: (r) => afdeling(r.project.afdeling_id)?.volgorde ?? 0 },
-            { kop: 'Tak', inhoud: (r) => tak(r.project.tak_id)?.naam ?? '', sorteer: (r) => tak(r.project.tak_id)?.naam ?? '' },
-            { kop: 'Status', inhoud: (r) => statusLabel(r.projectjaar.status), sorteer: (r) => r.projectjaar.status },
-            {
-              kop: 'Budget',
-              inhoud: (r) => formatEuro(r.projectjaar.budget),
-              getal: true,
-              sorteer: (r) => r.projectjaar.budget ?? -1,
-            },
-            {
-              kop: 'Uren',
-              inhoud: (r) => (r.inzet.length === 0 ? 'geen inzet' : formatUren(totaalUren(r.inzet))),
-              getal: true,
-              sorteer: (r) => totaalUren(r.inzet),
-            },
-            { kop: 'Looptijd', inhoud: (r) => formatPeriode(r.project.startdatum, r.project.einddatum), sorteer: (r) => r.project.startdatum },
-            ...(jaarplan.fase === 'wensen' || jaarplan.fase === 'concept'
-              ? []
-              : [{ kop: 'Projectgroep', inhoud: (r: (typeof regels)[number]) => (projectgroepVan(r.project.id) ? 'ja' : '–') }]),
-          ]}
-        />
-      </Sectie>
-
-      {jaarplan.proefjaar && alleRegels.length > 0 && (
-        <Sectie titel="Vergelijken met de Excel">
-          <ExcelVergelijking regels={alleRegels} afdelingen={afdelingen} functies={functies} />
         </Sectie>
       )}
+
+      {tab === 'afwijkingen' && <Afwijkingen jaarplan={jaarplan} regels={alleRegels} projectgroepen={projectgroepen} />}
+
+      {tab === 'excel' && <ExcelVergelijking regels={alleRegels} afdelingen={afdelingen} functies={functies} />}
 
       {dialogen}
     </Pagina>

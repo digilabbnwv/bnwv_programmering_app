@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
+import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
 import { Selectievakje } from '../components/Selectievakje'
 import { Tabel } from '../components/Tabel'
@@ -35,6 +36,8 @@ export function MedewerkersPage() {
   const { data, fout } = useGegevens(laden)
   const [ookInactief, setOokInactief] = useState(false)
   const [nieuw, setNieuw] = useState(false)
+  // Met werkbelasting.bekijken (MT) alleen-lezen.
+  const magBeheren = useRechten().heeftRecht('werkbelasting.beheren')
 
   if (!data) {
     return (
@@ -54,7 +57,7 @@ export function MedewerkersPage() {
   return (
     <Pagina titel="Medewerkers" intro="Medewerkers met hun contract, scholen en projectgroepen.">
       <div className="mb-6 flex flex-wrap items-center gap-6">
-        <Button onClick={() => setNieuw(true)}>Nieuwe medewerker</Button>
+        {magBeheren && <Button onClick={() => setNieuw(true)}>Nieuwe medewerker</Button>}
         <Selectievakje label="Ook inactieve medewerkers" checked={ookInactief} onChange={(e) => setOokInactief(e.target.checked)} />
       </div>
 

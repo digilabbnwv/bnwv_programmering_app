@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { Navigate } from 'react-router'
 import { useAuth } from '../auth/AuthProvider'
 import { useRechten } from '../auth/RechtenProvider'
 import { Button } from '../components/Button'
@@ -12,6 +13,7 @@ import { Tekstlink } from '../components/Tekstlink'
 import { AndereJaren, useJaar } from '../layout/JaarProvider'
 import { Pagina } from '../layout/Pagina'
 import { PAGINAS } from '../layout/paginas'
+import { Tabbladen, useTabblad } from '../layout/Tabbladen'
 import { functieNaam, type Afdeling, type Functie, type Tak } from '../organisatie/api'
 import { faseLabel, type Inzet, type Jaarplan, type Project, type Projectjaar } from '../projectplanner/api'
 import { formatEuro, projectregels, totaalUren, type Projectregel } from '../projectplanner/berekening'
@@ -55,14 +57,18 @@ interface Capaciteitsgegevens {
 /**
  * Dashboard van de projectplanner voor MT en directie (projectplan.bekijken):
  * kengetallen, signalen, drukte per functie per week, gelijktijdige projecten,
- * inzet per functie, budget per afdeling en tak, en de tijdlijn. Het jaar komt
- * uit de jaarkeuze in de kopbalk. Zie docs/projectplanner.md, hoofdstuk 7 en 8.
+ * inzet per functie, budget per afdeling en tak, en de tijdlijn. Filters en
+ * kengetallen staan boven de tabbladen (signalen, drukte, budget, tijdlijn).
+ * Het jaar komt uit de jaarkeuze in de kopbalk. Zie docs/projectplanner.md,
+ * hoofdstuk 7 en 8.
  */
 export function ProjectplannerDashboardPage() {
   const { client } = useAuth()
   const { heeftRecht } = useRechten()
   const magWerkbelasting = heeftRecht('werkbelasting.bekijken')
   const { jaar: gekozenJaar } = useJaar()
+  const tabbladen = PAGINAS.projectplanner.tabbladen
+  const tab = useTabblad(tabbladen)
   const [afdelingId, setAfdelingId] = useState('')
   const [keuze, setKeuze] = useState<Statuskeuze>('actief')
 
@@ -90,6 +96,7 @@ export function ProjectplannerDashboardPage() {
 
   const { capaciteit, fout: capaciteitFout } = useCapaciteit(jaar, magWerkbelasting)
 
+  if (tab === null) return <Navigate to=".." relative="path" replace />
   if (!data) {
     return (
       <Pagina titel="Projectplanner">
@@ -116,6 +123,9 @@ export function ProjectplannerDashboardPage() {
   const capaciteitBekend = magWerkbelasting && capaciteit !== null
   const perFunctie = capaciteit?.perFunctie ?? new Map<string, Capaciteit>()
   const d = drukte(regels, functies, perFunctie, jaar)
+  const aantalAfwijkend = jaarplan.momentopname
+    ? new Set(afwijkingen(jaarplan.momentopname, projectregels(jaar, data.projecten, data.projectjaren, data.inzet)).map((a) => a.projectId)).size
+    : 0
   const signalen = plansignalen(regels, d, {
     jaar,
     werkjaarBekend: capaciteit?.werkjaarBekend ?? true,
@@ -189,92 +199,102 @@ export function ProjectplannerDashboardPage() {
 
       {capaciteitFout && <Laadstatus fout={`De capaciteit kan niet worden geladen: ${capaciteitFout}`} />}
 
-      <Sectie titel="Signalen">
-        {jaarplan.momentopname && (
-          <Afwijkend aantal={new Set(afwijkingen(jaarplan.momentopname, projectregels(jaar, data.projecten, data.projectjaren, data.inzet)).map((a) => a.projectId)).size} jaar={jaar} />
-        )}
-        <Signalen signalen={signalen} jaar={jaar} />
-      </Sectie>
+      <Tabbladen tabbladen={tabbladen} actief={tab} tellers={{ '': signalen.length + (aantalAfwijkend > 0 ? 1 : 0) }} />
 
-      <Sectie titel="Drukte per functie per week">
-        <p className="mb-4 max-w-prose text-ui-sm text-neutral-700">
-          De uren van elke inzetregel zijn gelijk over de periode verdeeld. De bezetting is het deel van de uren die medewerkers met die functie
-          over hebben na scholen, programma-uitvoering en overige taken.
-        </p>
-        <Drukteheatmap jaar={jaar} drukte={d} />
-      </Sectie>
+      {tab === '' && (
+        <>
+          <Afwijkend aantal={aantalAfwijkend} jaar={jaar} />
+          <Signalen signalen={signalen} jaar={jaar} />
+        </>
+      )}
 
-      <Sectie titel="Projecten tegelijk in uitvoering">
-        <Gelijktijdig jaar={jaar} perWeek={projectenInUitvoering(regels, jaar)} />
-      </Sectie>
+      {tab === 'drukte' && (
+        <>
+          <Sectie titel="Drukte per functie per week">
+            <p className="mb-4 max-w-prose text-ui-sm text-neutral-700">
+              De uren van elke inzetregel zijn gelijk over de periode verdeeld. De bezetting is het deel van de uren die medewerkers met die functie
+              over hebben na scholen, programma-uitvoering en overige taken.
+            </p>
+            <Drukteheatmap jaar={jaar} drukte={d} />
+          </Sectie>
 
-      <Sectie titel="Inzet per functie">
-        <Tabel
-          bijschrift={`Inzet per functie in ${jaar}`}
-          rijen={d}
-          sleutel={(f) => f.functie.id}
-          leeg="Nog geen inzet."
-          standaardSortering={{ kop: 'Uren nodig', richting: 'aflopend' }}
-          kolommen={[
-            { kop: 'Functie', inhoud: (f) => <span className="font-semibold">{functieNaam(f.functie)}</span>, sorteer: (f) => f.functie.naam },
-            { kop: 'Afdeling', inhoud: (f) => afdeling(f.functie.afdeling_id)?.afkorting ?? '' },
-            { kop: 'Uren nodig', inhoud: (f) => formatUren(f.totaal), getal: true, sorteer: (f) => f.totaal },
-            {
-              kop: 'Vrij voor projecten',
-              inhoud: (f) => (f.capaciteit ? `${formatUren(f.capaciteit.perJaar)} (${f.capaciteit.medewerkers} mw.)` : 'onbekend'),
-              getal: true,
-              sorteer: (f) => f.capaciteit?.perJaar ?? -1,
-            },
-            {
-              kop: 'Over het jaar',
-              inhoud: (f) => (f.capaciteit ? formatPercentage((f.totaal / f.capaciteit.perJaar) * 100) : '–'),
-              getal: true,
-              sorteer: (f) => (f.capaciteit ? f.totaal / f.capaciteit.perJaar : -1),
-            },
-            {
-              kop: 'Drukste week',
-              inhoud: (f) => {
-                const w = drukstWeek(f)
-                return `${weekLabel(jaar, w.week)}: ${w.bezetting !== null ? formatPercentage(w.bezetting * 100) : `${formatUren(w.uren)} uur`}`
-              },
-            },
-            {
-              kop: 'Weken te vol',
-              inhoud: (f) => {
-                const n = wekenTeVol(f).length
-                return n === 0 ? (f.capaciteit ? '0' : '–') : <span className="font-semibold">{n} !</span>
-              },
-              getal: true,
-              sorteer: (f) => wekenTeVol(f).length,
-            },
-          ]}
-        />
-      </Sectie>
+          <Sectie titel="Projecten tegelijk in uitvoering">
+            <Gelijktijdig jaar={jaar} perWeek={projectenInUitvoering(regels, jaar)} />
+          </Sectie>
 
-      <Sectie titel="Budget per afdeling en tak">
-        <Tabel
-          bijschrift={`Budget per afdeling en tak in ${jaar}`}
-          rijen={budgetPerTak(alleRegels, afdelingen, takken)}
-          sleutel={(b) => `${b.afdeling.id}:${b.tak?.id ?? ''}`}
-          leeg="Nog geen projecten."
-          kolommen={[
-            { kop: 'Afdeling en tak', inhoud: (b) => <span className="font-semibold">{`${b.afdeling.afkorting || b.afdeling.naam} · ${b.tak?.naam ?? 'zonder tak'}`}</span> },
-            { kop: 'Projecten', inhoud: (b) => b.projecten, getal: true, sorteer: (b) => b.projecten },
-            { kop: 'Akkoord', inhoud: (b) => formatEuro(b.akkoord), getal: true, sorteer: (b) => b.akkoord },
-            { kop: 'Ingediend', inhoud: (b) => formatEuro(b.ingediend), getal: true, sorteer: (b) => b.ingediend },
-            { kop: 'Zonder budget', inhoud: (b) => b.zonderBudget, getal: true, sorteer: (b) => b.zonderBudget },
-            { kop: 'Uren', inhoud: (b) => formatUren(b.uren), getal: true, sorteer: (b) => b.uren },
-          ]}
-        />
-      </Sectie>
+          <Sectie titel="Inzet per functie">
+            <Tabel
+              bijschrift={`Inzet per functie in ${jaar}`}
+              rijen={d}
+              sleutel={(f) => f.functie.id}
+              leeg="Nog geen inzet."
+              standaardSortering={{ kop: 'Uren nodig', richting: 'aflopend' }}
+              kolommen={[
+                { kop: 'Functie', inhoud: (f) => <span className="font-semibold">{functieNaam(f.functie)}</span>, sorteer: (f) => f.functie.naam },
+                { kop: 'Afdeling', inhoud: (f) => afdeling(f.functie.afdeling_id)?.afkorting ?? '' },
+                { kop: 'Uren nodig', inhoud: (f) => formatUren(f.totaal), getal: true, sorteer: (f) => f.totaal },
+                {
+                  kop: 'Vrij voor projecten',
+                  inhoud: (f) => (f.capaciteit ? `${formatUren(f.capaciteit.perJaar)} (${f.capaciteit.medewerkers} mw.)` : 'onbekend'),
+                  getal: true,
+                  sorteer: (f) => f.capaciteit?.perJaar ?? -1,
+                },
+                {
+                  kop: 'Over het jaar',
+                  inhoud: (f) => (f.capaciteit ? formatPercentage((f.totaal / f.capaciteit.perJaar) * 100) : '–'),
+                  getal: true,
+                  sorteer: (f) => (f.capaciteit ? f.totaal / f.capaciteit.perJaar : -1),
+                },
+                {
+                  kop: 'Drukste week',
+                  inhoud: (f) => {
+                    const w = drukstWeek(f)
+                    return `${weekLabel(jaar, w.week)}: ${w.bezetting !== null ? formatPercentage(w.bezetting * 100) : `${formatUren(w.uren)} uur`}`
+                  },
+                },
+                {
+                  kop: 'Weken te vol',
+                  inhoud: (f) => {
+                    const n = wekenTeVol(f).length
+                    return n === 0 ? (f.capaciteit ? '0' : '–') : <span className="font-semibold">{n} !</span>
+                  },
+                  getal: true,
+                  sorteer: (f) => wekenTeVol(f).length,
+                },
+              ]}
+            />
+          </Sectie>
+        </>
+      )}
 
-      <Sectie titel="Tijdlijn">
-        <Tijdlijn
-          jaar={jaar}
-          regels={tijdlijn(regels, jaar)}
-          groep={(r) => `${afdeling(r.regel.project.afdeling_id)?.naam ?? ''} · ${tak(r.regel.project.tak_id)?.naam ?? 'zonder tak'}`}
-        />
-      </Sectie>
+      {tab === 'budget' && (
+        <Sectie titel="Budget per afdeling en tak">
+          <Tabel
+            bijschrift={`Budget per afdeling en tak in ${jaar}`}
+            rijen={budgetPerTak(alleRegels, afdelingen, takken)}
+            sleutel={(b) => `${b.afdeling.id}:${b.tak?.id ?? ''}`}
+            leeg="Nog geen projecten."
+            kolommen={[
+              { kop: 'Afdeling en tak', inhoud: (b) => <span className="font-semibold">{`${b.afdeling.afkorting || b.afdeling.naam} · ${b.tak?.naam ?? 'zonder tak'}`}</span> },
+              { kop: 'Projecten', inhoud: (b) => b.projecten, getal: true, sorteer: (b) => b.projecten },
+              { kop: 'Akkoord', inhoud: (b) => formatEuro(b.akkoord), getal: true, sorteer: (b) => b.akkoord },
+              { kop: 'Ingediend', inhoud: (b) => formatEuro(b.ingediend), getal: true, sorteer: (b) => b.ingediend },
+              { kop: 'Zonder budget', inhoud: (b) => b.zonderBudget, getal: true, sorteer: (b) => b.zonderBudget },
+              { kop: 'Uren', inhoud: (b) => formatUren(b.uren), getal: true, sorteer: (b) => b.uren },
+            ]}
+          />
+        </Sectie>
+      )}
+
+      {tab === 'tijdlijn' && (
+        <Sectie titel="Tijdlijn">
+          <Tijdlijn
+            jaar={jaar}
+            regels={tijdlijn(regels, jaar)}
+            groep={(r) => `${afdeling(r.regel.project.afdeling_id)?.naam ?? ''} · ${tak(r.regel.project.tak_id)?.naam ?? 'zonder tak'}`}
+          />
+        </Sectie>
+      )}
     </Pagina>
   )
 }
@@ -312,9 +332,7 @@ function Afwijkend({ aantal, jaar }: { aantal: number; jaar: number }) {
       <span className="font-semibold">
         {aantal} {aantal === 1 ? 'project' : 'projecten'} gewijzigd sinds het vaststellen.
       </span>{' '}
-      <Tekstlink to={`/jaarplan?jaar=${jaar}`}>
-        Bekijk de afwijkingen
-      </Tekstlink>
+      <Tekstlink to={`${PAGINAS.jaarplan.pad}/afwijkingen?jaar=${jaar}`}>Bekijk de afwijkingen</Tekstlink>
     </p>
   )
 }
