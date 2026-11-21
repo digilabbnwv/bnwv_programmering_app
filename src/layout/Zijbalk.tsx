@@ -54,9 +54,9 @@ export function Zijbalk({ menu, systeem }: { menu: NavRegel[]; systeem: NavRegel
       isGroep(regel) ? (
         <li key={regel.label}>
           {ingeklapt ? (
-            <hr aria-hidden="true" className="mx-3 my-2 border-neutral-200" />
+            <hr aria-hidden="true" className="mx-3 my-3 border-neutral-200" />
           ) : (
-            <span aria-hidden="true" className="block px-5 pt-3 pb-1 text-ui-xs font-semibold text-neutral-700">
+            <span aria-hidden="true" className="block px-5 pt-4 pb-1.5 text-ui-xs font-semibold text-neutral-700">
               {regel.label}
             </span>
           )}
@@ -82,7 +82,7 @@ export function Zijbalk({ menu, systeem }: { menu: NavRegel[]; systeem: NavRegel
       }`}
     >
       <div id={navId} className="flex min-h-0 flex-1 flex-col">
-        <nav aria-label="Hoofdmenu" className="min-h-0 flex-1 overflow-y-auto py-3" onScroll={verberg}>
+        <nav aria-label="Hoofdmenu" className="min-h-0 flex-1 overflow-y-auto py-4" onScroll={verberg}>
           <ul>{regels(menu)}</ul>
         </nav>
         {systeem.length > 0 && (
@@ -145,7 +145,7 @@ function ZijbalkLink({
       onPointerLeave={onVerberg}
       onFocus={onToon}
       onBlur={onVerberg}
-      className={`flex items-center gap-3 border-l-[3px] py-1.5 ${ingeklapt ? 'justify-center pr-[3px]' : 'pr-4 pl-[1.0625rem]'} ${
+      className={`flex items-center gap-3.5 border-l-[3px] py-2 ${ingeklapt ? 'justify-center pr-[3px]' : 'pr-4 pl-[1.0625rem]'} ${
         actief
           ? 'border-orange bg-neutral-100 font-semibold'
           : 'border-transparent font-medium text-neutral-700 hover:bg-neutral-100 hover:text-anthracite'
