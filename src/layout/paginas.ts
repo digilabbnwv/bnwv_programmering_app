@@ -70,7 +70,7 @@ export const PAGINAS = {
     ],
   },
   // Met werkbelasting.bekijken alleen-lezen (MT); wijzigen met werkbelasting.beheren.
-  medewerkers: { pad: '/medewerkers', recht: 'werkbelasting.bekijken', label: 'Medewerkers', icoon: 'personen' },
+  medewerkers: { pad: '/medewerkers', recht: 'werkbelasting.bekijken', label: 'Medewerkers', icoon: 'personen', metJaar: true },
   medewerker: {
     pad: '/medewerkers/:id',
     recht: 'werkbelasting.bekijken',
