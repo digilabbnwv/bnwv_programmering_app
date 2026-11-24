@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { duoCode, duoStatus, rondeTekst, standaardKeuze, type BrinVoorstel, type DuoRonde, type DuoTelling } from './duo'
+import { duoCode, duoStatus, peiljaarBij, rondeTekst, standaardKeuze, type BrinVoorstel, type DuoRonde, type DuoTelling } from './duo'
 
 const telling = (aantal: number | null): DuoTelling => ({
   vestigingscode: '21NK00',
@@ -14,6 +14,12 @@ describe('duoCode', () => {
     expect(duoCode('21NK')).toBe('21NK00')
     expect(duoCode('21NK01')).toBe('21NK01')
     expect(duoCode(null)).toBeNull()
+  })
+})
+
+describe('peiljaarBij', () => {
+  it('koppelt de telling van 1 oktober aan het werkjaar erna', () => {
+    expect(peiljaarBij(2026)).toBe(2025)
   })
 })
 

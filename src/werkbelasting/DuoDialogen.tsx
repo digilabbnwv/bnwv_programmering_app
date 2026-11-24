@@ -37,7 +37,7 @@ export function DuoOphalenDialoog({
     >
       <p>
         De app haalt de tellingen van 1 oktober op voor alle actieve scholen met een BRIN-nummer. De telling van
-        1 oktober van een jaar hoort bij dat werkjaar.
+        1 oktober hoort bij het werkjaar erna: die van 1 oktober 2025 bij werkjaar 2026.
       </p>
       <ul className="list-disc space-y-1 pl-5">
         <li>Lege en overgenomen aantallen worden ingevuld en krijgen het label “DUO”.</li>

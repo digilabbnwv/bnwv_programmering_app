@@ -65,8 +65,10 @@ De app haalt de leerlingaantallen op uit de [open onderwijsdata van DUO](https:/
 
 Afspraken:
 
-- **Peiljaar = werkjaar.** De telling van 1 oktober 2025 hoort bij werkjaar 2025, dus het aantal komt pas in
-  januari na dat jaar binnen. Tot dan geldt het overgenomen of ingevulde aantal.
+- **Werkjaar = peiljaar + 1.** De telling van 1 oktober 2025 (gepubliceerd in januari 2026) hoort bij werkjaar
+  2026. Zo is het aantal er aan het begin van het werkjaar, en januari t/m juli van dat jaar vallen in het
+  schooljaar van die telling. Wie in november 2026 ophaalt, krijgt voor 2026 de telling van oktober 2025; de
+  telling van oktober 2026 komt in januari 2027 binnen bij werkjaar 2027 (als dat jaar al bestaat).
 - **Alleen lege of overgenomen aantallen** worden ingevuld; die krijgen het label "DUO". Een later gecorrigeerde
   telling werkt een DUO-aantal bij. Een met de hand ingevuld aantal blijft staan; wijkt DUO af, dan staat
   "DUO: …" erachter. Wie een DUO-aantal met de hand wijzigt, maakt het handmatig (alleen de correctie wijzigen niet).

@@ -4,7 +4,8 @@ import { voerUit, type Resultaat, type SchoolJaargegevens } from './api'
 /**
  * Leerlingaantallen uit de open onderwijsdata van DUO (migratie
  * duo_leerlingaantallen). De database haalt ze op, met de knop of elke maand
- * automatisch. Peiljaar = werkjaar: de telling van 1 oktober 2025 hoort bij 2025.
+ * automatisch. Werkjaar = peiljaar + 1: de telling van 1 oktober 2025
+ * (gepubliceerd in januari 2026) hoort bij werkjaar 2026.
  */
 
 export interface DuoTelling {
@@ -36,6 +37,11 @@ export interface BrinVoorstel {
   postcode: string
   plaats: string
   score: number
+}
+
+/** Het peiljaar van de telling die bij een werkjaar hoort. */
+export function peiljaarBij(werkjaar: number): number {
+  return werkjaar - 1
 }
 
 /** BRIN uit de app naar de vestigingscode van DUO: 4 tekens is de hoofdvestiging. */
