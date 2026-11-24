@@ -10,7 +10,10 @@
 --   scholen zonder BRIN een BRIN voor te stellen.
 --
 -- Afspraken:
--- - Peiljaar = werkjaar: de telling van 1 oktober 2025 hoort bij werkjaar 2025.
+-- - Werkjaar = peiljaar + 1: de telling van 1 oktober 2025 (gepubliceerd in
+--   januari 2026) hoort bij werkjaar 2026. Zo is het aantal er aan het begin
+--   van het werkjaar, en het kalenderjaar valt grotendeels (januari t/m juli)
+--   in het schooljaar van die telling.
 -- - DUO vult alleen lege of 'overgenomen' aantallen in, en werkt eerder van
 --   DUO gekomen aantallen bij. Met de hand ingevoerde aantallen blijven staan;
 --   de app toont dan het verschil met DUO.
@@ -209,10 +212,10 @@ begin
   -- Alleen lege of overgenomen aantallen, en eerdere DUO-aantallen die
   -- veranderd zijn. Ongewijzigde rijen worden niet aangeraakt (geen auditregels).
   insert into public.school_jaargegevens as j (school_id, jaar, leerlingaantal, van_duo)
-  select s.id, d.peiljaar, d.aantal, true
+  select s.id, w.jaar, d.aantal, true
     from public.scholen s
     join public.duo_leerlingaantallen d on d.vestigingscode = private.duo_code(s.brin)
-    join public.werkjaren w on w.jaar = d.peiljaar
+    join public.werkjaren w on w.jaar = d.peiljaar + 1
    where s.actief and d.aantal is not null
   on conflict (school_id, jaar) do update
     set leerlingaantal = excluded.leerlingaantal,
@@ -285,7 +288,8 @@ begin
   begin
     select array_agg(distinct left(brin, 4) order by left(brin, 4)) into v_instellingen
       from public.scholen where brin is not null and actief;
-    select array_agg(jaar order by jaar) into v_jaren from public.werkjaren;
+    -- Werkjaar = peiljaar + 1.
+    select array_agg(jaar - 1 order by jaar) into v_jaren from public.werkjaren;
 
     if v_instellingen is not null and v_jaren is not null then
       v_records := private.duo_records(c_tellingen, jsonb_build_object(

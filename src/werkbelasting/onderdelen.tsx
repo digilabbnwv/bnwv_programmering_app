@@ -106,17 +106,17 @@ export function Overgenomen({ jaar }: { jaar: number }) {
 }
 
 /** Label of hint bij een leerlingaantal: van DUO, of een afwijkende telling van DUO. */
-export function DuoLabel({ status, jaar }: { status: DuoStatus; jaar: number }) {
+export function DuoLabel({ status, peiljaar }: { status: DuoStatus; peiljaar: number }) {
   if (!status) return null
   if (status.soort === 'duo') {
     return (
-      <span className={LABEL} title={`Telling van DUO op 1 oktober ${jaar}`}>
-        DUO<span className="sr-only">, telling 1 oktober {jaar}</span>
+      <span className={LABEL} title={`Telling van DUO op 1 oktober ${peiljaar}`}>
+        DUO<span className="sr-only">, telling 1 oktober {peiljaar}</span>
       </span>
     )
   }
   return (
-    <span className="ml-2 text-ui-xs text-neutral-700" title={`Telling van DUO op 1 oktober ${jaar}`}>
+    <span className="ml-2 text-ui-xs text-neutral-700" title={`Telling van DUO op 1 oktober ${peiljaar}`}>
       DUO: {status.aantal}
     </span>
   )

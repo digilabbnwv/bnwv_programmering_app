@@ -25,7 +25,7 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
-import { duoCode, duoStatus, leesTellingen, type DuoTelling } from '../werkbelasting/duo'
+import { duoCode, duoStatus, leesTellingen, peiljaarBij, type DuoTelling } from '../werkbelasting/duo'
 import { DuoLabel, FormulierDialoog, ongeldig, Overgenomen, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst, leesGetal, loopt, opNaam, vandaag } from '../werkbelasting/opmaak'
 import { SchoolFormulier } from '../werkbelasting/SchoolFormulier'
@@ -200,7 +200,10 @@ export function SchoolDetailPage() {
                 <>
                   {g.leerlingaantal}
                   {g.overgenomen && <Overgenomen jaar={g.jaar - 1} />}
-                  <DuoLabel status={duoStatus(g, tellingen.find((t) => t.peiljaar === g.jaar))} jaar={g.jaar} />
+                  <DuoLabel
+                    status={duoStatus(g, tellingen.find((t) => t.peiljaar === peiljaarBij(g.jaar)))}
+                    peiljaar={peiljaarBij(g.jaar)}
+                  />
                 </>
               ),
               getal: true,

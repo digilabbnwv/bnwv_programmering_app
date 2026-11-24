@@ -1,4 +1,4 @@
--- Leerlingaantallen van DUO: verwerken van tellingen (peiljaar = werkjaar),
+-- Leerlingaantallen van DUO: verwerken van tellingen (werkjaar = peiljaar + 1),
 -- alleen lege of overgenomen aantallen invullen, BRIN-voorstellen en koppelen.
 -- Het ophalen zelf (http naar DUO) zit niet in de test; de verwerking wel.
 begin;
@@ -7,7 +7,7 @@ select plan(23);
 select tests.create_user('teamleider@test.nl', 'teamleider');
 select tests.create_user('medewerker@test.nl', 'medewerker');
 
-insert into public.werkjaren (jaar) values (2024), (2025);
+insert into public.werkjaren (jaar) values (2025), (2026);
 insert into public.scholen (id, naam, soort, programma_id, brin, postcode, plaats, actief)
 select v.id::uuid, v.naam, 'PO', (select id from public.programmas where naam = 'dBos'), v.brin, v.postcode, v.plaats, v.actief
   from (values ('00000000-0000-0000-0000-00000000b001', 'De Borchstee',    '21NK00', '',        '',       true),
@@ -17,8 +17,8 @@ select v.id::uuid, v.naam, 'PO', (select id from public.programmas where naam = 
                ('00000000-0000-0000-0000-00000000b005', 'CBS De Triangel', null,     '8081 AB', 'Elburg', true))
        v (id, naam, brin, postcode, plaats, actief);
 insert into public.school_jaargegevens (school_id, jaar, leerlingaantal, overgenomen) values
-  ('00000000-0000-0000-0000-00000000b002', 2025, 150, true),   -- overgenomen van 2024
-  ('00000000-0000-0000-0000-00000000b003', 2025, 190, false);  -- met de hand ingevuld
+  ('00000000-0000-0000-0000-00000000b002', 2026, 150, true),   -- overgenomen van 2025
+  ('00000000-0000-0000-0000-00000000b003', 2026, 190, false);  -- met de hand ingevuld
 
 -- Rechten -----------------------------------------------------------------------
 select tests.authenticate_as('medewerker@test.nl');
@@ -37,7 +37,7 @@ select is(
   private.duo_tellingen_verwerken($$[
     {"INSTELLINGSCODE": "21NK", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2025, "AANTAL_LEERLINGEN": 298},
     {"INSTELLINGSCODE": "21NK", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2024, "AANTAL_LEERLINGEN": -1},
-    {"INSTELLINGSCODE": "21NK", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2023, "AANTAL_LEERLINGEN": 280},
+    {"INSTELLINGSCODE": "21NK", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2022, "AANTAL_LEERLINGEN": 280},
     {"INSTELLINGSCODE": "11CK", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2025, "AANTAL_LEERLINGEN": 144},
     {"INSTELLINGSCODE": "00DZ", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2025, "AANTAL_LEERLINGEN": 167},
     {"INSTELLINGSCODE": "07XX", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2025, "AANTAL_LEERLINGEN": 226.0}
@@ -49,11 +49,11 @@ select is(
   null, 'een afgeschermd aantal (-1) wordt onbekend');
 select is(
   (select string_agg(s.naam || ' ' || j.leerlingaantal || ' ' || j.overgenomen || ' ' || j.van_duo, '; ' order by s.naam)
-     from public.school_jaargegevens j join public.scholen s on s.id = j.school_id where j.jaar = 2025),
+     from public.school_jaargegevens j join public.scholen s on s.id = j.school_id where j.jaar = 2026),
   'Agnietenschool 190 false false; De Borchstee 298 false true; Wildemaetschool 144 false true',
-  'peiljaar = werkjaar; BRIN van 4 tekens is de hoofdvestiging; handmatig blijft staan');
+  'telling 2025 hoort bij werkjaar 2026; BRIN van 4 tekens is de hoofdvestiging; handmatig blijft staan');
 select is(
-  (select count(*)::integer from public.school_jaargegevens where jaar in (2023, 2024)),
+  (select count(*)::integer from public.school_jaargegevens where jaar in (2023, 2025)),
   0, 'geen aantal bij een onbekende telling of een jaar zonder werkjaar');
 select is(
   (select count(*)::integer from public.school_jaargegevens where school_id = '00000000-0000-0000-0000-00000000b004'),
@@ -71,16 +71,16 @@ select is(
 -- Met de hand opslaan -----------------------------------------------------------
 select tests.authenticate_as('teamleider@test.nl');
 select lives_ok(
-  $$ select public.school_jaargegevens_opslaan('00000000-0000-0000-0000-00000000b001', 2025::smallint, 300, 20, 'inclusief PSZ') $$,
+  $$ select public.school_jaargegevens_opslaan('00000000-0000-0000-0000-00000000b001', 2026::smallint, 300, 20, 'inclusief PSZ') $$,
   'teamleider: kan de correctie bij een DUO-aantal opslaan');
 select is(
-  (select van_duo from public.school_jaargegevens where school_id = '00000000-0000-0000-0000-00000000b001' and jaar = 2025),
+  (select van_duo from public.school_jaargegevens where school_id = '00000000-0000-0000-0000-00000000b001' and jaar = 2026),
   true, 'hetzelfde aantal opslaan houdt de markering DUO');
 select lives_ok(
-  $$ select public.school_jaargegevens_opslaan('00000000-0000-0000-0000-00000000b001', 2025::smallint, 310, 20, 'inclusief PSZ') $$,
+  $$ select public.school_jaargegevens_opslaan('00000000-0000-0000-0000-00000000b001', 2026::smallint, 310, 20, 'inclusief PSZ') $$,
   'teamleider: kan het aantal met de hand wijzigen');
 select is(
-  (select van_duo from public.school_jaargegevens where school_id = '00000000-0000-0000-0000-00000000b001' and jaar = 2025),
+  (select van_duo from public.school_jaargegevens where school_id = '00000000-0000-0000-0000-00000000b001' and jaar = 2026),
   false, 'een ander aantal opslaan haalt de markering DUO weg');
 reset role;
 select is(

@@ -24,7 +24,7 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
-import { duoCode, duoStatus, laatsteRonde, leesTellingen, type DuoRonde, type DuoTelling } from '../werkbelasting/duo'
+import { duoCode, duoStatus, laatsteRonde, leesTellingen, peiljaarBij, type DuoRonde, type DuoTelling } from '../werkbelasting/duo'
 import { BrinKoppelenDialoog, DuoOphalenDialoog } from '../werkbelasting/DuoDialogen'
 import { DuoLabel, FormulierDialoog, Overgenomen } from '../werkbelasting/onderdelen'
 import { loopt, opNaam } from '../werkbelasting/opmaak'
@@ -63,7 +63,7 @@ export function ScholenPage() {
           lees<StaffelSchijf>(client, 'staffel_schijven', 'min_leerlingen'),
           lees<Programma>(client, 'programmas', 'naam'),
           lees<Werkjaar>(client, 'werkjaren', 'jaar'),
-          leesTellingen(client, { peiljaar: jaar }),
+          leesTellingen(client, { peiljaar: peiljaarBij(jaar) }),
           laatsteRonde(client),
         ]),
       ),
@@ -224,7 +224,7 @@ export function ScholenPage() {
                 <>
                   {u.leerlingen}
                   {u.overgenomen && <Overgenomen jaar={jaar - 1} />}
-                  <DuoLabel status={u.duo} jaar={jaar} />
+                  <DuoLabel status={u.duo} peiljaar={peiljaarBij(jaar)} />
                 </>
               )
             },
