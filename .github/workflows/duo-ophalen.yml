@@ -1,0 +1,42 @@
+name: DUO ophalen
+
+# Haalt de leerlingaantallen (telling 1 oktober) en vestigingen op bij de open
+# onderwijsdata van DUO en levert ze aan bij de Edge Function duo-verwerken.
+# DUO verbreekt verbindingen vanuit Supabase, maar niet vanuit GitHub.
+#
+# Elke maand de 5e om 05:00 UTC, en met de hand via Actions → DUO ophalen →
+# Run workflow. Nodig: variable VITE_SUPABASE_URL en de secret DUO_SLEUTEL in
+# de environment "duo" (zie README → GitHub eenmalig inrichten).
+
+on:
+  schedule:
+    - cron: '0 5 5 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: duo-ophalen
+  cancel-in-progress: false
+
+jobs:
+  ophalen:
+    name: Ophalen en aanleveren
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: duo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Ophalen bij DUO
+        run: node scripts/duo-ophalen.mjs
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          DUO_SLEUTEL: ${{ secrets.DUO_SLEUTEL }}
