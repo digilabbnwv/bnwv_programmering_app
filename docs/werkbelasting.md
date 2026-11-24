@@ -52,7 +52,7 @@ team op te vragen. Uitgangspunt is de memo 2026 van Ingeborg.
 | `werkbelasting_toelichtingen` | per medewerker per jaar: vrije toelichting en status concept/vastgesteld |
 | `duo_leerlingaantallen` | telling van DUO per vestiging (BRIN6) en peiljaar; `aantal` is leeg bij 1 t/m 4 leerlingen |
 | `duo_vestigingen` | vestigingen bo en so in Gelderland (naam, adres, plaats) voor BRIN-voorstellen |
-| `duo_ophaalrondes` | logboek van elke keer ophalen bij DUO: wanneer, door wie (leeg = automatisch), gelukt, aantallen, foutmelding |
+| `duo_ophaalrondes` | logboek van elke keer ophalen bij DUO: wanneer, gelukt, aantallen, foutmelding |
 
 ## Leerlingaantallen van DUO
 
@@ -74,11 +74,17 @@ Afspraken:
   "DUO: …" erachter. Wie een DUO-aantal met de hand wijzigt, maakt het handmatig (alleen de correctie wijzigen niet).
 - **BRIN**: 4 tekens is de hoofdvestiging (BRIN + 00). Scholen zonder BRIN krijgen via "BRIN-nummers koppelen"
   voorstellen op naam, postcode en plaats; alleen duidelijke overeenkomsten staan vooraf gekozen.
-- **Ophalen** gebeurt in de database (extensie `http`): met de knop "Ophalen bij DUO" op Scholen, en elke maand
-  automatisch via `pg_cron` (job `duo-leerlingaantallen`, de 5e om 05:00 UTC). Er zijn geen sleutels voor nodig.
-  Een mislukte ronde verandert niets en staat met de foutmelding in `duo_ophaalrondes`.
+- **Ophalen** gebeurt in GitHub Actions, want DUO verbreekt verbindingen die vanuit Supabase komen. De workflow
+  [DUO ophalen](../.github/workflows/duo-ophalen.yml) draait elke maand de 5e om 05:00 UTC, en met de hand via
+  **Actions → DUO ophalen → Run workflow**. Het script [duo-ophalen.mjs](../scripts/duo-ophalen.mjs) vraagt de Edge
+  Function `duo-verwerken` welke instellingen en peiljaren nodig zijn, haalt ze op bij DUO en levert ze aan. De
+  functie controleert de sleutel `DUO_SLEUTEL` en roept met de service role `duo_te_vragen`, `duo_verwerken` en
+  `duo_mislukt` aan; die zijn alleen voor de service role. De service role key blijft in Supabase.
+- Een mislukte ronde verandert niets en staat met de foutmelding in `duo_ophaalrondes`; de workflow wordt dan rood.
+  De laatste ronde staat op Scholen onder "Leerlingaantallen van DUO".
 - Wijzigt DUO het id van een bestand, dan mislukt het ophalen. Zoek het nieuwe id op met
-  `https://onderwijsdata.duo.nl/api/3/action/package_show?id=poleerlingen-v1` en pas `private.duo_ophalen` aan.
+  `https://onderwijsdata.duo.nl/api/3/action/package_show?id=poleerlingen-v1` en pas `RESOURCES` in
+  `scripts/duo-ophalen.mjs` aan.
 
 ## Rechten
 
@@ -93,7 +99,7 @@ Het MT (rol `mt`) heeft `werkbelasting.bekijken`, maar wijzigt niets. Zie
 
 ## Schermen
 
-1. **Scholen**: lijst per jaar en formulier (NAW, soort, programma), leerlingaantal en correctie per jaar. Voor een nieuw jaar neemt "Leerlingaantallen van … overnemen" in één keer het aantal (en desgewenst de correctie) van het vorige jaar over voor alle actieve scholen zonder gegevens; die krijgen het label "overgenomen" tot ze bij de school worden bijgewerkt. "Ophalen bij DUO" vult de telling van DUO in (zie [Leerlingaantallen van DUO](#leerlingaantallen-van-duo)); "BRIN-nummers koppelen" stelt BRIN-nummers voor bij scholen zonder. Verder: huidige medewerker en historie, school verplaatsen naar een collega per datum.
+1. **Scholen**: lijst per jaar en formulier (NAW, soort, programma), leerlingaantal en correctie per jaar. Voor een nieuw jaar neemt "Leerlingaantallen van … overnemen" in één keer het aantal (en desgewenst de correctie) van het vorige jaar over voor alle actieve scholen zonder gegevens; die krijgen het label "overgenomen" tot ze bij de school worden bijgewerkt. "Leerlingaantallen van DUO" toont wanneer de telling van DUO voor het laatst is opgehaald (zie [Leerlingaantallen van DUO](#leerlingaantallen-van-duo)); "BRIN-nummers koppelen" stelt BRIN-nummers voor bij scholen zonder. Verder: huidige medewerker en historie, school verplaatsen naar een collega per datum.
 2. **Staffel en jaarinstellingen**: schijven per jaar en soort, werkweken en mijmerpercentage.
    **Programma's** (`/programmas`): lijst met soort en het aantal actieve scholen of uitvoerders. De detailpagina toont bij een programma met scholen de scholen (het programma kies je bij de school), en bij een programma met vaste uitvoerders de uitvoerders met uren en periode, met overdragen aan een collega per datum.
 3. **Medewerkers**: gegevens, functie en afdeling, koppeling met een account, contracthistorie, extra uren.

@@ -424,3 +424,6 @@ verify_jwt = false
 
 [functions.admin-users]
 verify_jwt = false
+
+[functions.duo-verwerken]
+verify_jwt = false

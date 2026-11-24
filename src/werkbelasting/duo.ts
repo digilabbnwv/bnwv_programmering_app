@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { voerUit, type Resultaat, type SchoolJaargegevens } from './api'
+import type { Resultaat, SchoolJaargegevens } from './api'
 
 /**
- * Leerlingaantallen uit de open onderwijsdata van DUO (migratie
- * duo_leerlingaantallen). De database haalt ze op, met de knop of elke maand
- * automatisch. Werkjaar = peiljaar + 1: de telling van 1 oktober 2025
+ * Leerlingaantallen uit de open onderwijsdata van DUO (migraties duo_*). De
+ * workflow "DUO ophalen" in GitHub Actions haalt ze elke maand op en levert ze
+ * aan bij de Edge Function duo-verwerken. Werkjaar = peiljaar + 1: de telling van 1 oktober 2025
  * (gepubliceerd in januari 2026) hoort bij werkjaar 2026.
  */
 
@@ -38,6 +38,9 @@ export interface BrinVoorstel {
   plaats: string
   score: number
 }
+
+/** Hier start je het ophalen met de hand (Actions → DUO ophalen → Run workflow). */
+export const DUO_WORKFLOW_URL = 'https://github.com/digilabbnwv/bnwv_programmering_app/actions/workflows/duo-ophalen.yml'
 
 /** Het peiljaar van de telling die bij een werkjaar hoort. */
 export function peiljaarBij(werkjaar: number): number {
@@ -125,13 +128,4 @@ export async function leesTellingen(
   ).order('vestigingscode')
   if (error) return { ok: false, melding: 'Laden lukt nu niet. Probeer het later opnieuw.' }
   return { ok: true, data: (data ?? []) as DuoTelling[] }
-}
-
-/** De knop "Ophalen bij DUO". Een mislukte ronde wordt een foutmelding. */
-export async function ophalenBijDuo(client: SupabaseClient): Promise<Resultaat<DuoRonde>> {
-  const res = await voerUit<DuoRonde>(client, 'duo_ophalen', {}, {
-    '57014': 'DUO reageerde niet op tijd. Probeer het later opnieuw; elke maand wordt ook automatisch opgehaald.',
-  })
-  if (res.ok && !res.data.gelukt) return { ok: false, melding: rondeTekst(res.data) }
-  return res
 }

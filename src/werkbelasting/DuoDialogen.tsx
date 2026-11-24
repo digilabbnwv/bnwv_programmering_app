@@ -1,66 +1,55 @@
 import { useCallback, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
+import { Button } from '../components/Button'
+import { Dialoog } from '../components/Dialoog'
 import { Laadstatus, Melding } from '../components/Melding'
 import { SelectField } from '../components/SelectField'
 import { voerUit, type School } from './api'
-import { formatMoment, ophalenBijDuo, rondeTekst, standaardKeuze, type BrinVoorstel, type DuoRonde } from './duo'
+import { DUO_WORKFLOW_URL, formatMoment, rondeTekst, standaardKeuze, type BrinVoorstel, type DuoRonde } from './duo'
 import { FormulierDialoog, ongeldig } from './onderdelen'
 import { opNaam } from './opmaak'
 import { useGegevens } from './useGegevens'
 
-/** Bevestigen en ophalen bij DUO. onGelukt krijgt de tekst voor de pagina. */
-export function DuoOphalenDialoog({
-  laatste,
-  onSluiten,
-  onGelukt,
-}: {
-  laatste: DuoRonde | null
-  onSluiten: () => void
-  onGelukt: (tekst: string) => void
-}) {
-  const { client } = useAuth()
-
-  async function ophalen() {
-    const res = await ophalenBijDuo(client)
-    if (res.ok) onGelukt(rondeTekst(res.data))
-    return res
-  }
-
+/** Uitleg en de laatste keer ophalen. Ophalen zelf gebeurt in GitHub Actions. */
+export function DuoInfoDialoog({ laatste, onSluiten }: { laatste: DuoRonde | null; onSluiten: () => void }) {
   return (
-    <FormulierDialoog
-      titel="Leerlingaantallen ophalen bij DUO"
-      opslaanLabel="Ophalen"
-      bezigLabel="Bezig met ophalen…"
-      onOpslaan={ophalen}
-      onSluiten={onSluiten}
-      onGelukt={() => undefined}
-    >
-      <p>
-        De app haalt de tellingen van 1 oktober op voor alle actieve scholen met een BRIN-nummer. De telling van
-        1 oktober hoort bij het werkjaar erna: die van 1 oktober 2025 bij werkjaar 2026.
-      </p>
-      <ul className="list-disc space-y-1 pl-5">
-        <li>Lege en overgenomen aantallen worden ingevuld en krijgen het label “DUO”.</li>
-        <li>Aantallen die je met de hand hebt ingevuld, blijven staan. Wijkt DUO af, dan zie je dat erachter.</li>
-      </ul>
-      <p className="text-ui-sm text-neutral-700">
-        Dit gebeurt ook elke maand automatisch. DUO publiceert de telling van 1 oktober in januari.
-        {laatste && (
-          <>
-            {' '}
-            Laatst opgehaald: {formatMoment(laatste.gestart_op)} ({laatste.door ? 'met de knop' : 'automatisch'}
-            {laatste.gelukt ? '' : ', mislukt'}).
-          </>
+    <Dialoog titel="Leerlingaantallen van DUO" onSluiten={onSluiten}>
+      <div className="space-y-5">
+        <p>
+          Elke maand worden de tellingen van 1 oktober opgehaald voor alle actieve scholen met een BRIN-nummer. De
+          telling hoort bij het werkjaar erna: die van 1 oktober 2025 bij werkjaar 2026. DUO publiceert de telling in
+          januari.
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Lege en overgenomen aantallen worden ingevuld en krijgen het label “DUO”.</li>
+          <li>Aantallen die je met de hand hebt ingevuld, blijven staan. Wijkt DUO af, dan zie je dat erachter.</li>
+        </ul>
+        {laatste ? (
+          <Melding soort={laatste.gelukt ? 'info' : 'fout'}>
+            <strong>Laatst opgehaald: {formatMoment(laatste.gestart_op)}.</strong> {rondeTekst(laatste)}
+          </Melding>
+        ) : (
+          <p>Er is nog niet opgehaald.</p>
         )}
-      </p>
-      <p className="text-ui-sm text-neutral-700">Bron: DUO, open onderwijsdata (CC BY).</p>
-    </FormulierDialoog>
+        <p>
+          Niet wachten tot de volgende maand? Start het ophalen in GitHub via{' '}
+          <a href={DUO_WORKFLOW_URL} target="_blank" rel="noopener noreferrer" className="font-semibold underline underline-offset-4 hover:no-underline">
+            DUO ophalen → Run workflow
+          </a>{' '}
+          en ververs deze pagina na een paar minuten.
+        </p>
+        <p className="text-ui-sm text-neutral-700">Bron: DUO, open onderwijsdata (CC BY).</p>
+        <Button variant="secundair" onClick={onSluiten}>
+          Sluiten
+        </Button>
+      </div>
+    </Dialoog>
   )
 }
 
 /**
  * Per actieve school zonder BRIN de best passende vestigingen van DUO. Na het
- * koppelen worden de aantallen meteen opgehaald.
+ * koppelen komen de aantallen bij de volgende keer ophalen.
  */
 export function BrinKoppelenDialoog({
   scholen,
@@ -88,16 +77,17 @@ export function BrinKoppelenDialoog({
     if (koppelingen.length === 0) return ongeldig('Kies bij minstens één school een vestiging.')
     const res = await voerUit<number>(client, 'school_brin_koppelen', { p_koppelingen: koppelingen })
     if (!res.ok) return res
-    const gekoppeld = `${res.data === 1 ? '1 school is' : `${res.data} scholen zijn`} gekoppeld aan een BRIN-nummer.`
-    const ronde = await ophalenBijDuo(client)
-    onGelukt(`${gekoppeld} ${ronde.ok ? rondeTekst(ronde.data) : ronde.melding}`)
+    onGelukt(
+      `${res.data === 1 ? '1 school is' : `${res.data} scholen zijn`} gekoppeld aan een BRIN-nummer. ` +
+        'De leerlingaantallen komen bij de volgende keer ophalen bij DUO (elke maand, of eerder via GitHub).',
+    )
     return res
   }
 
   return (
     <FormulierDialoog
       titel="BRIN-nummers koppelen"
-      opslaanLabel="Koppelen en ophalen"
+      opslaanLabel="Koppelen"
       bezigLabel="Bezig met koppelen…"
       onOpslaan={koppelen}
       onSluiten={onSluiten}

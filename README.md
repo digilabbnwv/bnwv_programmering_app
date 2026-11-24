@@ -41,7 +41,7 @@ src/
   pages/       één bestand per pagina
 supabase/
   migrations/  alle databasewijzigingen als SQL
-  functions/   Edge Functions: wachtwoord-wijzigen, admin-users, _shared
+  functions/   Edge Functions: wachtwoord-wijzigen, admin-users, duo-verwerken, _shared
   tests/       pgTAP-tests voor rechten en RLS
 tests/integratie/  tests tegen een lokale Supabase met echte Auth (CI)
 scripts/       Node-check en de secret-check op de build
@@ -109,6 +109,7 @@ Alles met `VITE_` komt in de JavaScript-bundel en is dus openbaar. Zet hier nooi
 |---|---|---|
 | `ALLOWED_ORIGINS` | `https://digilabbnwv.github.io` | Origins die de functies mogen aanroepen (CORS), komma-gescheiden, zonder pad. Zonder deze secret alleen de lokale dev- en preview-server. |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | automatisch | Zet Supabase zelf. De service role key staat alleen hier: nooit in de frontend, de repository of op een laptop. |
+| `DUO_SLEUTEL` | willekeurig, minstens 32 tekens | Sleutel waarmee de workflow *DUO ophalen* leerlingaantallen aanlevert bij `duo-verwerken`. Dezelfde waarde staat als secret in de GitHub-environment `duo`. Zie [werkbelasting.md](docs/werkbelasting.md#leerlingaantallen-van-duo). |
 
 ## Supabase eenmalig inrichten
 
@@ -129,7 +130,7 @@ npx supabase db push
 ```
 
 ```bash
-npx supabase functions deploy wachtwoord-wijzigen admin-users
+npx supabase functions deploy wachtwoord-wijzigen admin-users duo-verwerken
 ```
 
 ```bash
@@ -178,7 +179,10 @@ Na het wijzigen van de hook of de sessie-instellingen moeten gebruikers opnieuw 
    - **Environment secrets:**
      - `SUPABASE_ACCESS_TOKEN`: een persoonlijk access token, aan te maken via [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens). Geef het een duidelijke naam, bijv. "GitHub Actions BNWV Intern", en een vervaldatum.
      - `SUPABASE_DB_PASSWORD`: het databasewachtwoord van het project (Project Settings → Database).
-5. Aanbevolen: **Settings → Branches →** een regel voor `main` die een pull request en een groene CI vraagt.
+5. **Settings → Environments → New environment `duo`**, voor de workflow *DUO ophalen* (elke maand):
+   - **Deployment branches and tags:** *Selected branches*, alleen `main`. Geen reviewers: de workflow draait vanzelf.
+   - **Environment secret** `DUO_SLEUTEL`: dezelfde waarde als het Supabase-secret `DUO_SLEUTEL`.
+6. Aanbevolen: **Settings → Branches →** een regel voor `main` die een pull request en een groene CI vraagt.
 
 De repository is publiek: de code is openbaar, de gegevens niet. Daarom staat er geen enkel secret in de repository; gitleaks controleert dat bij elke push.
 

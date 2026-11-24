@@ -25,7 +25,7 @@ import {
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
 import { duoCode, duoStatus, laatsteRonde, leesTellingen, peiljaarBij, type DuoRonde, type DuoTelling } from '../werkbelasting/duo'
-import { BrinKoppelenDialoog, DuoOphalenDialoog } from '../werkbelasting/DuoDialogen'
+import { BrinKoppelenDialoog, DuoInfoDialoog } from '../werkbelasting/DuoDialogen'
 import { DuoLabel, FormulierDialoog, Overgenomen } from '../werkbelasting/onderdelen'
 import { loopt, opNaam } from '../werkbelasting/opmaak'
 import { SchoolFormulier } from '../werkbelasting/SchoolFormulier'
@@ -34,7 +34,7 @@ import { alles, useGegevens } from '../werkbelasting/useGegevens'
 /**
  * Overzicht van scholen met de huidige medewerker en de uren van het gekozen
  * jaar (werkbelasting.beheren). Voor een nieuw jaar kun je de leerlingaantallen
- * van het jaar ervoor in één keer overnemen, of de telling van DUO ophalen.
+ * van het jaar ervoor in één keer overnemen; de telling van DUO komt elke maand binnen.
  */
 export function ScholenPage() {
   const { client } = useAuth()
@@ -75,7 +75,7 @@ export function ScholenPage() {
   const [ookInactief, setOokInactief] = useState(false)
   const [nieuw, setNieuw] = useState(false)
   const [overnemen, setOvernemen] = useState(false)
-  const [duo, setDuo] = useState<'ophalen' | 'koppelen' | null>(null)
+  const [duo, setDuo] = useState<'info' | 'koppelen' | null>(null)
   // Het bericht na overnemen hoort bij het jaar waarin het gebeurde.
   const [resultaat, setResultaat] = useState<{ jaar: number; tekst: string } | null>(null)
 
@@ -141,8 +141,8 @@ export function ScholenPage() {
               Leerlingaantallen van {jaar - 1} overnemen
             </Button>
           )}
-          <Button variant="secundair" onClick={() => setDuo('ophalen')}>
-            Ophalen bij DUO
+          <Button variant="secundair" onClick={() => setDuo('info')}>
+            Leerlingaantallen van DUO
           </Button>
           <Button onClick={() => setNieuw(true)}>Nieuwe school</Button>
         </>
@@ -258,7 +258,7 @@ export function ScholenPage() {
           }}
         />
       )}
-      {duo === 'ophalen' && <DuoOphalenDialoog laatste={ronde} onSluiten={() => setDuo(null)} onGelukt={duoKlaar} />}
+      {duo === 'info' && <DuoInfoDialoog laatste={ronde} onSluiten={() => setDuo(null)} />}
       {duo === 'koppelen' && <BrinKoppelenDialoog scholen={scholen} onSluiten={() => setDuo(null)} onGelukt={duoKlaar} />}
       {nieuw && (
         <SchoolFormulier
