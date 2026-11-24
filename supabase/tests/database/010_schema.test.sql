@@ -45,7 +45,7 @@ select is(
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and has_function_privilege('authenticated', p.oid, 'execute')),
-  array['afdeling_opslaan', 'contract_opslaan', 'deelnemer_opslaan', 'duo_brin_voorstellen', 'duo_ophalen',
+  array['afdeling_opslaan', 'contract_opslaan', 'deelnemer_opslaan', 'duo_brin_voorstellen',
         'extra_uren_opslaan', 'functie_opslaan',
         'inzet_opslaan', 'jaarplan_definitief', 'jaarplan_heropenen', 'jaarplan_importeren', 'jaarplan_opslaan',
         'jaarplan_verwijderen',

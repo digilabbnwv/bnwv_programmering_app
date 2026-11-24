@@ -1,8 +1,8 @@
 -- Leerlingaantallen van DUO: verwerken van tellingen (werkjaar = peiljaar + 1),
 -- alleen lege of overgenomen aantallen invullen, BRIN-voorstellen en koppelen.
--- Het ophalen zelf (http naar DUO) zit niet in de test; de verwerking wel.
+-- Het ophalen bij DUO (GitHub Actions) zit niet in de test; de verwerking wel.
 begin;
-select plan(23);
+select plan(28);
 
 select tests.create_user('teamleider@test.nl', 'teamleider');
 select tests.create_user('medewerker@test.nl', 'medewerker');
@@ -22,15 +22,20 @@ insert into public.school_jaargegevens (school_id, jaar, leerlingaantal, overgen
 
 -- Rechten -----------------------------------------------------------------------
 select tests.authenticate_as('medewerker@test.nl');
-select throws_ok($$ select public.duo_ophalen() $$, '42501', null, 'medewerker: kan niet ophalen bij DUO');
 select throws_ok($$ select * from public.duo_brin_voorstellen() $$, '42501', null, 'medewerker: krijgt geen BRIN-voorstellen');
 select throws_ok(
   $$ select public.school_brin_koppelen('[{"school_id": "00000000-0000-0000-0000-00000000b005", "brin": "99ZZ00"}]') $$,
   '42501', null, 'medewerker: kan geen BRIN koppelen');
 reset role;
+select tests.authenticate_as('teamleider@test.nl');
+select throws_ok($$ select public.duo_verwerken('[]', '[]') $$, '42501', null,
+  'teamleider: kan geen DUO-gegevens aanleveren (alleen de service role)');
+select throws_ok($$ select public.duo_te_vragen() $$, '42501', null,
+  'teamleider: kan de DUO-vraag niet opvragen (alleen de service role)');
+reset role;
 
-select is((select count(*)::integer from cron.job where jobname = 'duo-leerlingaantallen'), 1,
-  'het maandelijks ophalen staat ingepland');
+select is(public.duo_te_vragen(), '{"instellingen": ["00DZ", "11CK", "21NK"], "peiljaren": [2024, 2025]}'::jsonb,
+  'vraagt de instellingen van actieve scholen en per werkjaar het peiljaar ervoor');
 
 -- Tellingen verwerken -----------------------------------------------------------
 select is(
@@ -120,6 +125,19 @@ select is(
     where id in ('00000000-0000-0000-0000-00000000b001', '00000000-0000-0000-0000-00000000b005')),
   'CBS De Triangel 99ZZ00; De Borchstee 21NK00', 'het BRIN wordt in hoofdletters vastgelegd');
 reset role;
+
+-- Aanleveren door de workflow (service role) ---------------------------------------
+select is(public.duo_verwerken('[]', '[]') ->> 'gelukt', 'false',
+  'zonder vestigingen mislukt de verwerking en wordt die vastgelegd');
+select is(
+  (select (r ->> 'gelukt') || ' ' || (r ->> 'tellingen') || ' ' || (r ->> 'vestigingen') || ' ' || (r ->> 'ingevuld')
+     from public.duo_verwerken(
+       '[{"INSTELLINGSCODE": "99ZZ", "VESTIGINGSCODE": "00", "TYPE_PO": "BO", "PEILJAAR": 2025, "AANTAL_LEERLINGEN": 210}]',
+       '[{"VESTIGINGSCODE": "99ZZ00", "VESTIGINGSNAAM": "De Triangel"}]') as v (r)),
+  'true 1 1 1', 'een verwerking vult het aantal van een net gekoppelde school');
+select is(public.duo_mislukt('DUO gaf status 503') ->> 'melding', 'DUO gaf status 503',
+  'een mislukte ophaalpoging wordt vastgelegd');
+select is((select count(*)::integer from public.duo_ophaalrondes), 3, 'elke ronde staat in het logboek');
 
 select * from finish();
 rollback;
