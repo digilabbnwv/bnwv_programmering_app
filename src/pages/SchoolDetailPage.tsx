@@ -17,6 +17,7 @@ import {
   voerUit,
   type Medewerker,
   type Programma,
+  type Resultaat,
   type School,
   type SchoolJaargegevens,
   type StaffelSchijf,
@@ -24,10 +25,22 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, ongeldig, Overgenomen, VerwijderDialoog } from '../werkbelasting/onderdelen'
+import { duoCode, duoStatus, leesTellingen, type DuoTelling } from '../werkbelasting/duo'
+import { DuoLabel, FormulierDialoog, ongeldig, Overgenomen, VerwijderDialoog } from '../werkbelasting/onderdelen'
 import { formatDatum, formatPeriode, getalAlsTekst, leesGetal, loopt, opNaam, vandaag } from '../werkbelasting/opmaak'
 import { SchoolFormulier } from '../werkbelasting/SchoolFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
+
+type Data = [
+  School[],
+  SchoolJaargegevens[],
+  Toewijzing[],
+  Medewerker[],
+  StaffelSchijf[],
+  Werkjaar[],
+  Programma[],
+  DuoTelling[],
+]
 
 type Dialoog =
   | { soort: 'wijzigen' }
@@ -41,9 +54,8 @@ export function SchoolDetailPage() {
   const { id = '' } = useParams()
   const { client } = useAuth()
   const navigate = useNavigate()
-  const laden = useCallback(
-    async () =>
-      alles<[School[], SchoolJaargegevens[], Toewijzing[], Medewerker[], StaffelSchijf[], Werkjaar[], Programma[]]>(
+  const laden = useCallback(async (): Promise<Resultaat<Data>> => {
+    const basis = alles<[School[], SchoolJaargegevens[], Toewijzing[], Medewerker[], StaffelSchijf[], Werkjaar[], Programma[]]>(
         await Promise.all([
           lees<School>(client, 'scholen', 'naam', { kolom: 'id', waarde: id }),
           lees<SchoolJaargegevens>(client, 'school_jaargegevens', 'jaar', { kolom: 'school_id', waarde: id }),
@@ -53,9 +65,14 @@ export function SchoolDetailPage() {
           lees<Werkjaar>(client, 'werkjaren', 'jaar'),
           lees<Programma>(client, 'programmas', 'naam'),
         ]),
-      ),
-    [client, id],
-  )
+      )
+    if (!basis.ok) return basis
+    // De tellingen van DUO horen bij het BRIN van de school.
+    const code = duoCode(basis.data[0][0]?.brin ?? null)
+    const tellingen = code ? await leesTellingen(client, { vestigingscode: code }) : { ok: true as const, data: [] }
+    if (!tellingen.ok) return tellingen
+    return { ok: true, data: [...basis.data, tellingen.data] }
+  }, [client, id])
   const { data, fout, herlaad } = useGegevens(laden)
   const [dialoog, setDialoog] = useState<Dialoog | null>(null)
   const sluit = () => setDialoog(null)
@@ -68,7 +85,7 @@ export function SchoolDetailPage() {
     )
   }
 
-  const [[school], jaargegevens, toewijzingen, medewerkers, staffel, werkjaren, programmas] = data
+  const [[school], jaargegevens, toewijzingen, medewerkers, staffel, werkjaren, programmas, tellingen] = data
   if (!school) {
     return (
       <Pagina titel="School niet gevonden">
@@ -183,6 +200,7 @@ export function SchoolDetailPage() {
                 <>
                   {g.leerlingaantal}
                   {g.overgenomen && <Overgenomen jaar={g.jaar - 1} />}
+                  <DuoLabel status={duoStatus(g, tellingen.find((t) => t.peiljaar === g.jaar))} jaar={g.jaar} />
                 </>
               ),
               getal: true,

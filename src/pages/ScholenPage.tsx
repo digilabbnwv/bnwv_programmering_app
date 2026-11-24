@@ -24,7 +24,9 @@ import {
   type Werkjaar,
 } from '../werkbelasting/api'
 import { formatUren, staffelUren } from '../werkbelasting/berekening'
-import { FormulierDialoog, Overgenomen } from '../werkbelasting/onderdelen'
+import { duoCode, duoStatus, laatsteRonde, leesTellingen, type DuoRonde, type DuoTelling } from '../werkbelasting/duo'
+import { BrinKoppelenDialoog, DuoOphalenDialoog } from '../werkbelasting/DuoDialogen'
+import { DuoLabel, FormulierDialoog, Overgenomen } from '../werkbelasting/onderdelen'
 import { loopt, opNaam } from '../werkbelasting/opmaak'
 import { SchoolFormulier } from '../werkbelasting/SchoolFormulier'
 import { alles, useGegevens } from '../werkbelasting/useGegevens'
@@ -32,14 +34,27 @@ import { alles, useGegevens } from '../werkbelasting/useGegevens'
 /**
  * Overzicht van scholen met de huidige medewerker en de uren van het gekozen
  * jaar (werkbelasting.beheren). Voor een nieuw jaar kun je de leerlingaantallen
- * van het jaar ervoor in één keer overnemen.
+ * van het jaar ervoor in één keer overnemen, of de telling van DUO ophalen.
  */
 export function ScholenPage() {
   const { client } = useAuth()
   const navigate = useNavigate()
+  const { jaar } = useJaar()
   const laden = useCallback(
     async () =>
-      alles<[School[], Toewijzing[], Medewerker[], SchoolJaargegevens[], StaffelSchijf[], Programma[], Werkjaar[]]>(
+      alles<
+        [
+          School[],
+          Toewijzing[],
+          Medewerker[],
+          SchoolJaargegevens[],
+          StaffelSchijf[],
+          Programma[],
+          Werkjaar[],
+          DuoTelling[],
+          DuoRonde | null,
+        ]
+      >(
         await Promise.all([
           lees<School>(client, 'scholen', 'naam'),
           lees<Toewijzing>(client, 'school_toewijzingen', 'startdatum'),
@@ -48,17 +63,19 @@ export function ScholenPage() {
           lees<StaffelSchijf>(client, 'staffel_schijven', 'min_leerlingen'),
           lees<Programma>(client, 'programmas', 'naam'),
           lees<Werkjaar>(client, 'werkjaren', 'jaar'),
+          leesTellingen(client, { peiljaar: jaar }),
+          laatsteRonde(client),
         ]),
       ),
-    [client],
+    [client, jaar],
   )
   const { data, fout, herlaad } = useGegevens(laden)
-  const { jaar } = useJaar()
   const [zoek, setZoek] = useState('')
   const [soort, setSoort] = useState('')
   const [ookInactief, setOokInactief] = useState(false)
   const [nieuw, setNieuw] = useState(false)
   const [overnemen, setOvernemen] = useState(false)
+  const [duo, setDuo] = useState<'ophalen' | 'koppelen' | null>(null)
   // Het bericht na overnemen hoort bij het jaar waarin het gebeurde.
   const [resultaat, setResultaat] = useState<{ jaar: number; tekst: string } | null>(null)
 
@@ -70,7 +87,7 @@ export function ScholenPage() {
     )
   }
 
-  const [scholen, toewijzingen, medewerkers, alleJaargegevens, alleStaffel, programmas, werkjaren] = data
+  const [scholen, toewijzingen, medewerkers, alleJaargegevens, alleStaffel, programmas, werkjaren, tellingen, ronde] = data
   const werkjaarBestaat = werkjaren.some((w) => w.jaar === jaar)
   const jaargegevens = alleJaargegevens.filter((g) => g.jaar === jaar)
   const staffel = alleStaffel.filter((s) => s.jaar === jaar)
@@ -95,6 +112,7 @@ export function ScholenPage() {
     return {
       leerlingen: g.leerlingaantal,
       overgenomen: g.overgenomen,
+      duo: duoStatus(g, tellingen.find((t) => t.vestigingscode === duoCode(s.brin))),
       uren: norm === null ? null : Math.max(0, norm + g.uren_correctie),
     }
   }
@@ -105,6 +123,11 @@ export function ScholenPage() {
     .filter((s) => `${s.naam} ${s.plaats}`.toLowerCase().includes(zoek.trim().toLowerCase()))
     .sort(opNaam)
   const zonderMedewerker = scholen.filter((s) => s.actief && !medewerkerVan(s.id)).length
+  const zonderBrin = scholen.filter((s) => s.actief && !s.brin && s.soort !== 'KDV').length
+  const duoKlaar = (tekst: string) => {
+    setResultaat({ jaar, tekst })
+    herlaad()
+  }
 
   return (
     <Pagina
@@ -118,6 +141,9 @@ export function ScholenPage() {
               Leerlingaantallen van {jaar - 1} overnemen
             </Button>
           )}
+          <Button variant="secundair" onClick={() => setDuo('ophalen')}>
+            Ophalen bij DUO
+          </Button>
           <Button onClick={() => setNieuw(true)}>Nieuwe school</Button>
         </>
       }
@@ -162,6 +188,14 @@ export function ScholenPage() {
         {nogOvergenomen > 0 &&
           ` · ${nogOvergenomen} ${nogOvergenomen === 1 ? 'aantal' : 'aantallen'} overgenomen van ${jaar - 1}, nog niet bijgewerkt`}
         {zonderMedewerker > 0 && ` · ${zonderMedewerker} actieve ${zonderMedewerker === 1 ? 'school' : 'scholen'} zonder medewerker`}
+        {zonderBrin > 0 && (
+          <>
+            {` · ${zonderBrin} actieve ${zonderBrin === 1 ? 'school' : 'scholen'} zonder BRIN-nummer `}
+            <Button variant="link" onClick={() => setDuo('koppelen')}>
+              BRIN-nummers koppelen
+            </Button>
+          </>
+        )}
       </p>
 
       <Tabel
@@ -190,6 +224,7 @@ export function ScholenPage() {
                 <>
                   {u.leerlingen}
                   {u.overgenomen && <Overgenomen jaar={jaar - 1} />}
+                  <DuoLabel status={u.duo} jaar={jaar} />
                 </>
               )
             },
@@ -223,6 +258,8 @@ export function ScholenPage() {
           }}
         />
       )}
+      {duo === 'ophalen' && <DuoOphalenDialoog laatste={ronde} onSluiten={() => setDuo(null)} onGelukt={duoKlaar} />}
+      {duo === 'koppelen' && <BrinKoppelenDialoog scholen={scholen} onSluiten={() => setDuo(null)} onGelukt={duoKlaar} />}
       {nieuw && (
         <SchoolFormulier
           school={null}

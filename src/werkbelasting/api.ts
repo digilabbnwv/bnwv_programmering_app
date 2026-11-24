@@ -70,6 +70,8 @@ export interface SchoolJaargegevens {
   correctie_reden: string
   /** Overgenomen van het vorige jaar en nog niet met de hand opgeslagen. */
   overgenomen: boolean
+  /** Aantal komt van DUO (telling 1 oktober) en is niet met de hand gewijzigd. */
+  van_duo: boolean
 }
 
 export interface Medewerker {

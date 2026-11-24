@@ -3,6 +3,7 @@ import { Button } from '../components/Button'
 import { Dialoog } from '../components/Dialoog'
 import { Melding } from '../components/Melding'
 import type { Resultaat } from './api'
+import type { DuoStatus } from './duo'
 
 /**
  * Dialoog met een formulier. onOpslaan controleert de invoer (geeft dan een
@@ -11,6 +12,7 @@ import type { Resultaat } from './api'
 export function FormulierDialoog({
   titel,
   opslaanLabel = 'Opslaan',
+  bezigLabel = 'Bezig met opslaan…',
   onOpslaan,
   onSluiten,
   onGelukt,
@@ -18,6 +20,7 @@ export function FormulierDialoog({
 }: {
   titel: string
   opslaanLabel?: string
+  bezigLabel?: string
   onOpslaan: () => Promise<Resultaat<unknown>> | Resultaat<unknown>
   onSluiten: () => void
   onGelukt: () => void
@@ -47,7 +50,7 @@ export function FormulierDialoog({
         {children}
         <div className="flex flex-wrap gap-3">
           <Button type="submit" disabled={bezig}>
-            {bezig ? 'Bezig met opslaan…' : opslaanLabel}
+            {bezig ? bezigLabel : opslaanLabel}
           </Button>
           <Button variant="secundair" onClick={onSluiten}>
             Annuleren
@@ -91,11 +94,30 @@ export function ongeldig(melding: string): Resultaat<never> {
   return { ok: false, melding }
 }
 
+const LABEL = 'ml-2 inline-block rounded-pill bg-neutral-100 px-2 py-0.5 text-ui-xs font-semibold text-neutral-700'
+
 /** Label bij een leerlingaantal dat van het vorige jaar is overgenomen en nog niet is bijgewerkt. */
 export function Overgenomen({ jaar }: { jaar: number }) {
   return (
-    <span className="ml-2 inline-block rounded-pill bg-neutral-100 px-2 py-0.5 text-ui-xs font-semibold text-neutral-700">
+    <span className={LABEL}>
       overgenomen<span className="sr-only"> van {jaar}, nog niet bijgewerkt</span>
+    </span>
+  )
+}
+
+/** Label of hint bij een leerlingaantal: van DUO, of een afwijkende telling van DUO. */
+export function DuoLabel({ status, jaar }: { status: DuoStatus; jaar: number }) {
+  if (!status) return null
+  if (status.soort === 'duo') {
+    return (
+      <span className={LABEL} title={`Telling van DUO op 1 oktober ${jaar}`}>
+        DUO<span className="sr-only">, telling 1 oktober {jaar}</span>
+      </span>
+    )
+  }
+  return (
+    <span className="ml-2 text-ui-xs text-neutral-700" title={`Telling van DUO op 1 oktober ${jaar}`}>
+      DUO: {status.aantal}
     </span>
   )
 }
